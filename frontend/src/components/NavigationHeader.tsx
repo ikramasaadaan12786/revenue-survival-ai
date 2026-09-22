@@ -17,7 +17,8 @@ import {
   Bot,
   ChevronDown,
   CheckCircle2,
-  FolderGit2
+  FolderGit2,
+  Brain
 } from "lucide-react";
 import { DashboardSummary } from "@/types";
 
@@ -93,6 +94,7 @@ export default function NavigationHeader({
       badge: summary?.pending_approvals ? summary.pending_approvals : undefined 
     },
     { id: "real-estate", label: "Dubai Real Estate Mode", icon: Building2, special: true },
+    { id: "intelligence", label: "Revenue Intelligence", icon: Brain, special: true },
     { id: "analytics", label: "Analytics & Memory", icon: BarChart3 },
   ];
 

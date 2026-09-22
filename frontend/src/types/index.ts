@@ -64,11 +64,28 @@ export type CRMStage =
   | "DEAL"
   | "COMMISSION";
 
+export type PipelineStage =
+  | "DISCOVERED"
+  | "QUALIFIED"
+  | "OFFER_CREATED"
+  | "CONTACT_PENDING"
+  | "CONTACTED"
+  | "DISCOVERY_CALL"
+  | "PROPOSAL_SENT"
+  | "FOLLOW_UP"
+  | "OBJECTION"
+  | "NEGOTIATION"
+  | "CLOSING"
+  | "PAYMENT_PENDING"
+  | "WON"
+  | "LOST";
+
 export interface Lead {
   id: number;
   mission_id: number;
   offer_id?: number;
   name: string;
+  company_name?: string;
   source: string;
   country: string;
   interest?: string;
@@ -76,11 +93,105 @@ export interface Lead {
   contact_info?: string;
   channel: "WhatsApp" | "Email" | "LinkedIn" | "Telegram";
   status: CRMStage;
+  pipeline_stage?: PipelineStage;
+  stage_duration_hours?: number;
   expected_value: number;
   commission_potential: number;
+  revenue_probability?: number;
+  qualification_score?: number;
+  classification?: "HOT" | "QUALIFIED" | "WARM" | "COLD";
+  buying_intent?: "HIGH" | "MEDIUM" | "LOW";
+  estimated_budget?: number;
+  decision_stage?: "PROBLEM_AWARE" | "EVALUATION" | "DECISION" | "READY_TO_BUY";
+  decision_maker_probability?: number;
+  qualification_notes?: string;
   notes?: string;
   created_at: string;
 }
+
+export interface Proposal {
+  id: number;
+  mission_id: number;
+  lead_id?: number;
+  opportunity_id?: number;
+  proposal_title: string;
+  proposal_type: "AI_AGENT" | "SOFTWARE" | "WEBSITE" | "SAAS" | "REAL_ESTATE" | "MARKETING";
+  client_name: string;
+  client_summary: string;
+  problem_statement: string;
+  proposed_solution: string;
+  deliverables: string[];
+  timeline_days: number;
+  pricing_amount: number;
+  currency: string;
+  payment_terms: string;
+  expected_outcomes: string[];
+  full_proposal_markdown?: string;
+  status: "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED";
+  created_at: string;
+}
+
+export interface SalesClosingStrategy {
+  lead_name: string;
+  company_name: string;
+  industry: string;
+  discovery_questions: { question: string; purpose: string }[];
+  objection_handling: { objection: string; script: string; tactical_pivot: string }[];
+  negotiation_strategy: {
+    recommended_starting_price: number;
+    minimum_acceptable_floor: number;
+    target_profit_margin: string;
+    suggested_payment_terms: string;
+    value_justification: string;
+    upsell_opportunity?: {
+      upsell_package_name?: string;
+      upsell_price?: number;
+      deliverables?: string[];
+      upsell_deliverables?: string[];
+    };
+  };
+  recommended_next_action: string;
+}
+
+export interface RevenueLearning {
+  id: number;
+  mission_id?: number;
+  industry?: string;
+  offer_type?: string;
+  source?: string;
+  conversion_rate: number;
+  reply_rate: number;
+  avg_closing_hours: number;
+  avg_deal_value: number;
+  sample_size: number;
+  learning_insight: string;
+  recommendation: string;
+  action_priority: "CRITICAL" | "HIGH" | "MEDIUM";
+  created_at: string;
+}
+
+export interface PerformanceReport {
+  mission_id: number;
+  best_performing_industry: string;
+  best_offer: string;
+  best_source: string;
+  biggest_bottleneck: string;
+  recommended_strategy_change: string;
+  intelligence_metrics: {
+    total_leads: number;
+    qualified_leads: number;
+    hot_leads: number;
+    active_negotiations: number;
+    proposals_sent: number;
+    deals_won: number;
+    revenue_generated: number;
+    conversion_rate_pct: number;
+    avg_deal_size_aed: number;
+    pipeline_coverage_ratio: number;
+  };
+  actionable_recommendations: string[];
+}
+
 
 export interface RealEstateDeal {
   id: number;

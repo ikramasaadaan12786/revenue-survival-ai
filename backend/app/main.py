@@ -21,6 +21,8 @@ from app.api import (
     strategy_brain,
     marketplace,
     copilot,
+    closing_engine,
+    learning,
 )
 
 @asynccontextmanager
@@ -70,6 +72,61 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE revenue_opportunities ADD COLUMN priority VARCHAR(50) DEFAULT 'HOT'"))
         except Exception:
             pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE leads ADD COLUMN company_name VARCHAR(255)"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE leads ADD COLUMN pipeline_stage VARCHAR(50) DEFAULT 'DISCOVERED'"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE leads ADD COLUMN stage_duration_hours FLOAT DEFAULT 1.0"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE leads ADD COLUMN revenue_probability FLOAT DEFAULT 0.80"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE leads ADD COLUMN qualification_score FLOAT DEFAULT 75.0"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE leads ADD COLUMN classification VARCHAR(50) DEFAULT 'QUALIFIED'"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE leads ADD COLUMN buying_intent VARCHAR(50) DEFAULT 'HIGH'"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE leads ADD COLUMN estimated_budget FLOAT DEFAULT 3500.0"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE leads ADD COLUMN decision_stage VARCHAR(50) DEFAULT 'EVALUATION'"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE leads ADD COLUMN decision_maker_probability FLOAT DEFAULT 0.85"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE leads ADD COLUMN qualification_notes TEXT"))
+        except Exception:
+            pass
     yield
 
 app = FastAPI(
@@ -105,6 +162,8 @@ app.include_router(browser_automation.router, prefix=settings.API_V1_STR)
 app.include_router(strategy_brain.router, prefix=settings.API_V1_STR)
 app.include_router(marketplace.router, prefix=settings.API_V1_STR)
 app.include_router(copilot.router, prefix=settings.API_V1_STR)
+app.include_router(closing_engine.router, prefix=settings.API_V1_STR)
+app.include_router(learning.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():

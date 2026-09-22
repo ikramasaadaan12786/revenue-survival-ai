@@ -529,3 +529,137 @@ class MissionEscalationApplyRequest(BaseModel):
     new_strategy_angle: Optional[str] = None
 
 
+# --- Revenue Closing & Learning Engine v3 Schemas ---
+
+# 1. AI Lead Qualification Schemas
+class LeadQualificationRequest(BaseModel):
+    lead_id: Optional[int] = None
+    opportunity_id: Optional[int] = None
+    company_name: Optional[str] = None
+    requirement_text: Optional[str] = None
+    channel: Optional[str] = "WhatsApp"
+    contact_name: Optional[str] = None
+    industry: Optional[str] = None
+
+class LeadQualificationResponse(BaseModel):
+    lead_id: Optional[int] = None
+    qualification_score: float  # 0 to 100
+    classification: str  # HOT, QUALIFIED, WARM, COLD
+    buying_intent: str  # HIGH, MEDIUM, LOW
+    estimated_budget: float
+    decision_stage: str  # PROBLEM_AWARE, EVALUATION, DECISION, READY_TO_BUY
+    decision_maker_probability: float
+    business_verification: Dict[str, Any]
+    requirement_clarity: float
+    revenue_potential_aed: float
+    closing_probability: float
+    qualification_notes: str
+
+
+# 2. AI Sales Closing Assistant Schemas
+class SalesClosingStrategyRequest(BaseModel):
+    lead_id: Optional[int] = None
+    opportunity_id: Optional[int] = None
+    company_name: Optional[str] = None
+    industry: Optional[str] = None
+    target_budget: Optional[float] = None
+    current_objection: Optional[str] = None
+
+class SalesClosingStrategyResponse(BaseModel):
+    lead_name: str
+    company_name: str
+    industry: str
+    discovery_questions: List[Dict[str, str]]
+    objection_handling: List[Dict[str, str]]
+    negotiation_strategy: Dict[str, Any]
+    recommended_next_action: str
+
+
+# 3. Proposal Generator Schemas
+class ProposalGenerateRequest(BaseModel):
+    mission_id: int
+    lead_id: Optional[int] = None
+    opportunity_id: Optional[int] = None
+    proposal_type: str = "AI_AGENT"  # AI_AGENT, SOFTWARE, WEBSITE, SAAS, REAL_ESTATE, MARKETING
+    client_name: str
+    client_industry: Optional[str] = None
+    problem_description: str
+    custom_budget: Optional[float] = None
+    timeline_days: Optional[int] = None
+
+class ProposalResponse(BaseModel):
+    id: int
+    mission_id: int
+    lead_id: Optional[int] = None
+    proposal_title: str
+    proposal_type: str
+    client_name: str
+    client_summary: str
+    problem_statement: str
+    proposed_solution: str
+    deliverables: List[str]
+    timeline_days: int
+    pricing_amount: float
+    currency: str = "AED"
+    payment_terms: str
+    expected_outcomes: List[str]
+    full_proposal_markdown: Optional[str] = None
+    status: str = "DRAFT"
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+
+# 4. Upgraded Deal Pipeline Schemas
+class PipelineStageUpdateRequest(BaseModel):
+    lead_id: int
+    stage: str  # DISCOVERED, QUALIFIED, OFFER_CREATED, CONTACT_PENDING, CONTACTED, DISCOVERY_CALL, PROPOSAL_SENT, FOLLOW_UP, OBJECTION, NEGOTIATION, CLOSING, PAYMENT_PENDING, WON, LOST
+    notes: Optional[str] = None
+    revenue_probability: Optional[float] = None
+
+class PipelineStageMetrics(BaseModel):
+    stage_name: str
+    count: int
+    total_value: float
+    conversion_rate: float
+    avg_duration_hours: float
+
+class DealPipelineOverviewResponse(BaseModel):
+    mission_id: int
+    total_leads: int
+    pipeline_value: float
+    weighted_pipeline_value: float
+    stages: List[PipelineStageMetrics]
+
+
+# 5. Revenue Memory & Learning Engine Schemas
+class RevenueLearningResponse(BaseModel):
+    id: int
+    mission_id: Optional[int] = None
+    industry: Optional[str] = None
+    offer_type: Optional[str] = None
+    source: Optional[str] = None
+    conversion_rate: float
+    reply_rate: float
+    avg_closing_hours: float
+    avg_deal_value: float
+    sample_size: int = 1
+    learning_insight: str
+    recommendation: str
+    action_priority: str
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class PerformanceReportResponse(BaseModel):
+    mission_id: int
+    best_performing_industry: str
+    best_offer: str
+    best_source: str
+    biggest_bottleneck: str
+    recommended_strategy_change: str
+    intelligence_metrics: Dict[str, Any]
+    actionable_recommendations: List[str]
+
+
+

@@ -53,6 +53,8 @@ class Mission(Base):
     market_signals = relationship("MarketSignal", back_populates="mission", cascade="all, delete-orphan")
     seller_listings = relationship("SellerListing", back_populates="mission", cascade="all, delete-orphan")
     revenue_opportunities = relationship("RevenueOpportunity", back_populates="mission", cascade="all, delete-orphan")
+    proposals = relationship("Proposal", back_populates="mission", cascade="all, delete-orphan")
+    revenue_learnings = relationship("RevenueLearning", back_populates="mission", cascade="all, delete-orphan")
 
 
 class MarketSignal(Base):
@@ -167,21 +169,36 @@ class Lead(Base):
     mission_id = Column(Integer, ForeignKey("missions.id"), nullable=False)
     offer_id = Column(Integer, ForeignKey("offers.id"), nullable=True)
     name = Column(String(255), nullable=False)
+    company_name = Column(String(255), nullable=True)
     source = Column(String(100), default="Telegram Public")
     country = Column(String(100), default="United Arab Emirates")
     interest = Column(Text, nullable=True)
     intent_score = Column(String(50), default="Warm")
     contact_info = Column(String(255), nullable=True)
     channel = Column(String(50), default="WhatsApp")
-    status = Column(String(50), default="NEW")  # NEW, AI_VERIFIED, CONTACT_READY, CONTACTED, REPLIED, MEETING, DEAL, COMMISSION
+    status = Column(String(50), default="NEW")  # Standard / CRM Funnel
+    pipeline_stage = Column(String(50), default="DISCOVERED")  # Upgraded stages: DISCOVERED, QUALIFIED, OFFER_CREATED, CONTACT_PENDING, CONTACTED, DISCOVERY_CALL, PROPOSAL_SENT, FOLLOW_UP, OBJECTION, NEGOTIATION, CLOSING, PAYMENT_PENDING, WON, LOST
+    stage_duration_hours = Column(Float, default=1.0)
     expected_value = Column(Float, default=0.0)
     commission_potential = Column(Float, default=0.0)
+    revenue_probability = Column(Float, default=0.80)
+    
+    # AI Qualification v3 Fields
+    qualification_score = Column(Float, default=75.0)  # 0 to 100
+    classification = Column(String(50), default="QUALIFIED")  # HOT, QUALIFIED, WARM, COLD
+    buying_intent = Column(String(50), default="HIGH")  # HIGH, MEDIUM, LOW
+    estimated_budget = Column(Float, default=3500.0)
+    decision_stage = Column(String(50), default="EVALUATION")  # PROBLEM_AWARE, EVALUATION, DECISION, READY_TO_BUY
+    decision_maker_probability = Column(Float, default=0.85)
+    qualification_notes = Column(Text, nullable=True)
+    
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     mission = relationship("Mission", back_populates="leads")
     offer = relationship("Offer", back_populates="leads")
     communications = relationship("Communication", back_populates="lead", cascade="all, delete-orphan")
+    proposals = relationship("Proposal", back_populates="lead", cascade="all, delete-orphan")
 
 
 class Communication(Base):
@@ -350,4 +367,53 @@ class ConnectorAuth(Base):
     latency_ms = Column(Integer, default=45)
     capabilities = Column(JSON, default=list)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class Proposal(Base):
+    __tablename__ = "proposals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=False)
+    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)
+    opportunity_id = Column(Integer, nullable=True)
+    proposal_title = Column(String(255), nullable=False)
+    proposal_type = Column(String(100), default="AI_AGENT")  # AI_AGENT, SOFTWARE, WEBSITE, SAAS, REAL_ESTATE, MARKETING
+    client_name = Column(String(255), nullable=False)
+    client_summary = Column(Text, nullable=False)
+    problem_statement = Column(Text, nullable=False)
+    proposed_solution = Column(Text, nullable=False)
+    deliverables = Column(JSON, default=list)
+    timeline_days = Column(Integer, default=3)
+    pricing_amount = Column(Float, nullable=False)
+    currency = Column(String(10), default="AED")
+    payment_terms = Column(String(255), default="50% upfront deposit, 50% upon deployment")
+    expected_outcomes = Column(JSON, default=list)
+    full_proposal_markdown = Column(Text, nullable=True)
+    status = Column(String(50), default="DRAFT")  # DRAFT, SENT, ACCEPTED, REJECTED
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    mission = relationship("Mission", back_populates="proposals")
+    lead = relationship("Lead", back_populates="proposals")
+
+
+class RevenueLearning(Base):
+    __tablename__ = "revenue_learnings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
+    industry = Column(String(100), nullable=True)
+    offer_type = Column(String(100), nullable=True)
+    source = Column(String(100), nullable=True)
+    conversion_rate = Column(Float, default=0.0)
+    reply_rate = Column(Float, default=0.0)
+    avg_closing_hours = Column(Float, default=24.0)
+    avg_deal_value = Column(Float, default=5000.0)
+    sample_size = Column(Integer, default=1)
+    learning_insight = Column(Text, nullable=False)
+    recommendation = Column(Text, nullable=False)
+    action_priority = Column(String(50), default="HIGH")  # CRITICAL, HIGH, MEDIUM
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    mission = relationship("Mission", back_populates="revenue_learnings")
+
 

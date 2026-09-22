@@ -11,6 +11,7 @@ import SafetyApprovalQueueView from "@/components/SafetyApprovalQueueView";
 import DubaiRealEstateView from "@/components/DubaiRealEstateView";
 import AnalyticsMemoryView from "@/components/AnalyticsMemoryView";
 import MultiIndustryStrategyBrainView from "@/components/MultiIndustryStrategyBrainView";
+import RevenueIntelligenceCenter from "@/components/RevenueIntelligenceCenter";
 import NewMissionModal from "@/components/NewMissionModal";
 import { DashboardSummary } from "@/types";
 import { api } from "@/lib/api";
@@ -208,6 +209,13 @@ export default function Home() {
               <DubaiRealEstateView
                 missionId={missionId}
                 onRefreshSummary={() => fetchSummary(missionId)}
+              />
+            )}
+
+            {/* Revenue Intelligence Center */}
+            {activeTab === "intelligence" && (
+              <RevenueIntelligenceCenter
+                missionId={missionId}
               />
             )}
 

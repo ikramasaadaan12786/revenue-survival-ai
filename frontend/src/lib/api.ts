@@ -253,6 +253,57 @@ export const api = {
   applyMissionEscalation: (missionId: number, data: { action_type: string; new_goal_amount?: number; new_strategy_angle?: string }) =>
     fetcher<any>(`/missions/${missionId}/apply-escalation`, { method: "POST", body: JSON.stringify(data) }),
 
+  // Revenue Closing & Learning Engine v3: Lead Qualification
+  qualifyLead: (data: {
+    lead_id?: number;
+    opportunity_id?: number;
+    company_name?: string;
+    requirement_text?: string;
+    channel?: string;
+    contact_name?: string;
+    industry?: string;
+  }) =>
+    fetcher<any>("/closing-engine/qualify-lead", { method: "POST", body: JSON.stringify(data) }),
+
+  // Revenue Closing & Learning Engine v3: Sales Closing Assistant
+  getSalesClosingStrategy: (data: {
+    lead_id?: number;
+    opportunity_id?: number;
+    company_name?: string;
+    industry?: string;
+    target_budget?: number;
+    current_objection?: string;
+  }) =>
+    fetcher<any>("/closing-engine/sales-copilot", { method: "POST", body: JSON.stringify(data) }),
+
+  // Revenue Closing & Learning Engine v3: Proposal Generator
+  generateProposal: (data: {
+    mission_id: number;
+    lead_id?: number;
+    opportunity_id?: number;
+    proposal_type?: string;
+    client_name: string;
+    client_industry?: string;
+    problem_description: string;
+    custom_budget?: number;
+    timeline_days?: number;
+  }) =>
+    fetcher<any>("/closing-engine/generate-proposal", { method: "POST", body: JSON.stringify(data) }),
+  getMissionProposals: (missionId: number) =>
+    fetcher<any[]>(`/closing-engine/proposals/${missionId}`),
+
+  // Revenue Closing & Learning Engine v3: Upgraded Deal Pipeline
+  updatePipelineStage: (leadId: number, data: { stage: string; notes?: string; revenue_probability?: number }) =>
+    fetcher<any>(`/closing-engine/leads/${leadId}/pipeline-stage`, { method: "PATCH", body: JSON.stringify(data) }),
+  getDealPipelineOverview: (missionId: number) =>
+    fetcher<any>(`/closing-engine/pipeline/overview/${missionId}`),
+
+  // Revenue Closing & Learning Engine v3: Revenue Memory & Performance Review
+  getRevenueLearnings: (missionId?: number) =>
+    fetcher<any[]>(`/learning/insights${missionId ? `/${missionId}` : ""}`),
+  getWeeklyPerformanceReport: (missionId: number) =>
+    fetcher<any>(`/learning/performance-report/${missionId}`),
+
   // Analytics & Memory
   getRevenues: (missionId: number) =>
     fetcher<any[]>(`/analytics/revenue/${missionId}`),
@@ -263,5 +314,6 @@ export const api = {
   getMemory: () =>
     fetcher<any[]>("/analytics/memory"),
 };
+
 
 
