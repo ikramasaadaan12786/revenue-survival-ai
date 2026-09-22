@@ -16,6 +16,7 @@ import AutonomousClosingCenter from "@/components/AutonomousClosingCenter";
 import AICEOCommandCenter from "@/components/AICEOCommandCenter";
 import { RevenueControlRoom } from "@/components/RevenueControlRoom";
 import { GrowthCommandCenter } from "@/components/GrowthCommandCenter";
+import { AICompanyCommandCenter } from "@/components/AICompanyCommandCenter";
 import NewMissionModal from "@/components/NewMissionModal";
 import { DashboardSummary } from "@/types";
 import { api } from "@/lib/api";
@@ -158,6 +159,13 @@ export default function Home() {
                   onRefreshSummary={() => fetchSummary(missionId)}
                 />
               </div>
+            )}
+
+            {/* Autonomous Revenue Empire v7: AI Company Operating System */}
+            {activeTab === "revenue-empire" && (
+              <AICompanyCommandCenter
+                activeMissionId={missionId}
+              />
             )}
 
             {/* Autonomous Business Operator v5: Revenue Control Room */}

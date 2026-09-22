@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 
-from app.db.database import get_db
+from app.core.database import get_db
 from app.services.growth_loop.strategy_experiment_engine import strategy_experiment_engine
 from app.services.growth_loop.revenue_learning_optimizer import revenue_learning_optimizer
 from app.services.growth_loop.dynamic_strategy_pivots import dynamic_strategy_pivots

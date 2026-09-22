@@ -473,5 +473,62 @@ class OperatorActionLog(Base):
     mission = relationship("Mission")
 
 
+class CompanyDepartmentLog(Base):
+    __tablename__ = "company_department_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
+    department = Column(String(100), nullable=False)  # CEO, SALES, MARKETING, LEAD_GEN, PRODUCT, FINANCE, CUSTOMER_SUCCESS
+    agent_role = Column(String(100), nullable=False)
+    status = Column(String(50), default="ACTIVE")
+    goals = Column(JSON, default=list)
+    kpis = Column(JSON, default=dict)
+    tasks = Column(JSON, default=list)
+    performance_metrics = Column(JSON, default=dict)
+    recommendations = Column(JSON, default=list)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    mission = relationship("Mission")
+
+
+class ClientAccount(Base):
+    __tablename__ = "client_accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
+    client_name = Column(String(255), nullable=False)
+    company_name = Column(String(255), nullable=True)
+    industry = Column(String(100), default="AI Automation")
+    contract_value = Column(Float, default=15000.0)
+    ltv = Column(Float, default=30000.0)
+    health_score = Column(Float, default=92.0)  # 0 to 100
+    satisfaction_rating = Column(Float, default=4.8)  # 1 to 5
+    status = Column(String(50), default="ACTIVE")  # ACTIVE, AT_RISK, RENEWAL_DUE, CHURNED
+    renewal_date = Column(DateTime, nullable=True)
+    upsell_opportunity = Column(String(255), nullable=True)
+    upsell_value_aed = Column(Float, default=12500.0)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    mission = relationship("Mission")
+
+
+class CompanyPerformanceScorecard(Base):
+    __tablename__ = "company_performance_scorecards"
+
+    id = Column(Integer, primary_key=True, index=True)
+    agent_role = Column(String(100), nullable=False)
+    department = Column(String(100), nullable=False)
+    tasks_completed = Column(Integer, default=0)
+    revenue_attributed_aed = Column(Float, default=0.0)
+    success_rate = Column(Float, default=95.0)
+    efficiency_score = Column(Float, default=92.0)
+    grade = Column(String(10), default="A+")
+    period = Column(String(50), default="DAILY")
+    metrics_snapshot = Column(JSON, default=dict)
+    evaluated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+
 
 

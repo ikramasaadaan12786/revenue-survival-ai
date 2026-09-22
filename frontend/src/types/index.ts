@@ -979,6 +979,92 @@ export interface GrowthCommandCenterStats {
   }[];
 }
 
+export interface EmployeeScorecard {
+  agent_role: string;
+  department: string;
+  tasks_completed_today: number;
+  revenue_attributed_aed: number;
+  success_rate_pct: number;
+  efficiency_score: number;
+  grade: string;
+  strengths: string[];
+  focus_area: string;
+}
+
+export interface MorningCEOReport {
+  report_title: string;
+  date: string;
+  time_gst: string;
+  company_health_status: string;
+  yesterday: {
+    revenue_closed_aed: number;
+    deals_won_count: number;
+    deals_lost_count: number;
+    summary: string;
+  };
+  today: {
+    daily_revenue_target_aed: number;
+    priority_actions: string[];
+    department_tasks: Record<string, string>;
+  };
+  future: {
+    growth_opportunities: {
+      vector: string;
+      projected_upside_aed: number;
+      timeline: string;
+    }[];
+    executive_directive: string;
+  };
+}
+
+export interface RevenueEmpireData {
+  company_name: string;
+  operating_status: string;
+  company_revenue_aed: number;
+  net_profit_aed: number;
+  active_pipeline_aed: number;
+  growth_score: number;
+  total_active_departments: number;
+  org_chart: {
+    company_name: string;
+    headquarters: string;
+    structure: string;
+    total_departments: number;
+    departments: Record<string, any>;
+    operational_status: string;
+    last_synced_at: string;
+  };
+  departments: {
+    sales: any;
+    marketing: any;
+    lead_gen: any;
+    product: any;
+    finance: any;
+    customer_success: any;
+  };
+  employee_scorecards: EmployeeScorecard[];
+  morning_ceo_report: MorningCEOReport;
+  financial_forecast: {
+    "30_day_forecast_aed": number;
+    "60_day_forecast_aed": number;
+    "90_day_forecast_aed": number;
+    confidence_level: string;
+    primary_growth_driver: string;
+  };
+  top_opportunities: {
+    lead_id: number;
+    name: string;
+    company: string;
+    deal_value_aed: number;
+    qualification_score: number;
+    current_stage: string;
+    recommended_action: string;
+    closing_probability_pct: number;
+  }[];
+  strategic_recommendations: string[];
+}
+
+
 
 
 

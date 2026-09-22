@@ -1,3 +1,5 @@
+import { RevenueEmpireData, EmployeeScorecard, MorningCEOReport } from "@/types";
+
 const getApiBase = (): string => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   if (envUrl && envUrl.trim() !== "") {
@@ -416,7 +418,26 @@ export const api = {
     fetcher<any>("/growth-loop/create-experiment", { method: "POST", body: JSON.stringify(data) }),
   getPricingIntelligence: () =>
     fetcher<any[]>("/growth-loop/pricing-intelligence"),
+
+  // Autonomous Revenue Empire v7: AI Company Operating System
+  getCompanyCommandCenter: (missionId?: number) =>
+    fetcher<RevenueEmpireData>(`/revenue-empire/command-center${missionId ? `?mission_id=${missionId}` : ""}`),
+  getCompanyOrgChart: () =>
+    fetcher<any>("/revenue-empire/org-chart"),
+  getDepartmentDetails: (deptName: string, missionId?: number) =>
+    fetcher<any>(`/revenue-empire/department/${deptName}${missionId ? `?mission_id=${missionId}` : ""}`),
+  getEmployeeScorecards: (missionId?: number) =>
+    fetcher<EmployeeScorecard[]>(`/revenue-empire/scorecards${missionId ? `?mission_id=${missionId}` : ""}`),
+  getMorningCEOReport: (missionId?: number) =>
+    fetcher<MorningCEOReport>(`/revenue-empire/morning-report${missionId ? `?mission_id=${missionId}` : ""}`),
+  runCompanyOperatingCycle: (missionId?: number) =>
+    fetcher<any>(`/revenue-empire/run-operating-cycle${missionId ? `?mission_id=${missionId}` : ""}`, { method: "POST" }),
+  listClientAccounts: (missionId?: number) =>
+    fetcher<any[]>(`/revenue-empire/clients${missionId ? `?mission_id=${missionId}` : ""}`),
+  createClientAccount: (data: any, missionId?: number) =>
+    fetcher<any>(`/revenue-empire/clients${missionId ? `?mission_id=${missionId}` : ""}`, { method: "POST", body: JSON.stringify(data) }),
 };
+
 
 
 
