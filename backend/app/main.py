@@ -1,0 +1,95 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from app.core.config import settings
+from app.core.database import engine, Base
+from app.api import (
+    missions,
+    opportunities,
+    offers,
+    leads,
+    communications,
+    tasks,
+    real_estate,
+    analytics,
+    scheduler,
+    connectors,
+    seller_intelligence,
+    outreach_automation,
+    long_term_memory,
+    browser_automation,
+    strategy_brain,
+    marketplace,
+)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize SQLite/Postgres DB tables on startup
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        
+        # Safely ensure new columns exist in communications table if already created
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE communications ADD COLUMN provider_name VARCHAR(50) DEFAULT 'WHATSAPP_BUSINESS'"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE communications ADD COLUMN provider_message_id VARCHAR(255)"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE communications ADD COLUMN delivered_at DATETIME"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE communications ADD COLUMN read_at DATETIME"))
+        except Exception:
+            pass
+    yield
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    description="Autonomous Multi-Agent AI Revenue Survival Engine",
+    lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount API Routers
+app.include_router(missions.router, prefix=settings.API_V1_STR)
+app.include_router(opportunities.router, prefix=settings.API_V1_STR)
+app.include_router(offers.router, prefix=settings.API_V1_STR)
+app.include_router(leads.router, prefix=settings.API_V1_STR)
+app.include_router(communications.router, prefix=settings.API_V1_STR)
+app.include_router(tasks.router, prefix=settings.API_V1_STR)
+app.include_router(real_estate.router, prefix=settings.API_V1_STR)
+app.include_router(analytics.router, prefix=settings.API_V1_STR)
+app.include_router(scheduler.router, prefix=settings.API_V1_STR)
+app.include_router(connectors.router, prefix=settings.API_V1_STR)
+app.include_router(seller_intelligence.router, prefix=settings.API_V1_STR)
+app.include_router(outreach_automation.router, prefix=settings.API_V1_STR)
+app.include_router(long_term_memory.router, prefix=settings.API_V1_STR)
+app.include_router(browser_automation.router, prefix=settings.API_V1_STR)
+app.include_router(strategy_brain.router, prefix=settings.API_V1_STR)
+app.include_router(marketplace.router, prefix=settings.API_V1_STR)
+
+@app.get("/")
+async def root():
+    return {
+        "platform": settings.PROJECT_NAME,
+        "version": settings.VERSION,
+        "status": "ONLINE",
+        "survival_mode": "ACTIVE",
+        "docs_url": "/docs"
+    }
