@@ -82,6 +82,7 @@ export default function NavigationHeader({
 
   const navItems = [
     { id: "command", label: "Command HUD", icon: Flame },
+    { id: "closing-engine", label: "Closing Engine", icon: Target, special: true },
     { id: "strategy-brain", label: "Strategy Brain & Marketplace", icon: Sparkles, brain: true },
     { id: "planner", label: "Day Plan & Swarm", icon: Layers },
     { id: "opportunities", label: "Market Radar", icon: Radio },

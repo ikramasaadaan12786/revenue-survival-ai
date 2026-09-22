@@ -308,6 +308,20 @@ export const api = {
   getDealPipelineOverview: (missionId: number) =>
     fetcher<any>(`/closing-engine/pipeline/overview/${missionId}`),
 
+  // Revenue Closing & Learning Engine v4: Autonomous Closing Engine
+  qualifyDeal: (data: any) =>
+    fetcher<any>("/closing-engine/qualify-deal", { method: "POST", body: JSON.stringify(data) }),
+  matchOffer: (data: any) =>
+    fetcher<any>("/closing-engine/match-offer", { method: "POST", body: JSON.stringify(data) }),
+  getSalesCopilotSequence: (data: any) =>
+    fetcher<any>("/closing-engine/sales-copilot-sequence", { method: "POST", body: JSON.stringify(data) }),
+  getDailyExecutionPlan: (missionId: number) =>
+    fetcher<any>(`/closing-engine/daily-execution-plan/${missionId}`),
+  recordDealOutcome: (data: { mission_id: number; lead_id: number; outcome: string; actual_revenue_aed?: number; reason?: string }) =>
+    fetcher<any>("/closing-engine/record-deal-outcome", { method: "POST", body: JSON.stringify(data) }),
+  runFullClosingCycle: (missionId: number) =>
+    fetcher<any>(`/closing-engine/run-full-closing-cycle/${missionId}`, { method: "POST" }),
+
   // Revenue Closing & Learning Engine v3: Revenue Memory & Performance Review
   getRevenueLearnings: (missionId?: number) =>
     fetcher<any[]>(`/learning/insights${missionId ? `/${missionId}` : ""}`),

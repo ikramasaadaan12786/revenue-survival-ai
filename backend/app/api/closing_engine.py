@@ -176,3 +176,165 @@ async def get_deal_pipeline_overview(mission_id: int, db: AsyncSession = Depends
         weighted_pipeline_value=round(weighted_val, 2),
         stages=stage_metrics
     )
+
+
+# 5. Autonomous Closing Engine v4 Endpoints
+
+@router.post("/qualify-deal")
+async def qualify_deal_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Evaluates buyer seriousness, budget capability, buying timeline, decision maker %, and closing probability.
+    """
+    from app.services.closing_engine.deal_qualifier import deal_qualification_engine
+    if payload.get("lead_id"):
+        result = await deal_qualification_engine.qualify_and_upgrade_lead(db, payload["lead_id"])
+        if not result:
+            raise HTTPException(status_code=404, detail="Lead not found")
+        return result
+    else:
+        result = deal_qualification_engine.qualify_opportunity(
+            name=payload.get("name", "Prospect"),
+            company=payload.get("company"),
+            requirement=payload.get("requirement", ""),
+            industry=payload.get("industry", "Dubai Real Estate & Advisory"),
+            source=payload.get("source", "TELEGRAM"),
+            stated_budget=payload.get("stated_budget")
+        )
+        return result
+
+
+@router.post("/match-offer")
+async def match_offer_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Auto-matches and creates tailored high-ticket service package for a requirement or lead.
+    """
+    from app.services.closing_engine.offer_matcher import offer_matching_engine
+    if payload.get("lead_id") and payload.get("mission_id"):
+        offer = await offer_matching_engine.create_or_attach_offer_for_lead(
+            db, payload["mission_id"], payload["lead_id"]
+        )
+        if not offer:
+            raise HTTPException(status_code=404, detail="Lead not found")
+        return {
+            "status": "success",
+            "offer_id": offer.id,
+            "product_name": offer.product_name,
+            "pricing": offer.pricing,
+            "currency": offer.currency,
+            "target_audience": offer.target_audience
+        }
+    else:
+        matched = offer_matching_engine.match_offer_for_requirement(
+            requirement=payload.get("requirement", ""),
+            industry=payload.get("industry", "AI Agents"),
+            budget_capability=payload.get("budget_capability")
+        )
+        return matched
+
+
+@router.post("/sales-copilot-sequence")
+async def sales_copilot_sequence_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Generates 4-touch closing sequence (Opening, Day 1, Day 3, Closing) and stages into Safety Approval Queue as PENDING.
+    """
+    from app.services.closing_engine.sales_copilot_service import sales_copilot_service
+    if payload.get("lead_id") and payload.get("mission_id"):
+        result = await sales_copilot_service.stage_sales_copilot_sequence(
+            db, payload["mission_id"], payload["lead_id"]
+        )
+        return result
+    else:
+        result = sales_copilot_service.generate_closing_sequence(
+            lead_name=payload.get("lead_name", "Decision Maker"),
+            company_name=payload.get("company_name"),
+            requirement=payload.get("requirement", ""),
+            industry=payload.get("industry", "UAE Business"),
+            channel=payload.get("channel", "WhatsApp"),
+            offer_name=payload.get("offer_name", "AI Revenue System"),
+            price_aed=payload.get("price_aed", 12500.0)
+        )
+        return result
+
+
+@router.get("/daily-execution-plan/{mission_id}")
+async def get_daily_execution_plan(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Generates morning AI Daily Execution Plan:
+    - Today's Goal
+    - Top 20 Prioritized Opportunities
+    - Who to Contact First
+    - Calls Needed & Proposals Needed
+    - Expected Revenue Forecast
+    - Recommended Strategic Actions
+    """
+    from app.services.closing_engine.daily_execution_planner import daily_execution_planner
+    plan = await daily_execution_planner.generate_daily_plan(db, mission_id)
+    return plan
+
+
+@router.post("/record-deal-outcome")
+async def record_deal_outcome_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Revenue Outcome Learning Loop:
+    Records WON or LOST deal, updates cognitive memory, learnings, and mission stats.
+    """
+    from app.services.closing_engine.outcome_learner import revenue_outcome_learner
+    result = await revenue_outcome_learner.record_deal_outcome(
+        session=db,
+        mission_id=payload["mission_id"],
+        lead_id=payload["lead_id"],
+        outcome=payload["outcome"],
+        actual_revenue_aed=payload.get("actual_revenue_aed"),
+        reason=payload.get("reason")
+    )
+    return result
+
+
+@router.post("/run-full-closing-cycle/{mission_id}")
+async def run_full_closing_cycle(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Autonomous Execution:
+    Takes all active leads for the mission, runs AI Qualification, Matches High-Ticket Offers,
+    and Stages Sales Copilot Sequences into the Safety Approval Queue.
+    """
+    from app.services.closing_engine.deal_qualifier import deal_qualification_engine
+    from app.services.closing_engine.offer_matcher import offer_matching_engine
+    from app.services.closing_engine.sales_copilot_service import sales_copilot_service
+    from app.services.closing_engine.daily_execution_planner import daily_execution_planner
+
+    leads_res = await db.execute(select(Lead).where(Lead.mission_id == mission_id))
+    leads = leads_res.scalars().all()
+
+    qualified_count = 0
+    offers_created = 0
+    messages_staged = 0
+
+    for l in leads:
+        # 1. Qualify
+        qual = await deal_qualification_engine.qualify_and_upgrade_lead(db, l.id)
+        if qual and qual["category"] != "REJECT":
+            qualified_count += 1
+
+            # 2. Offer Match
+            if not l.offer_id:
+                off = await offer_matching_engine.create_or_attach_offer_for_lead(db, mission_id, l.id)
+                if off:
+                    offers_created += 1
+
+            # 3. Stage Sales Copilot Sequence
+            seq_res = await sales_copilot_service.stage_sales_copilot_sequence(db, mission_id, l.id)
+            if "staged_communication_ids" in seq_res:
+                messages_staged += len(seq_res["staged_communication_ids"])
+
+    plan = await daily_execution_planner.generate_daily_plan(db, mission_id)
+
+    return {
+        "status": "success",
+        "mission_id": mission_id,
+        "total_leads_processed": len(leads),
+        "qualified_leads": qualified_count,
+        "offers_attached": offers_created,
+        "messages_staged_for_approval": messages_staged,
+        "daily_plan": plan
+    }
+

@@ -632,4 +632,62 @@ export interface DailySurvivalReport {
   recommended_actions: string[];
 }
 
+export interface PrioritizedOpportunity {
+  lead_id: number;
+  name: string;
+  company: string;
+  interest: string;
+  country: string;
+  channel: string;
+  classification: "HOT BUYER" | "WARM BUYER" | "NURTURE" | "REJECT" | string;
+  qualification_score: number;
+  deal_value_aed: number;
+  closing_probability: number;
+  weighted_value_aed: number;
+  pipeline_stage: string;
+  decision_stage: string;
+  priority_rank: number;
+}
+
+export interface ContactFirstItem {
+  lead_id: number;
+  name: string;
+  company: string;
+  channel: string;
+  deal_value_aed: number;
+  reason: string;
+}
+
+export interface DailyExecutionPlan {
+  mission_id: number;
+  plan_date: string;
+  todays_goal: string;
+  target_amount_aed: number;
+  revenue_achieved_aed: number;
+  remaining_target_aed: number;
+  hourly_velocity_required_aed: number;
+  deals_needed: number;
+  proposals_needed: number;
+  calls_needed: number;
+  expected_revenue_forecast_aed: number;
+  top_20_opportunities: PrioritizedOpportunity[];
+  who_to_contact_first: ContactFirstItem[];
+  recommended_actions: string[];
+}
+
+export interface SalesCopilotSequence {
+  client_summary: string;
+  pain_point: string;
+  recommended_solution: string;
+  channel: string;
+  opening_message: string;
+  followup_day_1: string;
+  followup_day_3: string;
+  closing_message: string;
+  requires_approval: boolean;
+  approval_status: string;
+  staged_communication_ids?: number[];
+}
+
+
 

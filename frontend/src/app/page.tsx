@@ -12,6 +12,7 @@ import DubaiRealEstateView from "@/components/DubaiRealEstateView";
 import AnalyticsMemoryView from "@/components/AnalyticsMemoryView";
 import MultiIndustryStrategyBrainView from "@/components/MultiIndustryStrategyBrainView";
 import RevenueIntelligenceCenter from "@/components/RevenueIntelligenceCenter";
+import AutonomousClosingCenter from "@/components/AutonomousClosingCenter";
 import NewMissionModal from "@/components/NewMissionModal";
 import { DashboardSummary } from "@/types";
 import { api } from "@/lib/api";
@@ -154,6 +155,14 @@ export default function Home() {
                   onRefreshSummary={() => fetchSummary(missionId)}
                 />
               </div>
+            )}
+
+            {/* Autonomous Revenue Closing Engine View */}
+            {activeTab === "closing-engine" && (
+              <AutonomousClosingCenter
+                missionId={missionId}
+                onRefresh={() => fetchSummary(missionId)}
+              />
             )}
 
             {/* Autonomous Multi-Industry Strategy Brain View */}
