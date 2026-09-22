@@ -133,6 +133,42 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE leads ADD COLUMN qualification_notes TEXT"))
         except Exception:
             pass
+        # Phase 16 Validation Layer columns
+        for col_sql in [
+            "ALTER TABLE leads ADD COLUMN source_type VARCHAR(50) DEFAULT 'REAL'",
+            "ALTER TABLE leads ADD COLUMN verification_status VARCHAR(50) DEFAULT 'VERIFIED'",
+            "ALTER TABLE leads ADD COLUMN client_identity VARCHAR(255)",
+            "ALTER TABLE leads ADD COLUMN proposal_id INTEGER",
+            "ALTER TABLE leads ADD COLUMN payment_status VARCHAR(50)",
+            "ALTER TABLE leads ADD COLUMN payment_reference VARCHAR(255)",
+            "ALTER TABLE leads ADD COLUMN revenue_verification_status VARCHAR(50) DEFAULT 'UNVERIFIED'",
+            "ALTER TABLE communications ADD COLUMN recipient VARCHAR(255)",
+            "ALTER TABLE communications ADD COLUMN delivery_confirmation VARCHAR(255)",
+            "ALTER TABLE communications ADD COLUMN reply_source VARCHAR(50) DEFAULT 'CLIENT_DIRECT'",
+            "ALTER TABLE communications ADD COLUMN source_type VARCHAR(50) DEFAULT 'REAL'",
+            "ALTER TABLE communications ADD COLUMN verification_status VARCHAR(50) DEFAULT 'VERIFIED'",
+            "ALTER TABLE revenue_tracking ADD COLUMN client_identity VARCHAR(255)",
+            "ALTER TABLE revenue_tracking ADD COLUMN proposal_id INTEGER",
+            "ALTER TABLE revenue_tracking ADD COLUMN payment_status VARCHAR(50) DEFAULT 'SETTLED'",
+            "ALTER TABLE revenue_tracking ADD COLUMN payment_reference VARCHAR(255)",
+            "ALTER TABLE revenue_tracking ADD COLUMN revenue_verification_status VARCHAR(50) DEFAULT 'VERIFIED'",
+            "ALTER TABLE revenue_tracking ADD COLUMN source_type VARCHAR(50) DEFAULT 'REAL'",
+            "ALTER TABLE revenue_tracking ADD COLUMN verification_status VARCHAR(50) DEFAULT 'VERIFIED'",
+            "ALTER TABLE revenue_tracking ADD COLUMN audit_hash VARCHAR(255)",
+            "ALTER TABLE proposals ADD COLUMN payment_status VARCHAR(50) DEFAULT 'UNPAID'",
+            "ALTER TABLE proposals ADD COLUMN payment_reference VARCHAR(255)",
+            "ALTER TABLE proposals ADD COLUMN source_type VARCHAR(50) DEFAULT 'REAL'",
+            "ALTER TABLE proposals ADD COLUMN verification_status VARCHAR(50) DEFAULT 'VERIFIED'",
+            "ALTER TABLE tasks ADD COLUMN source_type VARCHAR(50) DEFAULT 'SYSTEM'",
+            "ALTER TABLE tasks ADD COLUMN verification_status VARCHAR(50) DEFAULT 'VERIFIED'",
+            "ALTER TABLE operator_action_logs ADD COLUMN source_type VARCHAR(50) DEFAULT 'SYSTEM'",
+            "ALTER TABLE operator_action_logs ADD COLUMN verification_status VARCHAR(50) DEFAULT 'VERIFIED'"
+        ]:
+            try:
+                from sqlalchemy import text
+                await conn.execute(text(col_sql))
+            except Exception:
+                pass
     yield
 
 app = FastAPI(

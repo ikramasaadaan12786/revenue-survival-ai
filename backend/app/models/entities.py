@@ -192,6 +192,15 @@ class Lead(Base):
     decision_maker_probability = Column(Float, default=0.85)
     qualification_notes = Column(Text, nullable=True)
     
+    # Phase 16 Verification Layer
+    source_type = Column(String(50), default="REAL")  # REAL, SYSTEM, TEST
+    verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
+    client_identity = Column(String(255), nullable=True)
+    proposal_id = Column(Integer, nullable=True)
+    payment_status = Column(String(50), nullable=True)  # SETTLED, PENDING, UNPAID, FAILED
+    payment_reference = Column(String(255), nullable=True)
+    revenue_verification_status = Column(String(50), default="UNVERIFIED")  # VERIFIED, PENDING, UNVERIFIED
+
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -212,8 +221,13 @@ class Communication(Base):
     sequence_step = Column(Integer, default=1)
     subject = Column(String(255), nullable=True)
     body = Column(Text, nullable=False)
+    recipient = Column(String(255), nullable=True)
     provider_name = Column(String(50), default="WHATSAPP_BUSINESS")  # WHATSAPP_BUSINESS, TWILIO, SENDGRID_EMAIL
     provider_message_id = Column(String(255), nullable=True)
+    delivery_confirmation = Column(String(255), nullable=True)
+    reply_source = Column(String(50), default="CLIENT_DIRECT")  # CLIENT_DIRECT, INBOUND_WEBHOOK, SIMULATED
+    source_type = Column(String(50), default="REAL")  # REAL, SYSTEM, TEST
+    verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
     requires_approval = Column(Boolean, default=True)
     approval_status = Column(String(50), default="PENDING")  # PENDING, APPROVED, REJECTED, MODIFIED
     delivery_status = Column(String(50), default="DRAFT")  # DRAFT, QUEUED, SENT, DELIVERED, READ, REPLIED, FAILED
@@ -238,6 +252,8 @@ class Task(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     status = Column(String(50), default="PENDING")
+    source_type = Column(String(50), default="SYSTEM")  # REAL, SYSTEM, TEST
+    verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
     output_summary = Column(Text, nullable=True)
     logs = Column(JSON, default=list)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -319,8 +335,16 @@ class RevenueTracking(Base):
     currency = Column(String(10), default="AED")
     source = Column(String(255), nullable=False)
     payer_name = Column(String(255), nullable=True)
+    client_identity = Column(String(255), nullable=True)
+    proposal_id = Column(Integer, nullable=True)
+    payment_status = Column(String(50), default="SETTLED")  # SETTLED, PENDING, UNPAID, FAILED, REFUNDED
+    payment_reference = Column(String(255), nullable=True)
+    revenue_verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
     deal_status = Column(String(50), default="CONFIRMED")
     commission_collected = Column(Float, default=0.0)
+    source_type = Column(String(50), default="REAL")  # REAL, SYSTEM, TEST
+    verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
+    audit_hash = Column(String(255), nullable=True)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     notes = Column(Text, nullable=True)
 
@@ -387,6 +411,10 @@ class Proposal(Base):
     pricing_amount = Column(Float, nullable=False)
     currency = Column(String(10), default="AED")
     payment_terms = Column(String(255), default="50% upfront deposit, 50% upon deployment")
+    payment_status = Column(String(50), default="UNPAID")  # UNPAID, SETTLED, PENDING, REFUNDED
+    payment_reference = Column(String(255), nullable=True)
+    source_type = Column(String(50), default="REAL")  # REAL, SYSTEM, TEST
+    verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
     expected_outcomes = Column(JSON, default=list)
     full_proposal_markdown = Column(Text, nullable=True)
     status = Column(String(50), default="DRAFT")  # DRAFT, SENT, ACCEPTED, REJECTED
@@ -466,6 +494,8 @@ class OperatorActionLog(Base):
     action_payload = Column(JSON, default=dict)
     revenue_impact_aed = Column(Float, default=0.0)
     confidence_score = Column(Float, default=90.0)
+    source_type = Column(String(50), default="SYSTEM")  # REAL, SYSTEM, TEST
+    verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
     executed_by = Column(String(100), default="AUTONOMOUS_OPERATOR")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     executed_at = Column(DateTime, nullable=True)

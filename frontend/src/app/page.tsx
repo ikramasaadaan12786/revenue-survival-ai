@@ -24,6 +24,7 @@ import { AICompanyCommandCenter } from "@/components/AICompanyCommandCenter";
 import { AIScalingCommandCenter } from "@/components/AIScalingCommandCenter";
 import { AIEnterpriseNetworkCenter } from "@/components/AIEnterpriseNetworkCenter";
 import { RevenueWarRoom } from "@/components/luxury/RevenueWarRoom";
+import { RevenueProofDashboard } from "@/components/luxury/RevenueProofDashboard";
 import { HotBuyerTerminal } from "@/components/luxury/HotBuyerTerminal";
 import { CommunicationCenter } from "@/components/luxury/CommunicationCenter";
 import { ProposalDesk } from "@/components/luxury/ProposalDesk";
@@ -381,13 +382,21 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Phase 14 Execution Engine Tabs */}
+              {/* Phase 14-16 Execution Engine Tabs */}
               {activeTab === "war_room" && (
                 <RevenueWarRoom
                   missionId={missionId}
                   missionTitle={summary?.mission?.title || "Dubai AI Revenue Sprint — 18 Hour Challenge"}
                   targetRevenue={summary?.target_amount || 2500}
                   currentRevenue={summary?.revenue_achieved || 0}
+                  onNavigateTab={setActiveTab}
+                />
+              )}
+
+              {(activeTab === "revenue_proof" || activeTab === "proof_dashboard") && (
+                <RevenueProofDashboard
+                  missionId={missionId}
+                  missionTitle={summary?.mission?.title || "Dubai AI Revenue Sprint — 18 Hour Challenge"}
                   onNavigateTab={setActiveTab}
                 />
               )}

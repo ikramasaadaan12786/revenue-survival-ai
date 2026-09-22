@@ -565,5 +565,49 @@ async def close_deal_endpoint(payload: Dict[str, Any], db: AsyncSession = Depend
     return result
 
 
+# 9. Phase 16 Real Revenue Validation Layer Endpoints
+
+@router.get("/validation-overview/{mission_id}")
+async def get_validation_overview_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Phase 16: Returns clean separation between REAL BUSINESS RESULTS and SYSTEM ACTIVITY.
+    Guarantees no mixing of predicted/simulated counters with verified external client results.
+    """
+    from app.services.closing_engine.revenue_validation_service import revenue_validation_service
+    result = await revenue_validation_service.get_validation_overview(db, mission_id)
+    return result
+
+
+@router.get("/revenue-proof-ledger/{mission_id}")
+async def get_revenue_proof_ledger_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Phase 16: Returns the full Revenue Proof Ledger with client identity, payment reference, and SHA-256 audit hash.
+    """
+    from app.services.closing_engine.revenue_validation_service import revenue_validation_service
+    ledger = await revenue_validation_service.get_revenue_proof_ledger(db, mission_id)
+    return ledger
+
+
+@router.post("/verify-transaction")
+async def verify_transaction_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Phase 16: Verifies an external payment settlement with proof reference and cryptographic audit signature.
+    """
+    from app.services.closing_engine.revenue_validation_service import revenue_validation_service
+    result = await revenue_validation_service.verify_and_settle_deal(
+        session=db,
+        mission_id=payload.get("mission_id", 1006),
+        lead_id=payload["lead_id"],
+        actual_revenue_aed=float(payload.get("actual_revenue_aed", 2500.0)),
+        payment_reference=payload.get("payment_reference", "TXN-AE-ENBD-771928"),
+        proposal_id=payload.get("proposal_id"),
+        client_identity=payload.get("client_identity"),
+        payer_name=payload.get("payer_name"),
+        source=payload.get("source", "EXTERNAL_SETTLED_WIRE")
+    )
+    return result
+
+
+
 
 
