@@ -42,8 +42,6 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
   const [loading, setLoading] = useState(true);
   const [hunting, setHunting] = useState(false);
   const [syncingBridge, setSyncingBridge] = useState(false);
-  const [scanningConnectors, setScanningConnectors] = useState(false);
-  const [runningBrowserAgent, setRunningBrowserAgent] = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>("ALL");
   const [bridgeSyncResult, setBridgeSyncResult] = useState<BridgeSyncResult | null>(null);
 
@@ -111,19 +109,6 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
     }
   };
 
-  const handleScanConnectors = async () => {
-    try {
-      setScanningConnectors(true);
-      await api.scanAllConnectors(missionId);
-      await fetchOppsAndSignals();
-      onRefreshSummary();
-    } catch (err) {
-      console.error("Failed scanning connectors", err);
-    } finally {
-      setScanningConnectors(false);
-    }
-  };
-
   const handleIngestCustomSignal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customText.trim()) return;
@@ -152,43 +137,47 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
   const getIntentBadge = (intent: string) => {
     switch (intent) {
       case "Hot":
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 border border-rose-500/40 text-rose-300">HOT INTENT</span>;
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 border border-rose-500/30 text-rose-300">HOT INTENT</span>;
       case "Qualified":
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">QUALIFIED</span>;
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">QUALIFIED</span>;
       case "Warm":
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-300">WARM</span>;
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300">WARM</span>;
       default:
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/20 border border-slate-500/40 text-slate-400">COLD</span>;
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 border border-white/[0.06] text-[#8C9BAE]">COLD</span>;
     }
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-sans">
       {/* Header & Quick Action Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Radio className="w-5 h-5 text-cyan-400 animate-pulse" />
-            UAE Buyer Radar AI & Real Source Connectors
-          </h2>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
-            Telegram MTProto • LinkedIn • Instagram • Reddit • YouTube • Web Search Bridge Layer
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-[#0B101D] via-[#06080F] to-[#04060A] border border-[#D4AF37]/30 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-[#F3E5AB]/20 via-[#D4AF37]/10 to-transparent border border-[#D4AF37]/40 text-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+            <Radio className="w-6 h-6 animate-pulse" />
+          </div>
+          <div>
+            <h2 className="font-serif text-xl font-bold text-[#F9F6EE] tracking-tight flex items-center gap-2">
+              UAE Buyer Radar AI & Sovereign Connectors
+            </h2>
+            <p className="text-xs text-[#8C9BAE] mt-0.5">
+              Telegram MTProto • LinkedIn • Instagram • Reddit • YouTube • Global Financial Web Search
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => setShowIngestModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#06080F] hover:bg-[#0B101D] text-[#CBD5E1] border border-white/[0.08] hover:border-[#D4AF37]/30 transition-all"
           >
-            <PlusCircle className="w-3.5 h-3.5 text-cyan-400" />
+            <PlusCircle className="w-3.5 h-3.5 text-[#D4AF37]" />
             Ingest Signal
           </button>
 
           <button
             onClick={handleSyncBuyerRadar}
             disabled={syncingBridge}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 shadow-glow font-mono transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#F3E5AB] via-[#D4AF37] to-[#AA771C] text-[#06080F] shadow-[0_2px_15px_rgba(212,175,55,0.3)] transition-all disabled:opacity-50"
           >
             <Zap className={`w-3.5 h-3.5 fill-current ${syncingBridge ? "animate-spin" : ""}`} />
             {syncingBridge ? "SYNCING RADAR..." : "SYNC UAE BUYER RADAR"}
@@ -198,29 +187,29 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
 
       {/* Bridge Sync Result Notification Banner */}
       {bridgeSyncResult && (
-        <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 text-xs font-mono space-y-2">
+        <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 text-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="font-bold text-emerald-300 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               UAE Buyer Radar Live Sync Completed
             </span>
-            <span className="text-slate-400">{bridgeSyncResult.timestamp}</span>
+            <span className="text-[#8C9BAE]">{bridgeSyncResult.timestamp}</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-300 pt-1">
-            <div className="bg-slate-900/80 p-2.5 rounded-lg border border-white/[0.05]">
-              <div className="text-[10px] text-slate-400">Telegram Signals</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[#CBD5E1] pt-1">
+            <div className="bg-[#06080F]/80 p-2.5 rounded-lg border border-white/[0.05]">
+              <div className="text-[10px] text-[#8C9BAE]">Telegram Signals</div>
               <div className="text-sm font-bold text-cyan-400">{bridgeSyncResult.source_breakdown?.telegram || 0} Imported</div>
             </div>
-            <div className="bg-slate-900/80 p-2.5 rounded-lg border border-white/[0.05]">
-              <div className="text-[10px] text-slate-400">LinkedIn Signals</div>
+            <div className="bg-[#06080F]/80 p-2.5 rounded-lg border border-white/[0.05]">
+              <div className="text-[10px] text-[#8C9BAE]">LinkedIn Signals</div>
               <div className="text-sm font-bold text-cyan-400">{bridgeSyncResult.source_breakdown?.linkedin || 0} Imported</div>
             </div>
-            <div className="bg-slate-900/80 p-2.5 rounded-lg border border-white/[0.05]">
-              <div className="text-[10px] text-slate-400">Instagram Signals</div>
+            <div className="bg-[#06080F]/80 p-2.5 rounded-lg border border-white/[0.05]">
+              <div className="text-[10px] text-[#8C9BAE]">Instagram Signals</div>
               <div className="text-sm font-bold text-cyan-400">{bridgeSyncResult.source_breakdown?.instagram || 0} Imported</div>
             </div>
-            <div className="bg-slate-900/80 p-2.5 rounded-lg border border-white/[0.05]">
-              <div className="text-[10px] text-slate-400">Total Opportunities Created</div>
+            <div className="bg-[#06080F]/80 p-2.5 rounded-lg border border-white/[0.05]">
+              <div className="text-[10px] text-[#8C9BAE]">Total Opportunities Created</div>
               <div className="text-sm font-bold text-emerald-400">+{bridgeSyncResult.opportunities_created} CRM Leads</div>
             </div>
           </div>
@@ -228,24 +217,24 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
       )}
 
       {/* CONNECTOR HEALTH DASHBOARD */}
-      <div className="glass-panel p-6 border border-cyan-500/20 bg-[#090d16]/90 space-y-4">
-        <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+      <div className="rounded-2xl border border-[#D4AF37]/25 bg-gradient-to-b from-[#0B101D]/90 to-[#04060A]/95 p-6 space-y-4 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.6)]">
+        <div className="flex items-center justify-between border-b border-[#D4AF37]/15 pb-3">
           <div className="flex items-center gap-2.5">
-            <Server className="w-4 h-4 text-cyan-400" />
-            <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-              Connector Health Dashboard
+            <Server className="w-4 h-4 text-[#D4AF37]" />
+            <h3 className="font-serif text-sm font-bold text-[#F9F6EE] uppercase tracking-wider">
+              Connector Health Matrix
             </h3>
           </div>
-          <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+          <span className="text-[10px] text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-            6/6 Connectors Active
+            6/6 Connectors Synchronized
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-mono">
+          <table className="w-full text-left text-xs">
             <thead>
-              <tr className="text-slate-400 border-b border-white/[0.06] bg-slate-900/40">
+              <tr className="text-[#8C9BAE] border-b border-white/[0.06] bg-[#06080F]/60 text-[9px] uppercase tracking-wider">
                 <th className="py-2.5 px-3">Source</th>
                 <th className="py-2.5 px-3">Protocol / Scope</th>
                 <th className="py-2.5 px-3">Signals Today</th>
@@ -257,19 +246,19 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
             <tbody className="divide-y divide-white/[0.04]">
               {connectorHealth.map((conn) => (
                 <tr key={conn.connector_id} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="py-3 px-3 font-bold text-white flex items-center gap-2">
+                  <td className="py-3 px-3 font-bold text-[#F9F6EE] flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400" />
                     {conn.source}
                   </td>
-                  <td className="py-3 px-3 text-slate-300">{conn.protocol}</td>
+                  <td className="py-3 px-3 text-[#CBD5E1]">{conn.protocol}</td>
                   <td className="py-3 px-3 text-cyan-300 font-bold">{conn.signals_found_today}</td>
-                  <td className="py-3 px-3 text-slate-400 text-[11px]">{conn.last_sync}</td>
+                  <td className="py-3 px-3 text-[#8C9BAE] text-[11px]">{conn.last_sync}</td>
                   <td className="py-3 px-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                       {conn.status} ({conn.latency_ms}ms)
                     </span>
                   </td>
-                  <td className="py-3 px-3 text-slate-400">{conn.errors}</td>
+                  <td className="py-3 px-3 text-[#8C9BAE]">{conn.errors}</td>
                 </tr>
               ))}
             </tbody>
@@ -278,35 +267,35 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
       </div>
 
       {/* Live Data Acquisition Connectors Panel */}
-      <div className="glass-panel p-6 border border-cyan-500/20 bg-[#090d16]/90 space-y-5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
+      <div className="rounded-2xl border border-[#D4AF37]/25 bg-gradient-to-b from-[#0B101D]/90 to-[#04060A]/95 p-6 space-y-5 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.6)]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#D4AF37]/15 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center">
-              <Database className="w-4 h-4 text-cyan-400" />
+            <div className="w-9 h-9 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center">
+              <Database className="w-4 h-4 text-[#D4AF37]" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <h3 className="font-serif text-sm font-bold text-[#F9F6EE] flex items-center gap-2">
                 Normalized Live Signals Feed
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
                   {signals.length} Signals Captured
                 </span>
               </h3>
-              <p className="text-xs text-slate-400 font-mono">
+              <p className="text-xs text-[#8C9BAE] mt-0.5">
                 Ingesting Telegram MTProto, LinkedIn, Instagram, Reddit, YouTube & Web Search
               </p>
             </div>
           </div>
 
           {/* Filter Source Pills */}
-          <div className="flex flex-wrap gap-1.5 font-mono text-xs">
+          <div className="flex flex-wrap gap-1.5 text-xs">
             {["ALL", "TELEGRAM", "LINKEDIN", "INSTAGRAM", "REDDIT", "YOUTUBE", "WEB_SEARCH"].map((src) => (
               <button
                 key={src}
                 onClick={() => setSelectedSource(src)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${
                   selectedSource === src
-                    ? "bg-cyan-500 text-black font-bold shadow-sm"
-                    : "bg-slate-800/60 text-slate-400 hover:text-slate-200 border border-white/[0.05]"
+                    ? "bg-[#D4AF37] text-[#06080F] font-bold shadow-sm"
+                    : "bg-[#06080F] text-[#8C9BAE] hover:text-[#F9F6EE] border border-white/[0.04]"
                 }`}
               >
                 {src.replace("_", " ")} {breakdown[src] ? `(${breakdown[src]})` : ""}
@@ -317,30 +306,30 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
 
         {/* Real-time Signals Stream */}
         {signals.length === 0 ? (
-          <div className="py-8 text-center text-slate-500 font-mono text-xs">
-            No signals acquired for selected source. Click "Scan 5 Connectors" to fetch live data.
+          <div className="py-8 text-center text-[#8C9BAE] text-xs">
+            No signals acquired for selected source. Click &ldquo;Sync UAE Buyer Radar&rdquo; to fetch live data.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[340px] overflow-y-auto pr-1">
             {signals.map((sig) => (
               <div
                 key={sig.id}
-                className="bg-slate-900/60 border border-white/[0.06] hover:border-cyan-500/30 p-3.5 rounded-xl space-y-2.5 transition-all flex flex-col justify-between"
+                className="bg-[#06080F]/80 border border-white/[0.04] hover:border-[#D4AF37]/30 p-3.5 rounded-xl space-y-2.5 transition-all flex flex-col justify-between"
               >
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-cyan-500/20">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#0B101D] text-[#D4AF37] border border-[#D4AF37]/20">
                       {sig.source}
                     </span>
                     {getIntentBadge(sig.intent_score)}
                   </div>
-                  <p className="text-xs text-slate-200 font-sans leading-relaxed line-clamp-3">
-                    "{sig.signal_text}"
+                  <p className="text-xs text-[#CBD5E1] leading-relaxed line-clamp-3">
+                    &ldquo;{sig.signal_text}&rdquo;
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-white/[0.05] flex items-center justify-between text-[11px] font-mono text-slate-400">
-                  <span className="truncate max-w-[130px] text-slate-300">{sig.lead_name || "Anonymous Lead"}</span>
+                <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-[#8C9BAE]">
+                  <span className="truncate max-w-[130px] text-[#F9F6EE]">{sig.lead_name || "Anonymous Lead"}</span>
                   <span className="text-cyan-400">{sig.channel}</span>
                 </div>
               </div>
@@ -353,11 +342,11 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Flame className="w-4 h-4 text-rose-400" />
+            <h3 className="font-serif text-base font-bold text-[#F9F6EE] flex items-center gap-2">
+              <Flame className="w-4 h-4 text-amber-400" />
               Scored Revenue Opportunities & Buying Signals ({revenueOpportunities.length})
             </h3>
-            <p className="text-xs text-slate-400 font-mono">
+            <p className="text-xs text-[#8C9BAE]">
               Intent Scoring Engine • Urgency Evaluation • Closing Probability Model
             </p>
           </div>
@@ -365,20 +354,20 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
           <button
             onClick={handleRunHunter}
             disabled={hunting}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold font-mono bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black shadow-glow transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#F3E5AB] via-[#D4AF37] to-[#AA771C] text-[#06080F] shadow-[0_2px_15px_rgba(212,175,55,0.3)] transition-all disabled:opacity-50"
           >
-            <Sparkles className={`w-3.5 h-3.5 fill-black ${hunting ? "animate-spin" : ""}`} />
+            <Sparkles className={`w-3.5 h-3.5 fill-[#06080F] ${hunting ? "animate-spin" : ""}`} />
             {hunting ? "DISCOVERING..." : "RUN OPPORTUNITY HUNTER"}
           </button>
         </div>
 
         {revenueOpportunities.length === 0 && !loading ? (
-          <div className="glass-panel p-10 text-center text-slate-400 space-y-3">
+          <div className="p-10 text-center text-[#8C9BAE] space-y-3 bg-[#0B101D] rounded-2xl border border-[#D4AF37]/20">
             <p>No revenue opportunities scored yet for this mission.</p>
             <button
               onClick={handleRunHunter}
               disabled={hunting}
-              className="px-4 py-2 rounded-xl text-xs font-bold font-mono bg-cyan-400 text-black shadow-glow hover:bg-cyan-300 transition-all"
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-[#D4AF37] text-[#06080F]"
             >
               Scan Live Connectors Now
             </button>
@@ -388,47 +377,47 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
             {revenueOpportunities.map((ro) => {
               const priority = ro.priority || "HOT";
               const priorityBadge = priority === "HOT"
-                ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
                 : priority === "QUALIFIED"
-                ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                ? "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
                 : priority === "WARM"
-                ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                : "bg-slate-700/30 text-slate-400 border-slate-600/40";
+                ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                : "bg-slate-800 text-[#8C9BAE] border-white/[0.06]";
 
               return (
-                <div key={ro.id} className="glass-panel p-6 glass-panel-hover flex flex-col justify-between space-y-4 border border-white/[0.08]">
+                <div key={ro.id} className="p-6 flex flex-col justify-between space-y-4 rounded-2xl bg-gradient-to-b from-[#0B101D]/90 to-[#04060A]/95 border border-[#D4AF37]/25 shadow-md hover:border-[#D4AF37]/50 transition-all">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 uppercase">
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] uppercase">
                         {ro.industry}
                       </span>
-                      <span className={`inline-flex items-center gap-1 text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${priorityBadge}`}>
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${priorityBadge}`}>
                         {priority === "HOT" && <Flame className="w-3 h-3 animate-pulse" />}
                         {priority} OPPORTUNITY
                       </span>
                     </div>
 
                     <div>
-                      <h4 className="text-base font-bold text-white leading-snug">
+                      <h4 className="font-serif text-base font-bold text-[#F9F6EE] leading-snug">
                         {ro.name} {ro.company ? `• ${ro.company}` : ""}
                       </h4>
-                      <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-                        <strong className="text-slate-400 font-normal">Requirement Signal:</strong> {ro.requirement}
+                      <p className="text-xs text-[#CBD5E1] mt-2 leading-relaxed">
+                        <strong className="text-[#8C9BAE] font-normal">Requirement Signal:</strong> {ro.requirement}
                       </p>
                     </div>
 
-                    <div className="bg-slate-950/70 p-3.5 rounded-xl border border-white/[0.06] text-xs space-y-2.5 font-mono">
+                    <div className="bg-[#06080F]/80 p-3.5 rounded-xl border border-white/[0.04] text-xs space-y-2.5">
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-400">Estimated Deal Value:</span>
-                        <span className="text-emerald-400 font-bold text-sm">
+                        <span className="text-[#8C9BAE]">Estimated Deal Value:</span>
+                        <span className="text-emerald-400 font-bold font-serif text-sm">
                           {Number(ro.estimated_value).toLocaleString()} AED
                         </span>
                       </div>
 
                       {/* Intent & Urgency Score meters */}
-                      <div className="space-y-1.5 pt-1 border-t border-white/[0.05]">
+                      <div className="space-y-1.5 pt-1 border-t border-white/[0.04]">
                         <div className="flex justify-between text-[11px]">
-                          <span className="text-slate-400">Intent Score:</span>
+                          <span className="text-[#8C9BAE]">Intent Score:</span>
                           <span className="text-cyan-400 font-bold">{ro.intent_score ?? 90}%</span>
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
@@ -439,7 +428,7 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
                         </div>
 
                         <div className="flex justify-between text-[11px] pt-1">
-                          <span className="text-slate-400">Urgency Score:</span>
+                          <span className="text-[#8C9BAE]">Urgency Score:</span>
                           <span className="text-amber-400 font-bold">{ro.urgency_score ?? 85}%</span>
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
@@ -450,7 +439,7 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
                         </div>
 
                         <div className="flex justify-between text-[11px] pt-1">
-                          <span className="text-slate-400">Closing Probability:</span>
+                          <span className="text-[#8C9BAE]">Closing Probability:</span>
                           <span className="text-emerald-400 font-bold">
                             {ro.closing_probability ? `${Math.round(ro.closing_probability * 100)}%` : `${ro.conversion_score ?? 85}%`}
                           </span>
@@ -458,8 +447,8 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
                       </div>
                     </div>
 
-                    <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
-                      <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                    <div className="pt-3 border-t border-white/[0.04] flex items-center justify-between">
+                      <div className="text-[11px] text-[#8C9BAE] flex items-center gap-1">
                         <span>Source: <strong className="text-cyan-400 font-medium">{ro.source}</strong></span>
                       </div>
                       <button
@@ -467,9 +456,9 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
                           setCopilotOpportunity(ro);
                           setShowCopilotModal(true);
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all shadow-sm"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4AF37]/15 hover:bg-[#D4AF37]/25 text-[#D4AF37] border border-[#D4AF37]/30 text-xs font-semibold transition-all shadow-sm"
                       >
-                        <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                        <Cpu className="w-3.5 h-3.5 text-[#D4AF37]" />
                         <span>Revenue Copilot</span>
                       </button>
                     </div>
@@ -484,52 +473,52 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
       {/* Discovered Opportunities Section */}
       <div className="space-y-4 pt-4 border-t border-white/[0.06]">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
+          <h3 className="font-serif text-base font-bold text-[#F9F6EE] flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#D4AF37]" />
             Synthesized Monetization Plays ({opportunities.length})
           </h3>
-          <span className="text-xs font-mono text-slate-400">
+          <span className="text-xs text-[#8C9BAE]">
             Browser Research & Opportunity Hunter Output
           </span>
         </div>
 
         {opportunities.length === 0 && !loading ? (
-          <div className="glass-panel p-8 text-center text-slate-400">
+          <div className="p-8 text-center text-[#8C9BAE] bg-[#0B101D] rounded-2xl border border-white/[0.06]">
             <p>No market opportunities synthesized yet.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {opportunities.map((opp) => (
-              <div key={opp.id} className="glass-panel p-6 glass-panel-hover flex flex-col justify-between space-y-4 border border-white/[0.08]">
+              <div key={opp.id} className="p-6 flex flex-col justify-between space-y-4 rounded-2xl bg-gradient-to-b from-[#0B101D]/90 to-[#04060A]/95 border border-[#D4AF37]/25 hover:border-[#D4AF37]/50 transition-all shadow-md">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 uppercase">
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] uppercase">
                       {opp.market}
                     </span>
-                    <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400 font-bold">
-                      <Sparkles className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-bold">
+                      <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
                       {opp.confidence_score}% Conviction
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-base font-bold text-white leading-snug">
+                    <h3 className="font-serif text-base font-bold text-[#F9F6EE] leading-snug">
                       {opp.offer_idea}
                     </h3>
-                    <p className="text-xs text-slate-300 mt-2 line-clamp-3">
-                      <strong className="text-slate-400 font-normal">Pain Point:</strong> {opp.problem}
+                    <p className="text-xs text-[#CBD5E1] mt-2 line-clamp-3">
+                      <strong className="text-[#8C9BAE] font-normal">Pain Point:</strong> {opp.problem}
                     </p>
                   </div>
 
-                  <div className="bg-slate-950/60 p-3 rounded-xl border border-white/[0.05] text-xs space-y-1.5 font-mono">
-                    <div className="text-slate-400">Target Segment: <strong className="text-slate-200">{opp.target_customer}</strong></div>
-                    <div className="text-slate-400">Price Estimate: <strong className="text-amber-300">{opp.price_estimate} AED</strong></div>
-                    <div className="text-slate-400">Fulfillment Difficulty: <strong className="text-emerald-400">{opp.difficulty}</strong></div>
+                  <div className="bg-[#06080F]/80 p-3 rounded-xl border border-white/[0.04] text-xs space-y-1.5">
+                    <div className="text-[#8C9BAE]">Target Segment: <strong className="text-[#F9F6EE]">{opp.target_customer}</strong></div>
+                    <div className="text-[#8C9BAE]">Price Estimate: <strong className="text-[#F3E5AB] font-serif">{opp.price_estimate} AED</strong></div>
+                    <div className="text-[#8C9BAE]">Fulfillment Difficulty: <strong className="text-emerald-400">{opp.difficulty}</strong></div>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
-                  <span className="text-[11px] font-mono text-slate-400">Status: {opp.status}</span>
+                <div className="pt-3 border-t border-white/[0.04] flex items-center justify-between">
+                  <span className="text-[11px] text-[#8C9BAE]">Status: {opp.status}</span>
                   <button
                     onClick={() => {
                       setCopilotOpportunity({
@@ -542,9 +531,9 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
                       });
                       setShowCopilotModal(true);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#D4AF37]/15 hover:bg-[#D4AF37]/25 text-[#D4AF37] border border-[#D4AF37]/30 text-xs font-semibold transition-all"
                   >
-                    <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                    <Cpu className="w-3.5 h-3.5 text-[#D4AF37]" />
                     <span>Revenue Copilot</span>
                   </button>
                 </div>
@@ -567,16 +556,16 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
 
       {/* Manual Signal Ingestion Modal */}
       {showIngestModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="glass-panel p-6 max-w-lg w-full border border-cyan-500/30 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Database className="w-4 h-4 text-cyan-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="p-6 max-w-lg w-full bg-[#06080F] border border-[#D4AF37]/30 rounded-2xl space-y-4 shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
+            <div className="flex items-center justify-between border-b border-[#D4AF37]/15 pb-3">
+              <h3 className="font-serif text-base font-bold text-[#F9F6EE] flex items-center gap-2">
+                <Database className="w-4 h-4 text-[#D4AF37]" />
                 Ingest Real Market Signal
               </h3>
               <button
                 onClick={() => setShowIngestModal(false)}
-                className="text-slate-400 hover:text-white text-xs font-mono"
+                className="text-[#8C9BAE] hover:text-white text-xs"
               >
                 ✕ Cancel
               </button>
@@ -584,11 +573,11 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
 
             <form onSubmit={handleIngestCustomSignal} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-mono text-slate-300 mb-1">Source Connector</label>
+                <label className="block text-xs text-[#8C9BAE] mb-1 font-semibold">Source Connector</label>
                 <select
                   value={customSource}
                   onChange={(e) => setCustomSource(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-slate-100 font-mono focus:border-cyan-400 outline-none"
+                  className="w-full bg-[#0B101D] border border-white/[0.08] focus:border-[#D4AF37] rounded-xl px-3 py-2 text-xs text-[#F9F6EE] outline-none"
                 >
                   <option value="TELEGRAM">Telegram VIP Signals</option>
                   <option value="BUYER_RADAR">UAE Buyer Radar</option>
@@ -600,34 +589,34 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-300 mb-1">Raw Signal / Inquiry Text</label>
+                <label className="block text-xs text-[#8C9BAE] mb-1 font-semibold">Raw Signal / Inquiry Text</label>
                 <textarea
                   required
                   rows={3}
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
                   placeholder="e.g. Seeking distress 2BR in Business Bay under 1.6M AED liquid cash ready..."
-                  className="w-full bg-slate-900 border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-slate-100 focus:border-cyan-400 outline-none placeholder:text-slate-500 font-sans"
+                  className="w-full bg-[#0B101D] border border-white/[0.08] focus:border-[#D4AF37] rounded-xl px-3 py-2 text-xs text-[#F9F6EE] outline-none placeholder:text-[#64748B]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-mono text-slate-300 mb-1">Lead Name (Optional)</label>
+                  <label className="block text-xs text-[#8C9BAE] mb-1 font-semibold">Lead Name (Optional)</label>
                   <input
                     type="text"
                     value={customLeadName}
                     onChange={(e) => setCustomLeadName(e.target.value)}
                     placeholder="e.g. Hamdan Al-Maktoum"
-                    className="w-full bg-slate-900 border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-slate-100 focus:border-cyan-400 outline-none"
+                    className="w-full bg-[#0B101D] border border-white/[0.08] focus:border-[#D4AF37] rounded-xl px-3 py-2 text-xs text-[#F9F6EE] outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-mono text-slate-300 mb-1">Preferred Channel</label>
+                  <label className="block text-xs text-[#8C9BAE] mb-1 font-semibold">Preferred Channel</label>
                   <select
                     value={customChannel}
                     onChange={(e) => setCustomChannel(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-slate-100 font-mono focus:border-cyan-400 outline-none"
+                    className="w-full bg-[#0B101D] border border-white/[0.08] focus:border-[#D4AF37] rounded-xl px-3 py-2 text-xs text-[#F9F6EE] outline-none"
                   >
                     <option value="WhatsApp">WhatsApp</option>
                     <option value="Telegram">Telegram</option>
@@ -641,14 +630,14 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
                 <button
                   type="button"
                   onClick={() => setShowIngestModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-mono bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl text-xs bg-[#0B101D] text-[#8C9BAE] hover:text-[#F9F6EE]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={ingesting}
-                  className="px-5 py-2 rounded-xl text-xs font-bold font-mono bg-cyan-400 hover:bg-cyan-300 text-black shadow-glow disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#F3E5AB] via-[#D4AF37] to-[#AA771C] text-[#06080F] disabled:opacity-50"
                 >
                   {ingesting ? "Ingesting..." : "Ingest & Auto-Score Intent"}
                 </button>
@@ -660,4 +649,3 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
     </div>
   );
 }
-
