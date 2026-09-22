@@ -135,6 +135,12 @@ export const api = {
     fetcher<any>(`/connectors/bridge/sync/${missionId}${source ? `?source=${source}` : ""}`, { method: "POST" }),
   getConnectorHealth: () =>
     fetcher<any[]>("/connectors/bridge/health"),
+  getRevenueCommandCenter: (missionId: number) =>
+    fetcher<any>(`/connectors/bridge/command-center/${missionId}`),
+  getDailySurvivalReport: (missionId: number) =>
+    fetcher<any>(`/connectors/bridge/daily-report/${missionId}`),
+  triggerHourlyBridgeSync: () =>
+    fetcher<any>("/connectors/bridge/hourly-sync", { method: "POST" }),
   ingestSignal: (data: any) =>
     fetcher<any>("/connectors/ingest", { method: "POST", body: JSON.stringify(data) }),
 

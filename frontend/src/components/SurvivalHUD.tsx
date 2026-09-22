@@ -28,11 +28,12 @@ import {
   Share2,
   Key
 } from "lucide-react";
-import { DashboardSummary, GlobalMissionsOverview } from "@/types";
+import { DashboardSummary, GlobalMissionsOverview, RevenueCommandCenterMetrics } from "@/types";
 import { api } from "@/lib/api";
 import MissionEscalationCard from "./MissionEscalationCard";
 import AcquisitionFunnelForecast from "./AcquisitionFunnelForecast";
 import ConnectorAuthModal from "./ConnectorAuthModal";
+import DailySurvivalReportModal from "./DailySurvivalReportModal";
 
 interface Props {
   summary: DashboardSummary | null;
@@ -55,9 +56,27 @@ export default function SurvivalHUD({
 }: Props) {
   const [runningCycle, setRunningCycle] = useState(false);
   const [runningSweep, setRunningSweep] = useState(false);
+  const [runningHourlySync, setRunningHourlySync] = useState(false);
   const [showConnectorModal, setShowConnectorModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [globalOverview, setGlobalOverview] = useState<GlobalMissionsOverview | null>(null);
+  const [commandCenterMetrics, setCommandCenterMetrics] = useState<RevenueCommandCenterMetrics | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<number | null>(null);
+
+  const handleRunHourlySync = async () => {
+    if (!summary?.mission?.id) return;
+    try {
+      setRunningHourlySync(true);
+      await api.syncBuyerRadarBridge(summary.mission.id);
+      onRefreshSummary();
+      fetchOverview();
+      fetchCommandCenterMetrics();
+    } catch (err) {
+      console.error("Bridge hourly sync failed", err);
+    } finally {
+      setRunningHourlySync(false);
+    }
+  };
 
   const handleRunAutoDiscoverySweep = async () => {
     if (!summary?.mission?.id) return;
@@ -66,10 +85,23 @@ export default function SurvivalHUD({
       await api.runAutoDiscoverySweep(summary.mission.id);
       onRefreshSummary();
       fetchOverview();
+      fetchCommandCenterMetrics();
     } catch (err) {
       console.error("Auto discovery sweep failed", err);
     } finally {
       setRunningSweep(false);
+    }
+  };
+
+  const fetchCommandCenterMetrics = async () => {
+    if (!summary?.mission?.id) return;
+    try {
+      const data = await api.getRevenueCommandCenter(summary.mission.id).catch(() => null);
+      if (data) {
+        setCommandCenterMetrics(data);
+      }
+    } catch (err) {
+      console.warn("Failed fetching command center telemetry", err);
     }
   };
 
@@ -86,7 +118,10 @@ export default function SurvivalHUD({
 
   useEffect(() => {
     fetchOverview();
-  }, [summary]);
+    if (summary?.mission?.id) {
+      fetchCommandCenterMetrics();
+    }
+  }, [summary?.mission?.id]);
 
   if (!summary || !summary.mission) {
     return (
@@ -177,8 +212,27 @@ export default function SurvivalHUD({
 
           <div className="flex flex-wrap items-center gap-2">
             <button
+              onClick={() => setShowReportModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900/70 border border-cyan-500/40 transition-all shadow-sm"
+              title="Open Morning Revenue Survival Daily Report"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Morning Daily Report</span>
+            </button>
+
+            <button
+              onClick={handleRunHourlySync}
+              disabled={runningHourlySync}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-cyan-300 bg-slate-900 hover:bg-slate-800 border border-cyan-500/30 transition-all disabled:opacity-50"
+              title="Trigger Live 1-Hour UAE Buyer Radar Bridge Sync across Telegram, LinkedIn, IG, Reddit, YouTube & Web"
+            >
+              <Radio className={`w-3.5 h-3.5 text-cyan-400 ${runningHourlySync ? "animate-pulse" : ""}`} />
+              <span>{runningHourlySync ? "Syncing Feeds..." : "Hourly Radar Sync"}</span>
+            </button>
+
+            <button
               onClick={() => setShowConnectorModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-cyan-300 bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/40 transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-slate-300 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/60 transition-all shadow-sm"
               title="Manage API keys & connection for 6 public signal connectors"
             >
               <Key className="w-3.5 h-3.5 text-cyan-400" />
@@ -199,85 +253,148 @@ export default function SurvivalHUD({
               onClick={() => {
                 onRefreshSummary();
                 fetchOverview();
+                fetchCommandCenterMetrics();
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-slate-300 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/60 transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Sync All Feeds</span>
+              <span>Sync All</span>
             </button>
           </div>
         </div>
 
-        {/* Global Summary Metric Cards */}
+        {/* 6 Core Revenue Command Center Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-          <div className="glass-panel p-4 glass-panel-hover border-cyan-500/20">
+          {/* 1. Today's Signals */}
+          <div className="glass-panel p-4 glass-panel-hover border-cyan-500/20 bg-gradient-to-b from-cyan-950/20 to-transparent">
             <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
-              <span>Active Missions</span>
-              <FolderGit2 className="w-4 h-4 text-cyan-400" />
+              <span>Today's Signals</span>
+              <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
             </div>
             <div className="text-2xl font-black font-mono text-cyan-400">
-              {globalOverview?.total_active_missions ?? 1}
+              {commandCenterMetrics?.todays_signals ?? 0}
             </div>
             <div className="text-[10px] text-slate-400 font-mono mt-1">
-              {globalOverview?.total_missions ?? 1} Total Ingested
+              Live Ingested Signals
             </div>
           </div>
 
+          {/* 2. New Qualified Opportunities */}
           <div className="glass-panel p-4 glass-panel-hover border-indigo-500/20">
             <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
-              <span>Total Opportunities</span>
+              <span>Qualified Opps</span>
               <Sparkles className="w-4 h-4 text-indigo-400" />
             </div>
             <div className="text-2xl font-black font-mono text-indigo-300">
-              {globalOverview?.total_opportunities ?? summary.opportunities_count}
+              {commandCenterMetrics?.new_qualified_opportunities ?? summary.opportunities_count}
             </div>
-            <div className="text-[10px] text-indigo-400 font-mono mt-1">Multi-Source Radar</div>
+            <div className="text-[10px] text-indigo-400 font-mono mt-1">Passed Spam QC</div>
           </div>
 
+          {/* 3. Hot Leads */}
           <div className="glass-panel p-4 glass-panel-hover border-rose-500/20 bg-gradient-to-b from-rose-950/20 to-transparent">
             <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
-              <span>Hot Opportunities</span>
+              <span>Hot Leads</span>
               <Flame className="w-4 h-4 text-rose-400 animate-pulse" />
             </div>
             <div className="text-2xl font-black font-mono text-rose-400">
-              {globalOverview?.hot_opportunities ?? 0}
+              {commandCenterMetrics?.hot_leads ?? 0}
             </div>
-            <div className="text-[10px] text-rose-400/80 font-mono mt-1">&gt; 90% Intent Score</div>
+            <div className="text-[10px] text-rose-400/80 font-mono mt-1">&gt; 80 Intent / Urgency</div>
           </div>
 
-          <div className="glass-panel p-4 glass-panel-hover border-amber-500/20">
-            <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
-              <span>Pipeline Value</span>
-              <TrendingUp className="w-4 h-4 text-amber-400" />
-            </div>
-            <div className="text-2xl font-black font-mono text-amber-300">
-              {((globalOverview?.total_pipeline_value ?? summary.pipeline_expected) / 1000).toFixed(0)}k AED
-            </div>
-            <div className="text-[10px] text-slate-400 font-mono mt-1">Verified Deals</div>
-          </div>
-
+          {/* 4. Offers Ready */}
           <div className="glass-panel p-4 glass-panel-hover border-emerald-500/20">
             <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
-              <span>Revenue Generated</span>
-              <DollarSign className="w-4 h-4 text-emerald-400" />
+              <span>Offers Ready</span>
+              <Zap className="w-4 h-4 text-emerald-400" />
             </div>
-            <div className="text-2xl font-black font-mono text-emerald-400">
-              {(globalOverview?.total_revenue_generated ?? summary.revenue_achieved).toLocaleString()} AED
+            <div className="text-2xl font-black font-mono text-emerald-300">
+              {commandCenterMetrics?.offers_ready ?? 0}
             </div>
-            <div className="text-[10px] text-emerald-400 font-mono mt-1">Confirmed Cash</div>
+            <div className="text-[10px] text-emerald-400 font-mono mt-1">AI Pitches Crafted</div>
           </div>
 
+          {/* 5. Messages Pending Approval */}
           <div className="glass-panel p-4 glass-panel-hover border-purple-500/20">
             <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
-              <span>Safety Approval</span>
+              <span>Pending Approval</span>
               <ShieldCheck className="w-4 h-4 text-purple-400" />
             </div>
             <div className="text-2xl font-black font-mono text-purple-300">
-              {summary.pending_approvals ?? 0}
+              {commandCenterMetrics?.messages_pending_approval ?? summary.pending_approvals ?? 0}
             </div>
-            <div className="text-[10px] text-purple-400 font-mono mt-1">Human Staged</div>
+            <div className="text-[10px] text-purple-400 font-mono mt-1">Safety Staging Queue</div>
+          </div>
+
+          {/* 6. Expected Revenue */}
+          <div className="glass-panel p-4 glass-panel-hover border-amber-500/20">
+            <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
+              <span>Expected Revenue</span>
+              <TrendingUp className="w-4 h-4 text-amber-400" />
+            </div>
+            <div className="text-2xl font-black font-mono text-amber-300">
+              {Number(commandCenterMetrics?.expected_revenue_aed ?? summary.pipeline_expected ?? 0).toLocaleString()} AED
+            </div>
+            <div className="text-[10px] text-slate-400 font-mono mt-1">Weighted Pipeline</div>
           </div>
         </div>
+
+        {/* Daily Revenue Target Engine Math Funnel */}
+        {commandCenterMetrics?.target_math && (
+          <div className="glass-panel p-4 border border-cyan-500/30 bg-gradient-to-r from-cyan-950/30 via-slate-900/60 to-slate-950/80 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-cyan-400" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-300">
+                  Daily Revenue Target Engine • Target Velocity Math
+                </span>
+              </div>
+              <div className="text-xs font-mono text-slate-300">
+                Target: <strong className="text-white">{commandCenterMetrics.target_math.target_amount.toLocaleString()} AED</strong> in {commandCenterMetrics.target_math.deadline_hours}h
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-white/[0.06] text-center">
+                <div className="text-xl font-black font-mono text-white">
+                  {commandCenterMetrics.target_math.required_qualified_leads}
+                </div>
+                <div className="text-[11px] text-slate-400 font-mono mt-0.5">Qualified Leads Needed</div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-white/[0.06] text-center">
+                <div className="text-xl font-black font-mono text-indigo-300">
+                  {commandCenterMetrics.target_math.required_conversations}
+                </div>
+                <div className="text-[11px] text-slate-400 font-mono mt-0.5">Conversations Needed</div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-white/[0.06] text-center">
+                <div className="text-xl font-black font-mono text-amber-300">
+                  {commandCenterMetrics.target_math.required_proposals}
+                </div>
+                <div className="text-[11px] text-slate-400 font-mono mt-0.5">Proposals Required</div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-white/[0.06] text-center">
+                <div className="text-xl font-black font-mono text-emerald-400">
+                  {commandCenterMetrics.target_math.required_deals}
+                </div>
+                <div className="text-[11px] text-slate-400 font-mono mt-0.5">Deals to Close</div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-white/[0.06] text-xs font-mono text-slate-400">
+              <div className="text-slate-300">
+                {commandCenterMetrics.target_math.target_summary}
+              </div>
+              <div className="text-cyan-400 font-bold shrink-0">
+                Pace: {commandCenterMetrics.target_math.required_revenue_velocity_per_hour.toFixed(0)} AED / hour
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Source Breakdown Section */}
         <div className="glass-panel p-4 border border-white/[0.08] bg-slate-950/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -304,14 +421,14 @@ export default function SurvivalHUD({
               <strong className="text-white font-bold">{sources.Telegram || 0} signals</strong>
             </div>
 
-            <div className="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-center gap-1.5">
-              <span>Product Hunt:</span>
-              <strong className="text-white font-bold">{sources.ProductHunt || 0} signals</strong>
+            <div className="px-3 py-1 rounded-lg bg-pink-500/10 border border-pink-500/30 text-pink-300 flex items-center gap-1.5">
+              <span>Instagram:</span>
+              <strong className="text-white font-bold">{sources.Instagram || 0} signals</strong>
             </div>
 
-            <div className="px-3 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 flex items-center gap-1.5">
-              <span>GitHub:</span>
-              <strong className="text-white font-bold">{sources.GitHub || 0} signals</strong>
+            <div className="px-3 py-1 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 flex items-center gap-1.5">
+              <span>YouTube:</span>
+              <strong className="text-white font-bold">{sources.YouTube || 0} signals</strong>
             </div>
 
             <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-center gap-1.5">
@@ -588,6 +705,13 @@ export default function SurvivalHUD({
       <ConnectorAuthModal
         isOpen={showConnectorModal}
         onClose={() => setShowConnectorModal(false)}
+      />
+
+      {/* Daily Survival Report Modal */}
+      <DailySurvivalReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        missionId={mission.id}
       />
     </div>
   );

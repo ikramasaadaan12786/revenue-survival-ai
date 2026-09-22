@@ -132,3 +132,47 @@ async def get_connector_health_dashboard(db: AsyncSession = Depends(get_db)):
     health = await uae_buyer_radar_bridge.get_connector_health_dashboard(db)
     return health
 
+
+@router.get("/bridge/command-center/{mission_id}")
+async def get_revenue_command_center_telemetry(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Returns real-time Revenue Command Center metrics:
+    - Today's Signals
+    - New Qualified Opportunities
+    - Hot Leads
+    - Offers Ready
+    - Messages Pending Approval
+    - Expected Revenue
+    - Target Funnel Math (Required Leads -> Convos -> Proposals -> Deals)
+    """
+    from app.services.connectors.uae_buyer_radar_bridge import uae_buyer_radar_bridge
+    metrics = await uae_buyer_radar_bridge.get_revenue_command_center_metrics(db, mission_id)
+    return metrics
+
+
+@router.get("/bridge/daily-report/{mission_id}")
+async def get_revenue_survival_daily_report(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Generates morning Revenue Survival Daily Report:
+    - Signals Found
+    - Qualified Leads
+    - Industries Breakdown
+    - Expected Revenue
+    - Top 10 Opportunities
+    - Recommended Actions
+    """
+    from app.services.connectors.uae_buyer_radar_bridge import uae_buyer_radar_bridge
+    report = await uae_buyer_radar_bridge.generate_revenue_survival_daily_report(db, mission_id)
+    return report
+
+
+@router.post("/bridge/hourly-sync")
+async def run_hourly_connector_sync_endpoint(db: AsyncSession = Depends(get_db)):
+    """
+    Executes autonomous 1-hour connector sync across all active missions.
+    """
+    from app.services.scheduler import daily_scheduler
+    result = await daily_scheduler.run_hourly_connector_sync(db)
+    return result
+
+

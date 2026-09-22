@@ -192,10 +192,35 @@ class DailyAutonomousScheduler:
             "timestamp": datetime.datetime.utcnow().isoformat(),
             "missions_swept": len(missions_to_sweep),
             "opportunities_discovered": total_discovered,
-            "opportunities_scored": total_scored,
-            "offers_generated": total_offers_generated,
-            "mission_summaries": mission_summaries
+    async def run_hourly_connector_sync(self, session: AsyncSession) -> Dict[str, Any]:
+        """
+        AUTONOMOUS 1-HOUR CONNECTOR SYNC:
+        Pulls fresh signals from Telegram MTProto, LinkedIn, Instagram, Reddit, YouTube, Web Search,
+        applies Quality Control anti-spam filters, and updates all active missions with fresh leads.
+        """
+        from app.services.connectors.uae_buyer_radar_bridge import uae_buyer_radar_bridge
+        
+        stmt = select(Mission).where(Mission.status.in_(["ACTIVE", "PIVOTING"]))
+        missions = (await session.execute(stmt)).scalars().all()
+        
+        sync_results = []
+        for m in missions:
+            res = await uae_buyer_radar_bridge.sync_mission_signals(session, m.id)
+            sync_results.append({
+                "mission_id": m.id,
+                "title": m.title,
+                "signals_imported": res.get("total_signals_imported", 0),
+                "opportunities_created": res.get("opportunities_created", 0),
+                "leads_created": res.get("leads_created", 0)
+            })
+
+        return {
+            "status": "success",
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "active_missions_synced": len(missions),
+            "results": sync_results
         }
 
 daily_scheduler = DailyAutonomousScheduler()
+
 

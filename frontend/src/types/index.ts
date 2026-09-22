@@ -575,5 +575,61 @@ export interface BridgeSyncResult {
   opportunities_created: number;
   leads_created: number;
   total_pipeline_value_added_aed: number;
+  target_math?: any;
 }
+
+export interface TargetMath {
+  mission_id: number;
+  target_amount: number;
+  revenue_achieved: number;
+  remaining_target: number;
+  currency: string;
+  deadline_hours: number;
+  required_deals: number;
+  required_proposals: number;
+  required_conversations: number;
+  required_qualified_leads: number;
+  required_scanned_opportunities: number;
+  required_revenue_velocity_per_hour: number;
+  target_summary: string;
+}
+
+export interface RevenueCommandCenterMetrics {
+  mission_id: number;
+  todays_signals: number;
+  new_qualified_opportunities: number;
+  hot_leads: number;
+  offers_ready: number;
+  messages_pending_approval: number;
+  expected_revenue_aed: number;
+  pipeline_value_aed: number;
+  revenue_generated_aed: number;
+  target_math: TargetMath;
+}
+
+export interface DailySurvivalReport {
+  mission_id: number;
+  mission_title: string;
+  report_date: string;
+  signals_found: number;
+  qualified_leads: number;
+  industries_breakdown: Record<string, number>;
+  expected_revenue_aed: number;
+  pipeline_value_aed: number;
+  target_math: TargetMath;
+  top_10_opportunities: Array<{
+    id: number;
+    name: string;
+    company: string;
+    industry: string;
+    source: string;
+    estimated_value_aed: number;
+    intent_score: number;
+    urgency_score: number;
+    priority: string;
+    requirement_snippet: string;
+  }>;
+  recommended_actions: string[];
+}
+
 
