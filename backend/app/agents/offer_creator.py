@@ -45,6 +45,10 @@ class OfferCreatorAgent(BaseAgent):
         
         try:
             data = json.loads(response_text)
+            if isinstance(data, list) and len(data) > 0:
+                data = data[0]
+            elif not isinstance(data, dict):
+                raise ValueError("Parsed JSON is not a dictionary")
         except Exception:
             data = {
                 "product_name": "Dubai Distress & Yield Intelligence Pass",

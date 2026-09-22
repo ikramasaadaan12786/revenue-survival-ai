@@ -192,6 +192,10 @@ class DailyAutonomousScheduler:
             "timestamp": datetime.datetime.utcnow().isoformat(),
             "missions_swept": len(missions_to_sweep),
             "opportunities_discovered": total_discovered,
+            "offers_generated": total_offers_generated,
+            "mission_summaries": mission_summaries
+        }
+
     async def run_hourly_connector_sync(self, session: AsyncSession) -> Dict[str, Any]:
         """
         AUTONOMOUS 1-HOUR CONNECTOR SYNC:

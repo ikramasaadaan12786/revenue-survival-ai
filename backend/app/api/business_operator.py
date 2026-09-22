@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 
-from app.db.database import get_db
+from app.core.database import get_db
 from app.services.business_operator.ai_mission_creator import ai_mission_creator
 from app.services.business_operator.self_optimizing_revenue_engine import self_optimizing_revenue_engine
 from app.services.business_operator.autonomous_offer_generator import autonomous_offer_generator
