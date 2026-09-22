@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Target, 
   Clock, 
@@ -17,9 +17,17 @@ import {
   MessageSquareQuote,
   CalendarCheck,
   Zap,
-  Play
+  Play,
+  Pause,
+  Archive,
+  FolderGit2,
+  Activity,
+  Layers,
+  Flame,
+  Radio,
+  Share2
 } from "lucide-react";
-import { DashboardSummary } from "@/types";
+import { DashboardSummary, GlobalMissionsOverview } from "@/types";
 import { api } from "@/lib/api";
 
 interface Props {
@@ -28,6 +36,8 @@ interface Props {
   onEvaluatePivot: () => void;
   isRunningStep: boolean;
   onRefreshSummary: () => void;
+  onSwitchMission?: (id: number) => void;
+  allMissions?: any[];
 }
 
 export default function SurvivalHUD({
@@ -35,9 +45,28 @@ export default function SurvivalHUD({
   onRunNextStep,
   onEvaluatePivot,
   isRunningStep,
-  onRefreshSummary
+  onRefreshSummary,
+  onSwitchMission,
+  allMissions = []
 }: Props) {
   const [runningCycle, setRunningCycle] = useState(false);
+  const [globalOverview, setGlobalOverview] = useState<GlobalMissionsOverview | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState<number | null>(null);
+
+  const fetchOverview = async () => {
+    try {
+      const data = await api.getGlobalOverview().catch(() => null);
+      if (data) {
+        setGlobalOverview(data);
+      }
+    } catch (err) {
+      console.warn("Failed fetching global missions overview", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchOverview();
+  }, [summary]);
 
   if (!summary || !summary.mission) {
     return (
@@ -60,6 +89,7 @@ export default function SurvivalHUD({
       setRunningCycle(true);
       await api.runDailyCycle(mission.id);
       onRefreshSummary();
+      fetchOverview();
     } catch (err) {
       console.error("Failed running daily cycle", err);
     } finally {
@@ -67,11 +97,328 @@ export default function SurvivalHUD({
     }
   };
 
+  const handleToggleMissionStatus = async (mId: number, currentStatus: string) => {
+    try {
+      setIsUpdatingStatus(mId);
+      const targetStatus = currentStatus === "ACTIVE" ? "PAUSED" : "ACTIVE";
+      await api.updateMissionStatus(mId, targetStatus);
+      onRefreshSummary();
+      fetchOverview();
+    } catch (err) {
+      console.error("Failed toggling status", err);
+    } finally {
+      setIsUpdatingStatus(null);
+    }
+  };
+
+  const handleArchiveMission = async (mId: number) => {
+    try {
+      setIsUpdatingStatus(mId);
+      await api.updateMissionStatus(mId, "ARCHIVED");
+      onRefreshSummary();
+      fetchOverview();
+    } catch (err) {
+      console.error("Failed archiving mission", err);
+    } finally {
+      setIsUpdatingStatus(null);
+    }
+  };
+
+  const sources = globalOverview?.source_breakdown || {
+    Reddit: 0,
+    LinkedIn: 0,
+    Telegram: 0,
+    ProductHunt: 0,
+    GitHub: 0,
+    Web: 0
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Hero Banner: Mission Survival HUD */}
+    <div className="space-y-8">
+      {/* 1. Revenue Command Center Global KPIs Bar */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+              <Activity className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                <span>Revenue Command Center</span>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  AUTONOMOUS OPERATING SYSTEM
+                </span>
+              </h2>
+              <p className="text-xs text-slate-400 font-mono">
+                Multi-Mission Orchestrator • Real-Time Discovery Engine • Safety Approval Staging
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                onRefreshSummary();
+                fetchOverview();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-slate-300 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/60 transition-all"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Sync All Feeds</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Global Summary Metric Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+          <div className="glass-panel p-4 glass-panel-hover border-cyan-500/20">
+            <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
+              <span>Active Missions</span>
+              <FolderGit2 className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div className="text-2xl font-black font-mono text-cyan-400">
+              {globalOverview?.total_active_missions ?? 1}
+            </div>
+            <div className="text-[10px] text-slate-400 font-mono mt-1">
+              {globalOverview?.total_missions ?? 1} Total Ingested
+            </div>
+          </div>
+
+          <div className="glass-panel p-4 glass-panel-hover border-indigo-500/20">
+            <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
+              <span>Total Opportunities</span>
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div className="text-2xl font-black font-mono text-indigo-300">
+              {globalOverview?.total_opportunities ?? summary.opportunities_count}
+            </div>
+            <div className="text-[10px] text-indigo-400 font-mono mt-1">Multi-Source Radar</div>
+          </div>
+
+          <div className="glass-panel p-4 glass-panel-hover border-rose-500/20 bg-gradient-to-b from-rose-950/20 to-transparent">
+            <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
+              <span>Hot Opportunities</span>
+              <Flame className="w-4 h-4 text-rose-400 animate-pulse" />
+            </div>
+            <div className="text-2xl font-black font-mono text-rose-400">
+              {globalOverview?.hot_opportunities ?? 0}
+            </div>
+            <div className="text-[10px] text-rose-400/80 font-mono mt-1">&gt; 90% Intent Score</div>
+          </div>
+
+          <div className="glass-panel p-4 glass-panel-hover border-amber-500/20">
+            <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
+              <span>Pipeline Value</span>
+              <TrendingUp className="w-4 h-4 text-amber-400" />
+            </div>
+            <div className="text-2xl font-black font-mono text-amber-300">
+              {((globalOverview?.total_pipeline_value ?? summary.pipeline_expected) / 1000).toFixed(0)}k AED
+            </div>
+            <div className="text-[10px] text-slate-400 font-mono mt-1">Verified Deals</div>
+          </div>
+
+          <div className="glass-panel p-4 glass-panel-hover border-emerald-500/20">
+            <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
+              <span>Revenue Generated</span>
+              <DollarSign className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="text-2xl font-black font-mono text-emerald-400">
+              {(globalOverview?.total_revenue_generated ?? summary.revenue_achieved).toLocaleString()} AED
+            </div>
+            <div className="text-[10px] text-emerald-400 font-mono mt-1">Confirmed Cash</div>
+          </div>
+
+          <div className="glass-panel p-4 glass-panel-hover border-purple-500/20">
+            <div className="text-slate-400 text-xs flex items-center justify-between mb-1">
+              <span>Safety Approval</span>
+              <ShieldCheck className="w-4 h-4 text-purple-400" />
+            </div>
+            <div className="text-2xl font-black font-mono text-purple-300">
+              {summary.pending_approvals ?? 0}
+            </div>
+            <div className="text-[10px] text-purple-400 font-mono mt-1">Human Staged</div>
+          </div>
+        </div>
+
+        {/* Source Breakdown Section */}
+        <div className="glass-panel p-4 border border-white/[0.08] bg-slate-950/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <span className="text-xs font-mono font-semibold text-slate-300 uppercase tracking-wider">
+              Signal Discovery Ingestion Feeds:
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+            <div className="px-3 py-1 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-300 flex items-center gap-1.5">
+              <span>Reddit:</span>
+              <strong className="text-white font-bold">{sources.Reddit || 0} signals</strong>
+            </div>
+
+            <div className="px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300 flex items-center gap-1.5">
+              <span>LinkedIn:</span>
+              <strong className="text-white font-bold">{sources.LinkedIn || 0} signals</strong>
+            </div>
+
+            <div className="px-3 py-1 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-300 flex items-center gap-1.5">
+              <span>Telegram:</span>
+              <strong className="text-white font-bold">{sources.Telegram || 0} signals</strong>
+            </div>
+
+            <div className="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-center gap-1.5">
+              <span>Product Hunt:</span>
+              <strong className="text-white font-bold">{sources.ProductHunt || 0} signals</strong>
+            </div>
+
+            <div className="px-3 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 flex items-center gap-1.5">
+              <span>GitHub:</span>
+              <strong className="text-white font-bold">{sources.GitHub || 0} signals</strong>
+            </div>
+
+            <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-center gap-1.5">
+              <span>Web / Radar:</span>
+              <strong className="text-white font-bold">{sources.Web || 0} signals</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. ACTIVE MISSIONS MANAGEMENT TABLE */}
+      <div className="glass-panel overflow-hidden border border-cyan-500/20 bg-[#090d16]/90">
+        <div className="p-4 sm:px-6 border-b border-white/[0.08] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FolderGit2 className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+              Active Missions Management Matrix ({globalOverview?.active_missions?.length ?? allMissions.length ?? 1})
+            </h3>
+          </div>
+          <span className="text-[11px] font-mono text-slate-400">
+            Independent Parallel Execution • Real-Time Pipeline Isolation
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs font-mono">
+            <thead className="bg-slate-900/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-white/[0.06]">
+              <tr>
+                <th className="py-3 px-4">Mission Name</th>
+                <th className="py-3 px-4">Target Revenue</th>
+                <th className="py-3 px-4">Current Revenue</th>
+                <th className="py-3 px-4">Pipeline Value</th>
+                <th className="py-3 px-4 text-center">Opps</th>
+                <th className="py-3 px-4 text-center">Leads</th>
+                <th className="py-3 px-4">Time Remaining</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.04]">
+              {(globalOverview?.active_missions || allMissions).map((m: any) => {
+                const isCurrent = m.id === mission.id;
+                const hoursLeft = Number(m.time_remaining_hours ?? m.deadline_hours ?? 72);
+                return (
+                  <tr
+                    key={m.id}
+                    className={`transition-colors hover:bg-slate-800/40 ${
+                      isCurrent ? "bg-cyan-500/[0.07] border-l-4 border-l-cyan-400" : ""
+                    }`}
+                  >
+                    <td className="py-3.5 px-4 font-semibold text-white">
+                      <div className="flex items-center gap-2">
+                        <span className="text-cyan-400 font-bold">#{m.id}</span>
+                        <span className="truncate max-w-[200px]">{m.title}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-normal truncate max-w-[240px]">
+                        {m.industry || "Multi-Industry"}
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4 text-cyan-300 font-bold">
+                      {Number(m.goal_amount).toLocaleString()} {m.currency || "AED"}
+                    </td>
+
+                    <td className="py-3.5 px-4 text-emerald-400 font-bold">
+                      {Number(m.revenue_generated || 0).toLocaleString()} {m.currency || "AED"}
+                    </td>
+
+                    <td className="py-3.5 px-4 text-amber-300 font-bold">
+                      {Number(m.pipeline_value || 0).toLocaleString()} {m.currency || "AED"}
+                    </td>
+
+                    <td className="py-3.5 px-4 text-center text-slate-200">
+                      <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        {m.opportunities_count ?? 0}
+                      </span>
+                    </td>
+
+                    <td className="py-3.5 px-4 text-center text-slate-200">
+                      <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                        {m.leads_count ?? 0}
+                      </span>
+                    </td>
+
+                    <td className="py-3.5 px-4 text-amber-400">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-400" />
+                        <span>{hoursLeft}h</span>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          m.status === "ACTIVE"
+                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                            : m.status === "PAUSED"
+                            ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                            : "bg-slate-700/40 text-slate-300 border border-slate-600/40"
+                        }`}
+                      >
+                        {m.status === "ACTIVE" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />}
+                        {m.status}
+                      </span>
+                    </td>
+
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {onSwitchMission && !isCurrent && (
+                          <button
+                            onClick={() => onSwitchMission(m.id)}
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 transition-all"
+                          >
+                            Switch
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => handleToggleMissionStatus(m.id, m.status)}
+                          disabled={isUpdatingStatus === m.id}
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                          title={m.status === "ACTIVE" ? "Pause Mission" : "Resume Mission"}
+                        >
+                          {m.status === "ACTIVE" ? <Pause className="w-3 h-3 text-amber-400" /> : <Play className="w-3 h-3 text-emerald-400" />}
+                        </button>
+
+                        <button
+                          onClick={() => handleArchiveMission(m.id)}
+                          disabled={isUpdatingStatus === m.id}
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-700 transition-colors"
+                          title="Archive Mission"
+                        >
+                          <Archive className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 3. Hero Banner: Current Selected Mission HUD */}
       <div className="relative overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-b from-[#0e172a]/90 via-[#0a0f1d]/90 to-[#060911]/90 p-6 md:p-8 backdrop-blur-xl shadow-cardGlow">
-        {/* Ambient background glow */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -80,7 +427,7 @@ export default function SurvivalHUD({
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
-                MISSION #{mission.id}
+                ACTIVE MISSION #{mission.id}
               </span>
               <span className="text-xs font-mono text-slate-400">
                 Industry: <strong className="text-slate-200">{mission.industry}</strong>
@@ -135,7 +482,7 @@ export default function SurvivalHUD({
               Survival Progress: <strong className="text-white">{progressPct}%</strong>
             </span>
             <span className="text-slate-400">
-              2% Broker Commission Potential: <strong className="text-amber-300">{total_commission_potential?.toLocaleString()} AED</strong>
+              Pipeline Value: <strong className="text-amber-300">{(summary.pipeline_expected || 0).toLocaleString()} AED</strong>
             </span>
           </div>
           <div className="w-full h-2.5 rounded-full bg-slate-800/80 overflow-hidden p-0.5 border border-white/[0.05]">
@@ -147,118 +494,14 @@ export default function SurvivalHUD({
         </div>
       </div>
 
-      {/* 4-Phase Daily Scheduler Bar */}
-      <div className="glass-panel p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-cyan-500/20 bg-slate-950/60">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center">
-            <CalendarCheck className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-white flex items-center gap-2">
-              <span>Daily Autonomous Scheduler</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                ACTIVE
-              </span>
-            </div>
-            <div className="text-[11px] text-slate-400 font-mono">
-              Morning Sweep → Discovery → Performance Review → Evening Strategy Pivot
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={handleRunDailyCycle}
-          disabled={runningCycle}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono shadow-glow transition-all disabled:opacity-50"
-        >
-          <Play className={`w-3.5 h-3.5 fill-black ${runningCycle ? "animate-spin" : ""}`} />
-          {runningCycle ? "RUNNING CYCLE..." : "TRIGGER DAILY 4-PHASE CYCLE"}
-        </button>
-      </div>
-
-      {/* KPI Cards Matrix */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-        {/* Spent */}
-        <div className="glass-panel p-4 glass-panel-hover">
-          <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-            <span>Ad Spend</span>
-            <DollarSign className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-lg font-bold font-mono text-white">
-            {budget_spent} {mission.currency}
-          </div>
-          <div className="text-[10px] text-emerald-400 font-mono mt-1">Zero-Budget Mode</div>
-        </div>
-
-        {/* Opportunities Found */}
-        <div className="glass-panel p-4 glass-panel-hover">
-          <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-            <span>Opportunities</span>
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div className="text-lg font-bold font-mono text-cyan-300">
-            {summary.opportunities_count}
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-1">Market Signals</div>
-        </div>
-
-        {/* Leads in CRM */}
-        <div className="glass-panel p-4 glass-panel-hover">
-          <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-            <span>CRM Leads</span>
-            <TrendingUp className="w-4 h-4 text-indigo-400" />
-          </div>
-          <div className="text-lg font-bold font-mono text-indigo-300">
-            {summary.leads_count}
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-1">8-Stage Funnel</div>
-        </div>
-
-        {/* Pitches Sent */}
-        <div className="glass-panel p-4 glass-panel-hover">
-          <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-            <span>Pitches Sent</span>
-            <Send className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="text-lg font-bold font-mono text-amber-300">
-            {summary.messages_sent}
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-1">Approved & Sent</div>
-        </div>
-
-        {/* Replies */}
-        <div className="glass-panel p-4 glass-panel-hover">
-          <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-            <span>Replies</span>
-            <MessageSquareQuote className="w-4 h-4 text-rose-400" />
-          </div>
-          <div className="text-lg font-bold font-mono text-rose-300">
-            {summary.replies_count}
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-1">Active Convos</div>
-        </div>
-
-        {/* Commission Pipeline */}
-        <div className="glass-panel p-4 glass-panel-hover">
-          <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-            <span>2% Commission</span>
-            <ShieldCheck className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="text-lg font-bold font-mono text-amber-300">
-            {total_commission_potential > 1000 ? `${(total_commission_potential / 1000).toFixed(0)}k` : total_commission_potential} AED
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-1">Broker Payout</div>
-        </div>
-      </div>
-
-      {/* AI Decision & Next Best Action Box */}
+      {/* 4. AI Decision & Next Best Action Box */}
       <div className="glass-panel p-6 border-l-4 border-l-cyan-400 bg-gradient-to-r from-cyan-950/30 to-transparent">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <Compass className="w-4 h-4 text-cyan-400 animate-spin" />
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400">
-                AI Survival Brain • Next Best Action
+                AI Revenue Strategy Brain • Next Action
               </span>
             </div>
             <p className="text-base font-semibold text-slate-100">
@@ -289,3 +532,4 @@ export default function SurvivalHUD({
     </div>
   );
 }
+

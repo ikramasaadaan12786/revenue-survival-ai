@@ -54,6 +54,21 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE missions ADD COLUMN industries JSON"))
         except Exception:
             pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE revenue_opportunities ADD COLUMN intent_score FLOAT DEFAULT 85.0"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE revenue_opportunities ADD COLUMN closing_probability FLOAT DEFAULT 0.85"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE revenue_opportunities ADD COLUMN priority VARCHAR(50) DEFAULT 'HOT'"))
+        except Exception:
+            pass
     yield
 
 app = FastAPI(

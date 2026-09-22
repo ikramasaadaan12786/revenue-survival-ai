@@ -19,7 +19,7 @@ import {
   Flame,
   CheckCircle2
 } from "lucide-react";
-import { Opportunity, MarketSignal } from "@/types";
+import { Opportunity, MarketSignal, RevenueOpportunity } from "@/types";
 import { api } from "@/lib/api";
 
 interface Props {
@@ -29,6 +29,7 @@ interface Props {
 
 export default function OpportunityRadarView({ missionId, onRefreshSummary }: Props) {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [revenueOpportunities, setRevenueOpportunities] = useState<RevenueOpportunity[]>([]);
   const [signals, setSignals] = useState<MarketSignal[]>([]);
   const [breakdown, setBreakdown] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -48,11 +49,13 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
   const fetchOppsAndSignals = async () => {
     try {
       setLoading(true);
-      const [oppsData, signalsData] = await Promise.all([
-        api.getOpportunities(missionId),
-        api.getSignals(missionId, selectedSource === "ALL" ? undefined : selectedSource)
+      const [oppsData, revOppsData, signalsData] = await Promise.all([
+        api.getOpportunities(missionId).catch(() => []),
+        api.getRevenueOpportunities(missionId).catch(() => []),
+        api.getSignals(missionId, selectedSource === "ALL" ? undefined : selectedSource).catch(() => ({ signals: [], breakdown: {} }))
       ]);
       setOpportunities(oppsData);
+      setRevenueOpportunities(revOppsData || []);
       setSignals(signalsData.signals || []);
       setBreakdown(signalsData.breakdown || {});
     } catch (err) {
@@ -65,6 +68,19 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
   useEffect(() => {
     fetchOppsAndSignals();
   }, [missionId, selectedSource]);
+
+  const handleRunHunter = async () => {
+    try {
+      setHunting(true);
+      await api.huntOpportunities(missionId);
+      await fetchOppsAndSignals();
+      onRefreshSummary();
+    } catch (err) {
+      console.error("Failed hunting opportunities", err);
+    } finally {
+      setHunting(false);
+    }
+  };
 
   const handleScanConnectors = async () => {
     try {
@@ -267,8 +283,132 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
         )}
       </div>
 
-      {/* Discovered Opportunities Section */}
+      {/* Scored Revenue Opportunities Section */}
       <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <Flame className="w-4 h-4 text-rose-400" />
+              Scored Revenue Opportunities & Buying Signals ({revenueOpportunities.length})
+            </h3>
+            <p className="text-xs text-slate-400 font-mono">
+              Intent Scoring Engine • Urgency Evaluation • Closing Probability Model
+            </p>
+          </div>
+
+          <button
+            onClick={handleRunHunter}
+            disabled={hunting}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold font-mono bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black shadow-glow transition-all disabled:opacity-50"
+          >
+            <Sparkles className={`w-3.5 h-3.5 fill-black ${hunting ? "animate-spin" : ""}`} />
+            {hunting ? "DISCOVERING..." : "RUN OPPORTUNITY HUNTER"}
+          </button>
+        </div>
+
+        {revenueOpportunities.length === 0 && !loading ? (
+          <div className="glass-panel p-10 text-center text-slate-400 space-y-3">
+            <p>No revenue opportunities scored yet for this mission.</p>
+            <button
+              onClick={handleRunHunter}
+              disabled={hunting}
+              className="px-4 py-2 rounded-xl text-xs font-bold font-mono bg-cyan-400 text-black shadow-glow hover:bg-cyan-300 transition-all"
+            >
+              Scan Live Connectors Now
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {revenueOpportunities.map((ro) => {
+              const priority = ro.priority || "HOT";
+              const priorityBadge = priority === "HOT"
+                ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                : priority === "QUALIFIED"
+                ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                : priority === "WARM"
+                ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                : "bg-slate-700/30 text-slate-400 border-slate-600/40";
+
+              return (
+                <div key={ro.id} className="glass-panel p-6 glass-panel-hover flex flex-col justify-between space-y-4 border border-white/[0.08]">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 uppercase">
+                        {ro.industry}
+                      </span>
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${priorityBadge}`}>
+                        {priority === "HOT" && <Flame className="w-3 h-3 animate-pulse" />}
+                        {priority} OPPORTUNITY
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-base font-bold text-white leading-snug">
+                        {ro.name} {ro.company ? `• ${ro.company}` : ""}
+                      </h4>
+                      <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                        <strong className="text-slate-400 font-normal">Requirement Signal:</strong> {ro.requirement}
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-950/70 p-3.5 rounded-xl border border-white/[0.06] text-xs space-y-2.5 font-mono">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">Estimated Deal Value:</span>
+                        <span className="text-emerald-400 font-bold text-sm">
+                          {Number(ro.estimated_value).toLocaleString()} AED
+                        </span>
+                      </div>
+
+                      {/* Intent & Urgency Score meters */}
+                      <div className="space-y-1.5 pt-1 border-t border-white/[0.05]">
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-slate-400">Intent Score:</span>
+                          <span className="text-cyan-400 font-bold">{ro.intent_score ?? 90}%</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                            style={{ width: `${ro.intent_score ?? 90}%` }}
+                          />
+                        </div>
+
+                        <div className="flex justify-between text-[11px] pt-1">
+                          <span className="text-slate-400">Urgency Score:</span>
+                          <span className="text-amber-400 font-bold">{ro.urgency_score ?? 85}%</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-amber-500 to-rose-500"
+                            style={{ width: `${ro.urgency_score ?? 85}%` }}
+                          />
+                        </div>
+
+                        <div className="flex justify-between text-[11px] pt-1">
+                          <span className="text-slate-400">Closing Probability:</span>
+                          <span className="text-emerald-400 font-bold">
+                            {ro.closing_probability ? `${Math.round(ro.closing_probability * 100)}%` : `${ro.conversion_score ?? 85}%`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between pt-1">
+                      <span>Source: <strong className="text-cyan-400 font-medium">{ro.source}</strong></span>
+                      <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        CRM Ingested & Staged
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Discovered Opportunities Section */}
+      <div className="space-y-4 pt-4 border-t border-white/[0.06]">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400" />
@@ -280,8 +420,8 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
         </div>
 
         {opportunities.length === 0 && !loading ? (
-          <div className="glass-panel p-12 text-center text-slate-400">
-            <p>No market opportunities synthesized yet. Click "Run Browser Agent" to formulate monetization angles.</p>
+          <div className="glass-panel p-8 text-center text-slate-400">
+            <p>No market opportunities synthesized yet.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -321,25 +461,6 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
                       <span className="text-emerald-400 font-semibold">{opp.difficulty}</span>
                     </div>
                   </div>
-
-                  {opp.sources && opp.sources.length > 0 && (
-                    <div className="space-y-1.5 pt-1">
-                      <span className="text-[10px] font-mono text-slate-400 uppercase flex items-center gap-1">
-                        <Globe className="w-3 h-3 text-cyan-400" />
-                        Validated Signal Sources:
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {opp.sources.map((src, i) => (
-                          <span
-                            key={i}
-                            className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-white/[0.05]"
-                          >
-                            {src}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">

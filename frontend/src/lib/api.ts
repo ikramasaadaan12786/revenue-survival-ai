@@ -38,6 +38,12 @@ export const api = {
   // Missions
   getMissions: () => fetcher<any[]>("/missions/"),
   getMissionDashboard: (missionId: number) => fetcher<any>(`/missions/${missionId}/dashboard`),
+  getGlobalOverview: () => fetcher<any>("/missions/global/overview"),
+  updateMissionStatus: (missionId: number, status: string) =>
+    fetcher<any>(`/missions/${missionId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
   createMission: (data: any) =>
     fetcher<any>("/missions/", { method: "POST", body: JSON.stringify(data) }),
   runNextStep: (missionId: number) =>
@@ -45,9 +51,11 @@ export const api = {
   evaluatePivot: (missionId: number) =>
     fetcher<any>(`/missions/${missionId}/evaluate-pivot`, { method: "POST" }),
 
-  // Opportunities
+  // Opportunities & Scored Revenue Opportunities
   getOpportunities: (missionId: number) =>
     fetcher<any[]>(`/opportunities/mission/${missionId}`),
+  getRevenueOpportunities: (missionId: number) =>
+    fetcher<any[]>(`/opportunities/revenue-opportunities/${missionId}`),
   huntOpportunities: (missionId: number) =>
     fetcher<any>(`/opportunities/hunt/${missionId}`, { method: "POST" }),
 

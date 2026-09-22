@@ -19,6 +19,7 @@ import { Loader2 } from "lucide-react";
 export default function Home() {
   const [activeTab, setActiveTab] = useState("command");
   const [missionId, setMissionId] = useState<number>(1);
+  const [missionsList, setMissionsList] = useState<any[]>([]);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRunningStep, setIsRunningStep] = useState(false);
@@ -27,28 +28,31 @@ export default function Home() {
   const fetchSummary = async (targetId?: number) => {
     try {
       setLoading(true);
-      // First fetch list of available missions
+      // Fetch list of all missions
       const allMissions = await api.getMissions().catch(() => []);
+      setMissionsList(allMissions || []);
       
       let currentId = targetId || missionId;
       if (allMissions && allMissions.length > 0) {
-        const found = targetId ? allMissions.find((m: any) => m.id === targetId) : allMissions[0];
+        const found = targetId ? allMissions.find((m: any) => m.id === targetId) : allMissions.find((m: any) => m.id === currentId);
         currentId = found ? found.id : allMissions[0].id;
         setMissionId(currentId);
       } else {
         // Automatically create initial mission if none exists yet
         try {
           const newMission = await api.createMission({
-            title: "Phase 5 Autonomous Revenue Survival: 50,000 AED Commission Sprint",
-            goal_amount: 50000,
+            title: "AI Agent Sales Sprint",
+            goal_amount: 10000,
             currency: "AED",
             deadline_hours: 72,
             budget: 0,
-            industry: "Real Estate"
+            industry: "AI Agents & Automation",
+            industries: ["AI Agents & Automation"]
           });
           if (newMission && newMission.id) {
             currentId = newMission.id;
             setMissionId(currentId);
+            setMissionsList([newMission]);
           }
         } catch (seedErr) {
           console.warn("Could not auto-seed mission, trying direct dashboard fetch", seedErr);
@@ -72,6 +76,11 @@ export default function Home() {
   useEffect(() => {
     fetchSummary();
   }, []);
+
+  const handleSwitchMission = (newId: number) => {
+    setMissionId(newId);
+    fetchSummary(newId);
+  };
 
   const handleRunNextStep = async () => {
     try {
@@ -113,6 +122,9 @@ export default function Home() {
         onOpenNewMission={() => setIsNewMissionOpen(true)}
         onRunNextStep={handleRunNextStep}
         isRunningStep={isRunningStep}
+        missionsList={missionsList}
+        currentMissionId={missionId}
+        onSwitchMission={handleSwitchMission}
       />
 
       {/* Main Content Area */}
@@ -133,6 +145,8 @@ export default function Home() {
                   onEvaluatePivot={handleEvaluatePivot}
                   isRunningStep={isRunningStep}
                   onRefreshSummary={() => fetchSummary(missionId)}
+                  onSwitchMission={handleSwitchMission}
+                  allMissions={missionsList}
                 />
                 <MissionPlannerView
                   missionId={missionId}

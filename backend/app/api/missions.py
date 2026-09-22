@@ -4,8 +4,8 @@ from sqlalchemy.future import select
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
 from app.core.database import get_db
-from app.models.entities import Mission, Opportunity, RevenueOpportunity, Lead, Communication, RevenueTracking, Task, Offer, RealEstateDeal
-from app.schemas.schemas import MissionCreate, MissionResponse, DashboardSummary, TaskResponse
+from app.models.entities import Mission, Opportunity, RevenueOpportunity, Lead, Communication, RevenueTracking, Task, Offer, RealEstateDeal, MarketSignal
+from app.schemas.schemas import MissionCreate, MissionResponse, DashboardSummary, TaskResponse, MissionStatusUpdate, GlobalMissionsOverview, RevenueOpportunityResponse
 from app.agents.survival_manager import SurvivalManagerAgent
 
 router = APIRouter(prefix="/missions", tags=["missions"])
@@ -16,6 +16,110 @@ async def list_missions(db: AsyncSession = Depends(get_db)):
     stmt = select(Mission).order_by(Mission.id.desc())
     result = await db.execute(stmt)
     return result.scalars().all()
+
+@router.get("/global/overview", response_model=GlobalMissionsOverview)
+async def get_global_missions_overview(db: AsyncSession = Depends(get_db)):
+    """
+    Revenue Command Center global aggregated overview across all active & historical missions.
+    """
+    all_missions_res = await db.execute(select(Mission).order_by(Mission.id.desc()))
+    all_missions = all_missions_res.scalars().all()
+
+    active_missions = [m for m in all_missions if m.status in ["ACTIVE", "PIVOTING"]]
+    
+    # Revenue Opportunities
+    all_rev_opps_res = await db.execute(select(RevenueOpportunity))
+    all_rev_opps = all_rev_opps_res.scalars().all()
+
+    # Signals
+    all_signals_res = await db.execute(select(MarketSignal))
+    all_signals = all_signals_res.scalars().all()
+
+    # Calculate Source Breakdown
+    source_counts = {
+        "Reddit": 0,
+        "LinkedIn": 0,
+        "Telegram": 0,
+        "ProductHunt": 0,
+        "GitHub": 0,
+        "Web": 0,
+        "BuyerRadar": 0,
+    }
+
+    for ro in all_rev_opps:
+        src = (ro.source or "").lower()
+        if "reddit" in src:
+            source_counts["Reddit"] += 1
+        elif "linkedin" in src:
+            source_counts["LinkedIn"] += 1
+        elif "telegram" in src:
+            source_counts["Telegram"] += 1
+        elif "product" in src:
+            source_counts["ProductHunt"] += 1
+        elif "github" in src:
+            source_counts["GitHub"] += 1
+        elif "radar" in src:
+            source_counts["BuyerRadar"] += 1
+        else:
+            source_counts["Web"] += 1
+
+    for sig in all_signals:
+        src = (sig.source or "").lower()
+        if "reddit" in src:
+            source_counts["Reddit"] += 1
+        elif "linkedin" in src:
+            source_counts["LinkedIn"] += 1
+        elif "telegram" in src:
+            source_counts["Telegram"] += 1
+        elif "radar" in src:
+            source_counts["BuyerRadar"] += 1
+        else:
+            source_counts["Web"] += 1
+
+    # Format active missions item summary
+    active_items = []
+    now = datetime.utcnow()
+    for m in all_missions:
+        m_opps = [ro for ro in all_rev_opps if ro.mission_id == m.id]
+        leads_res = await db.execute(select(Lead).where(Lead.mission_id == m.id))
+        m_leads = leads_res.scalars().all()
+        
+        hours_left = 0.0
+        if m.expires_at:
+            diff = (m.expires_at - now).total_seconds() / 3600.0
+            hours_left = max(0.0, round(diff, 1))
+        else:
+            hours_left = float(m.deadline_hours)
+
+        active_items.append({
+            "id": m.id,
+            "title": m.title,
+            "goal_amount": m.goal_amount,
+            "revenue_generated": m.revenue_generated,
+            "pipeline_value": m.pipeline_value,
+            "opportunities_count": len(m_opps),
+            "leads_count": len(m_leads),
+            "time_remaining_hours": hours_left,
+            "status": m.status,
+            "industry": m.industry,
+            "currency": m.currency or "AED",
+            "confidence_score": m.confidence_score or 85.0
+        })
+
+    hot_opps_count = sum(1 for ro in all_rev_opps if ro.priority == "HOT" or ro.urgency_score >= 88.0)
+    total_pipe = sum(m.pipeline_value for m in active_missions)
+    total_rev = sum(m.revenue_generated for m in all_missions)
+
+    return GlobalMissionsOverview(
+        total_active_missions=len(active_missions),
+        total_missions=len(all_missions),
+        total_opportunities=len(all_rev_opps),
+        hot_opportunities=hot_opps_count,
+        total_pipeline_value=total_pipe,
+        total_revenue_generated=total_rev,
+        source_breakdown=source_counts,
+        active_missions=active_items
+    )
 
 @router.post("/", response_model=MissionResponse)
 async def create_mission(payload: MissionCreate, db: AsyncSession = Depends(get_db)):
@@ -72,12 +176,34 @@ async def create_mission(payload: MissionCreate, db: AsyncSession = Depends(get_
     await db.refresh(mission)
     return mission
 
+@router.patch("/{mission_id}/status", response_model=MissionResponse)
+async def update_mission_status(mission_id: int, payload: MissionStatusUpdate, db: AsyncSession = Depends(get_db)):
+    mission = await db.get(Mission, mission_id)
+    if not mission:
+        raise HTTPException(status_code=404, detail="Mission not found")
+    
+    valid_statuses = ["ACTIVE", "PAUSED", "ARCHIVED", "COMPLETED", "PIVOTING", "CRITICAL"]
+    new_status = payload.status.upper()
+    if new_status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status: {payload.status}. Valid statuses: {valid_statuses}")
+    
+    mission.status = new_status
+    await db.commit()
+    await db.refresh(mission)
+    return mission
+
 @router.get("/{mission_id}", response_model=MissionResponse)
 async def get_mission(mission_id: int, db: AsyncSession = Depends(get_db)):
     mission = await db.get(Mission, mission_id)
     if not mission:
         raise HTTPException(status_code=404, detail="Mission not found")
     return mission
+
+@router.get("/{mission_id}/revenue-opportunities", response_model=List[RevenueOpportunityResponse])
+async def get_mission_revenue_opportunities(mission_id: int, db: AsyncSession = Depends(get_db)):
+    stmt = select(RevenueOpportunity).where(RevenueOpportunity.mission_id == mission_id).order_by(RevenueOpportunity.id.desc())
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 @router.get("/{mission_id}/dashboard", response_model=DashboardSummary)
 @router.get("/{mission_id}/summary", response_model=DashboardSummary)

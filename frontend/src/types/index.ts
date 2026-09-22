@@ -391,5 +391,46 @@ export interface RevenueEvaluationResult {
   };
 }
 
+export interface RevenueOpportunity {
+  id: number;
+  mission_id: number;
+  name: string;
+  company?: string;
+  industry: string;
+  source: string;
+  requirement: string;
+  estimated_value: number;
+  urgency_score: number;
+  conversion_score: number;
+  intent_score: number;
+  closing_probability: number;
+  priority: "HOT" | "QUALIFIED" | "WARM" | "COLD";
+  status: string;
+  created_at: string;
+}
 
+export interface GlobalActiveMissionItem {
+  id: number;
+  title: string;
+  goal_amount: number;
+  revenue_generated: number;
+  pipeline_value: number;
+  opportunities_count: number;
+  leads_count: number;
+  time_remaining_hours: number;
+  status: string;
+  industry: string;
+  currency: string;
+  confidence_score: number;
+}
 
+export interface GlobalMissionsOverview {
+  total_active_missions: number;
+  total_missions: number;
+  total_opportunities: number;
+  hot_opportunities: number;
+  total_pipeline_value: number;
+  total_revenue_generated: number;
+  source_breakdown: Record<string, number>;
+  active_missions: GlobalActiveMissionItem[];
+}

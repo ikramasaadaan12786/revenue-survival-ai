@@ -108,6 +108,9 @@ class RevenueOpportunity(Base):
     estimated_value = Column(Float, default=0.0)
     urgency_score = Column(Float, default=85.0)
     conversion_score = Column(Float, default=85.0)
+    intent_score = Column(Float, default=85.0)
+    closing_probability = Column(Float, default=0.85)
+    priority = Column(String(50), default="HOT")  # HOT, QUALIFIED, WARM, COLD
     status = Column(String(50), default="QUALIFIED")  # DISCOVERED, QUALIFIED, CONVERTED, CLOSED
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 

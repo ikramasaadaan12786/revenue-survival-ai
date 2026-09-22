@@ -28,6 +28,9 @@ class RevenueOpportunityBase(BaseModel):
     estimated_value: float = 0.0
     urgency_score: float = 85.0
     conversion_score: float = 85.0
+    intent_score: float = 85.0
+    closing_probability: float = 0.85
+    priority: str = "HOT"  # HOT, QUALIFIED, WARM, COLD
     status: str = "QUALIFIED"
 
 class RevenueOpportunityCreate(RevenueOpportunityBase):
@@ -39,6 +42,19 @@ class RevenueOpportunityResponse(RevenueOpportunityBase):
     created_at: datetime
     class Config:
         from_attributes = True
+
+class MissionStatusUpdate(BaseModel):
+    status: str  # ACTIVE, PAUSED, ARCHIVED, COMPLETED, PIVOTING
+
+class GlobalMissionsOverview(BaseModel):
+    total_active_missions: int
+    total_missions: int
+    total_opportunities: int
+    hot_opportunities: int
+    total_pipeline_value: float
+    total_revenue_generated: float
+    source_breakdown: Dict[str, int]
+    active_missions: List[Dict[str, Any]]
 
 
 # Opportunity Schemas
