@@ -18,6 +18,29 @@ class UserResponse(UserBase):
         from_attributes = True
 
 
+# Revenue Opportunity Schemas
+class RevenueOpportunityBase(BaseModel):
+    name: str
+    company: Optional[str] = None
+    industry: str
+    source: str = "Direct Search"
+    requirement: str
+    estimated_value: float = 0.0
+    urgency_score: float = 85.0
+    conversion_score: float = 85.0
+    status: str = "QUALIFIED"
+
+class RevenueOpportunityCreate(RevenueOpportunityBase):
+    mission_id: int
+
+class RevenueOpportunityResponse(RevenueOpportunityBase):
+    id: int
+    mission_id: int
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+
 # Opportunity Schemas
 class OpportunityBase(BaseModel):
     problem: str

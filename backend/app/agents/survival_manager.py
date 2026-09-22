@@ -172,14 +172,17 @@ class SurvivalManagerAgent(BaseAgent):
         try:
             if "Browser Research" in agent_name:
                 res = await self.browser_agent.execute_task(session, mission_id, {})
-                # Also trigger multi-connector signal acquisition
                 await data_acquisition_engine.scan_all_connectors(session, mission_id)
-                result_summary = res.get("summary", "Browser Research and Data Ingestion completed.")
-                mission.next_best_action = "Review discovered market signals and score high-value opportunities."
+                opp_res = await self.opp_agent.execute_task(session, mission_id, {})
+                result_summary = (
+                    f"Market Scan & Revenue Discovery complete: {opp_res.get('opportunities_count', 0)} qualified opportunities found, "
+                    f"{opp_res.get('leads_count', 0)} CRM leads created, {opp_res.get('pending_approvals', 0)} outreach drafts staged for human approval."
+                )
+                mission.next_best_action = "Review & approve staged outreach drafts in Safety Approval Queue to initiate prospect conversations."
             elif "Opportunity Hunter" in agent_name:
                 res = await self.opp_agent.execute_task(session, mission_id, {})
-                result_summary = res.get("summary", "Market research completed.")
-                mission.next_best_action = "Formulate high-converting commercial offer in Offer Studio."
+                result_summary = res.get("summary", "Revenue opportunities discovered and staged.")
+                mission.next_best_action = "Review and authorize pending outreach drafts in Safety Approval Queue."
             elif "Offer Creator" in agent_name:
                 res = await self.offer_agent.execute_task(session, mission_id, {})
                 result_summary = res.get("summary", "Offer crafted.")

@@ -52,6 +52,7 @@ class Mission(Base):
     daily_cycles = relationship("DailyCycleLog", back_populates="mission", cascade="all, delete-orphan")
     market_signals = relationship("MarketSignal", back_populates="mission", cascade="all, delete-orphan")
     seller_listings = relationship("SellerListing", back_populates="mission", cascade="all, delete-orphan")
+    revenue_opportunities = relationship("RevenueOpportunity", back_populates="mission", cascade="all, delete-orphan")
 
 
 class MarketSignal(Base):
@@ -92,6 +93,25 @@ class SellerListing(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     mission = relationship("Mission", back_populates="seller_listings")
+
+
+class RevenueOpportunity(Base):
+    __tablename__ = "revenue_opportunities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    company = Column(String(255), nullable=True)
+    industry = Column(String(100), nullable=False)
+    source = Column(String(100), default="Direct Search")
+    requirement = Column(Text, nullable=False)
+    estimated_value = Column(Float, default=0.0)
+    urgency_score = Column(Float, default=85.0)
+    conversion_score = Column(Float, default=85.0)
+    status = Column(String(50), default="QUALIFIED")  # DISCOVERED, QUALIFIED, CONVERTED, CLOSED
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    mission = relationship("Mission", back_populates="revenue_opportunities")
 
 
 class Opportunity(Base):

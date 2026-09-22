@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
 from app.core.database import get_db
-from app.models.entities import Mission, Opportunity, Lead, Communication, RevenueTracking, Task, Offer, RealEstateDeal
+from app.models.entities import Mission, Opportunity, RevenueOpportunity, Lead, Communication, RevenueTracking, Task, Offer, RealEstateDeal
 from app.schemas.schemas import MissionCreate, MissionResponse, DashboardSummary, TaskResponse
 from app.agents.survival_manager import SurvivalManagerAgent
 
@@ -95,6 +95,7 @@ async def get_mission_dashboard(mission_id: int, db: AsyncSession = Depends(get_
         hours_remaining = float(mission.deadline_hours)
 
     opp_count = (await db.execute(select(Opportunity).where(Opportunity.mission_id == mission_id))).scalars().all()
+    rev_opps = (await db.execute(select(RevenueOpportunity).where(RevenueOpportunity.mission_id == mission_id))).scalars().all()
     leads = (await db.execute(select(Lead).where(Lead.mission_id == mission_id))).scalars().all()
     comms = (await db.execute(select(Communication).where(Communication.mission_id == mission_id))).scalars().all()
     tasks = (await db.execute(select(Task).where(Task.mission_id == mission_id).order_by(Task.id.desc()).limit(10))).scalars().all()
@@ -126,7 +127,20 @@ async def get_mission_dashboard(mission_id: int, db: AsyncSession = Depends(get_
         else:
             crm_funnel_counts["NEW"] += 1
 
+    total_opps = max(len(opp_count), len(rev_opps), len(opp_count) + len(rev_opps) if not opp_count else len(opp_count))
+    lead_pipeline_val = sum(l.expected_value for l in leads)
+    if lead_pipeline_val > 0:
+        pipeline_val = lead_pipeline_val
+    elif rev_opps:
+        pipeline_val = sum(ro.estimated_value for ro in rev_opps)
+    else:
+        pipeline_val = mission.pipeline_value or 0.0
+
+    mission.pipeline_value = pipeline_val
+
     total_comm_potential = sum(l.commission_potential for l in leads) + sum(d.commission_amount for d in deals)
+    if total_comm_potential == 0 and pipeline_val > 0:
+        total_comm_potential = round(pipeline_val * 0.15, 2)
     mission.total_commission_potential = total_comm_potential
 
     return DashboardSummary(
@@ -134,12 +148,12 @@ async def get_mission_dashboard(mission_id: int, db: AsyncSession = Depends(get_
         hours_remaining=hours_remaining,
         target_amount=mission.goal_amount,
         revenue_achieved=mission.revenue_generated,
-        pipeline_expected=mission.pipeline_value,
+        pipeline_expected=pipeline_val,
         total_commission_potential=total_comm_potential,
         budget_spent=mission.spent,
         survival_status=mission.status,
         confidence_score=mission.confidence_score,
-        opportunities_count=len(opp_count),
+        opportunities_count=total_opps,
         leads_count=len(leads),
         messages_sent=sent_count,
         replies_count=replies_count,
