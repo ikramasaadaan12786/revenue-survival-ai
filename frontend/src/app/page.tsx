@@ -24,13 +24,43 @@ export default function Home() {
   const [isRunningStep, setIsRunningStep] = useState(false);
   const [isNewMissionOpen, setIsNewMissionOpen] = useState(false);
 
-  const fetchSummary = async (targetId = missionId) => {
+  const fetchSummary = async (targetId?: number) => {
     try {
       setLoading(true);
-      const data = await api.getMissionDashboard(targetId);
-      setSummary(data);
-      if (data.mission) {
-        setMissionId(data.mission.id);
+      // First fetch list of available missions
+      const allMissions = await api.getMissions().catch(() => []);
+      
+      let currentId = targetId || missionId;
+      if (allMissions && allMissions.length > 0) {
+        const found = targetId ? allMissions.find((m: any) => m.id === targetId) : allMissions[0];
+        currentId = found ? found.id : allMissions[0].id;
+        setMissionId(currentId);
+      } else {
+        // Automatically create initial mission if none exists yet
+        try {
+          const newMission = await api.createMission({
+            title: "Phase 5 Autonomous Revenue Survival: 50,000 AED Commission Sprint",
+            goal_amount: 50000,
+            currency: "AED",
+            deadline_hours: 72,
+            budget: 0,
+            industry: "Real Estate"
+          });
+          if (newMission && newMission.id) {
+            currentId = newMission.id;
+            setMissionId(currentId);
+          }
+        } catch (seedErr) {
+          console.warn("Could not auto-seed mission, trying direct dashboard fetch", seedErr);
+        }
+      }
+
+      const data = await api.getMissionDashboard(currentId).catch(() => null);
+      if (data) {
+        setSummary(data);
+        if (data.mission && data.mission.id) {
+          setMissionId(data.mission.id);
+        }
       }
     } catch (err) {
       console.error("Failed fetching mission dashboard", err);

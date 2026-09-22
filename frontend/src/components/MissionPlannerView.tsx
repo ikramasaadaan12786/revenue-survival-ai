@@ -182,7 +182,7 @@ export default function MissionPlannerView({ missionId, onRefreshSummary }: Prop
 
                 <div className="pt-2 border-t border-white/[0.05] space-y-1 text-[10px] font-mono">
                   <div className="text-amber-300">Target: {p.target_metric}</div>
-                  <div className="text-emerald-400 font-bold">Commission Milestone: {p.commission_milestone_aed.toLocaleString()} AED</div>
+                  <div className="text-emerald-400 font-bold">Commission Milestone: {Number(p.commission_milestone_aed || 0).toLocaleString()} AED</div>
                 </div>
               </div>
             ))}
@@ -197,17 +197,17 @@ export default function MissionPlannerView({ missionId, onRefreshSummary }: Prop
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5 uppercase">
                 <Compass className="w-4 h-4" />
-                Day {strategyDecision.day_number} Strategy Theme: {strategyDecision.strategy_theme}
+                Day {strategyDecision.day_number || 1} Strategy Theme: {strategyDecision.strategy_theme || "Strategic Momentum"}
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold">
-                {strategyDecision.confidence_rating}% Conviction
+                {strategyDecision.confidence_rating ?? 85}% Conviction
               </span>
             </div>
             <p className="text-xs text-slate-200 font-sans leading-relaxed">{strategyDecision.daily_focus}</p>
             <div className="pt-2 border-t border-white/[0.06] text-[11px] font-mono text-slate-300 space-y-1">
               <div className="text-amber-300 font-bold">Target KPI: {strategyDecision.target_kpi}</div>
               <ul className="text-[10px] text-slate-400 space-y-0.5 list-disc list-inside">
-                {strategyDecision.prescribed_actions.map((act, i) => (
+                {(strategyDecision.prescribed_actions || []).map((act, i) => (
                   <li key={i}>{act}</li>
                 ))}
               </ul>

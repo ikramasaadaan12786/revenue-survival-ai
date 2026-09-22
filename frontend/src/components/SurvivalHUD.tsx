@@ -47,8 +47,13 @@ export default function SurvivalHUD({
     );
   }
 
-  const { mission, hours_remaining, revenue_achieved, pipeline_expected, total_commission_potential, budget_spent, confidence_score } = summary;
-  const progressPct = Math.min(100, Math.round((revenue_achieved / mission.goal_amount) * 100));
+  const mission = summary.mission;
+  const goal_amount = Number(mission?.goal_amount || 0);
+  const revenue_achieved = Number(summary.revenue_achieved || 0);
+  const hours_remaining = Number(summary.hours_remaining ?? 72);
+  const total_commission_potential = Number(summary.total_commission_potential || 0);
+  const budget_spent = Number(summary.budget_spent || 0);
+  const progressPct = goal_amount > 0 ? Math.min(100, Math.round((revenue_achieved / goal_amount) * 100)) : 0;
 
   const handleRunDailyCycle = async () => {
     try {
@@ -97,7 +102,7 @@ export default function SurvivalHUD({
             <div className="px-3 border-r border-white/[0.08] last:border-none">
               <div className="text-[11px] font-mono text-slate-400 uppercase">Target Revenue</div>
               <div className="text-xl font-black text-cyan-400 font-mono">
-                {mission.goal_amount.toLocaleString()} <span className="text-xs text-slate-400 font-normal">{mission.currency}</span>
+                {goal_amount.toLocaleString()} <span className="text-xs text-slate-400 font-normal">{mission?.currency || "AED"}</span>
               </div>
             </div>
 
