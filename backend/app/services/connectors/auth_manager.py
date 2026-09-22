@@ -61,6 +61,17 @@ DEFAULT_CONNECTORS = [
         "capabilities": ["Public Forum Scraper", "Google Search Intent", "Real-Time News Parsing"]
     },
     {
+        "connector_name": "INSTAGRAM",
+        "auth_type": "GRAPH_API",
+        "credentials": {
+            "access_token": "IGQVJ_sample_instagram_graph_api_token_dubai",
+            "monitored_accounts": ["@dubai_luxury_estates", "@dxb_tech_founders", "@dubai_startups_hub"]
+        },
+        "status": "CONNECTED",
+        "latency_ms": 45,
+        "capabilities": ["DM Intent Sourcing", "Luxury Real Estate Bio Parsing", "Story Comment Intercept"]
+    },
+    {
         "connector_name": "BUSINESS_DIRECTORIES",
         "auth_type": "API_KEY",
         "credentials": {

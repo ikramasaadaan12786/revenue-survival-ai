@@ -124,13 +124,17 @@ export const api = {
   runDailyCycle: (missionId: number) =>
     fetcher<any>(`/scheduler/run-cycle/${missionId}`, { method: "POST" }),
 
-  // Connectors & Live Data Acquisition
+  // Connectors & Live Data Acquisition & UAE Buyer Radar Bridge
   getSignals: (missionId: number, source?: string) =>
     fetcher<{ total_signals: number; breakdown: Record<string, number>; signals: any[] }>(
       `/connectors/signals/${missionId}${source ? `?source=${source}` : ""}`
     ),
   scanAllConnectors: (missionId: number) =>
     fetcher<any>(`/connectors/scan-all/${missionId}`, { method: "POST" }),
+  syncBuyerRadarBridge: (missionId: number, source?: string) =>
+    fetcher<any>(`/connectors/bridge/sync/${missionId}${source ? `?source=${source}` : ""}`, { method: "POST" }),
+  getConnectorHealth: () =>
+    fetcher<any[]>("/connectors/bridge/health"),
   ingestSignal: (data: any) =>
     fetcher<any>("/connectors/ingest", { method: "POST", body: JSON.stringify(data) }),
 

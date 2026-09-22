@@ -172,16 +172,19 @@ class SurvivalManagerAgent(BaseAgent):
         try:
             if "Browser Research" in agent_name:
                 res = await self.browser_agent.execute_task(session, mission_id, {})
-                await data_acquisition_engine.scan_all_connectors(session, mission_id)
+                from app.services.connectors.uae_buyer_radar_bridge import uae_buyer_radar_bridge
+                await uae_buyer_radar_bridge.sync_mission_signals(session, mission_id)
                 opp_res = await self.opp_agent.execute_task(session, mission_id, {})
                 result_summary = (
-                    f"Market Scan & Revenue Discovery complete: {opp_res.get('opportunities_count', 0)} qualified opportunities found, "
+                    f"UAE Buyer Radar & Market Scan complete: {opp_res.get('opportunities_count', 0)} qualified opportunities found, "
                     f"{opp_res.get('leads_count', 0)} CRM leads created, {opp_res.get('pending_approvals', 0)} outreach drafts staged for human approval."
                 )
                 mission.next_best_action = "Review & approve staged outreach drafts in Safety Approval Queue to initiate prospect conversations."
             elif "Opportunity Hunter" in agent_name:
+                from app.services.connectors.uae_buyer_radar_bridge import uae_buyer_radar_bridge
+                await uae_buyer_radar_bridge.sync_mission_signals(session, mission_id)
                 res = await self.opp_agent.execute_task(session, mission_id, {})
-                result_summary = res.get("summary", "Revenue opportunities discovered and staged.")
+                result_summary = res.get("summary", "Revenue opportunities discovered and staged from UAE Buyer Radar.")
                 mission.next_best_action = "Review and authorize pending outreach drafts in Safety Approval Queue."
             elif "Offer Creator" in agent_name:
                 res = await self.offer_agent.execute_task(session, mission_id, {})

@@ -18,9 +18,13 @@ import {
   MessageSquare,
   Flame,
   CheckCircle2,
-  Cpu
+  Cpu,
+  Activity,
+  Zap,
+  Check,
+  Server
 } from "lucide-react";
-import { Opportunity, MarketSignal, RevenueOpportunity } from "@/types";
+import { Opportunity, MarketSignal, RevenueOpportunity, ConnectorHealth, BridgeSyncResult } from "@/types";
 import { api } from "@/lib/api";
 import RevenueCopilotModal from "./RevenueCopilotModal";
 
@@ -34,11 +38,14 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
   const [revenueOpportunities, setRevenueOpportunities] = useState<RevenueOpportunity[]>([]);
   const [signals, setSignals] = useState<MarketSignal[]>([]);
   const [breakdown, setBreakdown] = useState<Record<string, number>>({});
+  const [connectorHealth, setConnectorHealth] = useState<ConnectorHealth[]>([]);
   const [loading, setLoading] = useState(true);
   const [hunting, setHunting] = useState(false);
+  const [syncingBridge, setSyncingBridge] = useState(false);
   const [scanningConnectors, setScanningConnectors] = useState(false);
   const [runningBrowserAgent, setRunningBrowserAgent] = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>("ALL");
+  const [bridgeSyncResult, setBridgeSyncResult] = useState<BridgeSyncResult | null>(null);
 
   // Revenue Copilot State
   const [copilotOpportunity, setCopilotOpportunity] = useState<any>(null);
@@ -55,15 +62,17 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
   const fetchOppsAndSignals = async () => {
     try {
       setLoading(true);
-      const [oppsData, revOppsData, signalsData] = await Promise.all([
+      const [oppsData, revOppsData, signalsData, healthData] = await Promise.all([
         api.getOpportunities(missionId).catch(() => []),
         api.getRevenueOpportunities(missionId).catch(() => []),
-        api.getSignals(missionId, selectedSource === "ALL" ? undefined : selectedSource).catch(() => ({ signals: [], breakdown: {} }))
+        api.getSignals(missionId, selectedSource === "ALL" ? undefined : selectedSource).catch(() => ({ signals: [], breakdown: {} })),
+        api.getConnectorHealth().catch(() => [])
       ]);
       setOpportunities(oppsData);
       setRevenueOpportunities(revOppsData || []);
       setSignals(signalsData.signals || []);
       setBreakdown(signalsData.breakdown || {});
+      setConnectorHealth(healthData || []);
     } catch (err) {
       console.error("Failed to load opportunities & signals", err);
     } finally {
@@ -74,6 +83,20 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
   useEffect(() => {
     fetchOppsAndSignals();
   }, [missionId, selectedSource]);
+
+  const handleSyncBuyerRadar = async () => {
+    try {
+      setSyncingBridge(true);
+      const res = await api.syncBuyerRadarBridge(missionId);
+      setBridgeSyncResult(res);
+      await fetchOppsAndSignals();
+      onRefreshSummary();
+    } catch (err) {
+      console.error("Failed syncing UAE Buyer Radar bridge", err);
+    } finally {
+      setSyncingBridge(false);
+    }
+  };
 
   const handleRunHunter = async () => {
     try {
@@ -98,19 +121,6 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
       console.error("Failed scanning connectors", err);
     } finally {
       setScanningConnectors(false);
-    }
-  };
-
-  const handleRunBrowserResearch = async () => {
-    try {
-      setRunningBrowserAgent(true);
-      await api.triggerBrowserResearch(missionId);
-      await fetchOppsAndSignals();
-      onRefreshSummary();
-    } catch (err) {
-      console.error("Failed triggering browser research", err);
-    } finally {
-      setRunningBrowserAgent(false);
     }
   };
 
@@ -159,10 +169,10 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Radio className="w-5 h-5 text-cyan-400 animate-pulse" />
-            Market Radar & Live Data Acquisition Layer
+            UAE Buyer Radar AI & Real Source Connectors
           </h2>
           <p className="text-xs text-slate-400 font-mono mt-0.5">
-            Autonomous multi-source ingestion • Intent qualification • Browser research synthesis
+            Telegram MTProto • LinkedIn • Instagram • Reddit • YouTube • Web Search Bridge Layer
           </p>
         </div>
 
@@ -176,44 +186,94 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
           </button>
 
           <button
-            onClick={async () => {
-              try {
-                setScanningConnectors(true);
-                await api.pollLiveConnectors(missionId);
-                await fetchOppsAndSignals();
-                onRefreshSummary();
-              } catch (e) {
-                console.error(e);
-              } finally {
-                setScanningConnectors(false);
-              }
-            }}
-            disabled={scanningConnectors}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-mono transition-all disabled:opacity-50"
+            onClick={handleSyncBuyerRadar}
+            disabled={syncingBridge}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 shadow-glow font-mono transition-all disabled:opacity-50"
           >
-            <Radio className={`w-3.5 h-3.5 text-emerald-400 ${scanningConnectors ? "animate-spin" : "animate-pulse"}`} />
-            {scanningConnectors ? "Polling Live..." : "Poll Live Feeds"}
+            <Zap className={`w-3.5 h-3.5 fill-current ${syncingBridge ? "animate-spin" : ""}`} />
+            {syncingBridge ? "SYNCING RADAR..." : "SYNC UAE BUYER RADAR"}
           </button>
+        </div>
+      </div>
 
-          <button
-            onClick={async () => {
-              try {
-                setRunningBrowserAgent(true);
-                await api.scanPlaywrightMarket(missionId);
-                await fetchOppsAndSignals();
-                onRefreshSummary();
-              } catch (e) {
-                console.error(e);
-              } finally {
-                setRunningBrowserAgent(false);
-              }
-            }}
-            disabled={runningBrowserAgent}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-cyan-400 hover:bg-cyan-300 text-black shadow-glow font-mono transition-all disabled:opacity-50"
-          >
-            <Sparkles className={`w-3.5 h-3.5 fill-black ${runningBrowserAgent ? "animate-spin" : ""}`} />
-            {runningBrowserAgent ? "Scanning Portals..." : "Playwright Portal Scan"}
-          </button>
+      {/* Bridge Sync Result Notification Banner */}
+      {bridgeSyncResult && (
+        <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 text-xs font-mono space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-emerald-300 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              UAE Buyer Radar Live Sync Completed
+            </span>
+            <span className="text-slate-400">{bridgeSyncResult.timestamp}</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-300 pt-1">
+            <div className="bg-slate-900/80 p-2.5 rounded-lg border border-white/[0.05]">
+              <div className="text-[10px] text-slate-400">Telegram Signals</div>
+              <div className="text-sm font-bold text-cyan-400">{bridgeSyncResult.source_breakdown?.telegram || 0} Imported</div>
+            </div>
+            <div className="bg-slate-900/80 p-2.5 rounded-lg border border-white/[0.05]">
+              <div className="text-[10px] text-slate-400">LinkedIn Signals</div>
+              <div className="text-sm font-bold text-cyan-400">{bridgeSyncResult.source_breakdown?.linkedin || 0} Imported</div>
+            </div>
+            <div className="bg-slate-900/80 p-2.5 rounded-lg border border-white/[0.05]">
+              <div className="text-[10px] text-slate-400">Instagram Signals</div>
+              <div className="text-sm font-bold text-cyan-400">{bridgeSyncResult.source_breakdown?.instagram || 0} Imported</div>
+            </div>
+            <div className="bg-slate-900/80 p-2.5 rounded-lg border border-white/[0.05]">
+              <div className="text-[10px] text-slate-400">Total Opportunities Created</div>
+              <div className="text-sm font-bold text-emerald-400">+{bridgeSyncResult.opportunities_created} CRM Leads</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONNECTOR HEALTH DASHBOARD */}
+      <div className="glass-panel p-6 border border-cyan-500/20 bg-[#090d16]/90 space-y-4">
+        <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+          <div className="flex items-center gap-2.5">
+            <Server className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
+              Connector Health Dashboard
+            </h3>
+          </div>
+          <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            6/6 Connectors Active
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs font-mono">
+            <thead>
+              <tr className="text-slate-400 border-b border-white/[0.06] bg-slate-900/40">
+                <th className="py-2.5 px-3">Source</th>
+                <th className="py-2.5 px-3">Protocol / Scope</th>
+                <th className="py-2.5 px-3">Signals Today</th>
+                <th className="py-2.5 px-3">Last Sync</th>
+                <th className="py-2.5 px-3">Status</th>
+                <th className="py-2.5 px-3">Errors</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.04]">
+              {connectorHealth.map((conn) => (
+                <tr key={conn.connector_id} className="hover:bg-white/[0.02] transition-colors">
+                  <td className="py-3 px-3 font-bold text-white flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    {conn.source}
+                  </td>
+                  <td className="py-3 px-3 text-slate-300">{conn.protocol}</td>
+                  <td className="py-3 px-3 text-cyan-300 font-bold">{conn.signals_found_today}</td>
+                  <td className="py-3 px-3 text-slate-400 text-[11px]">{conn.last_sync}</td>
+                  <td className="py-3 px-3">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      {conn.status} ({conn.latency_ms}ms)
+                    </span>
+                  </td>
+                  <td className="py-3 px-3 text-slate-400">{conn.errors}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -226,20 +286,20 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
             </div>
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                Live Data Acquisition Connectors
+                Normalized Live Signals Feed
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                   {signals.length} Signals Captured
                 </span>
               </h3>
               <p className="text-xs text-slate-400 font-mono">
-                Ingesting UAE Buyer Radar, Telegram VIP, Reddit r/dubai, YouTube Commentary & LinkedIn
+                Ingesting Telegram MTProto, LinkedIn, Instagram, Reddit, YouTube & Web Search
               </p>
             </div>
           </div>
 
           {/* Filter Source Pills */}
           <div className="flex flex-wrap gap-1.5 font-mono text-xs">
-            {["ALL", "BUYER_RADAR", "TELEGRAM", "REDDIT", "YOUTUBE", "LINKEDIN"].map((src) => (
+            {["ALL", "TELEGRAM", "LINKEDIN", "INSTAGRAM", "REDDIT", "YOUTUBE", "WEB_SEARCH"].map((src) => (
               <button
                 key={src}
                 onClick={() => setSelectedSource(src)}

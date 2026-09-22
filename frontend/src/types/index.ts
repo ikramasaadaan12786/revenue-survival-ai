@@ -545,3 +545,35 @@ export interface GlobalMissionsOverview {
   source_breakdown: Record<string, number>;
   active_missions: GlobalActiveMissionItem[];
 }
+
+export interface ConnectorHealth {
+  connector_id: string;
+  source: string;
+  protocol: string;
+  target_channels: string;
+  last_sync: string;
+  signals_found_today: number;
+  status: "ONLINE" | "ACTIVE" | "ERROR" | "CONNECTING";
+  latency_ms: number;
+  errors: string;
+  reliability_score: string;
+}
+
+export interface BridgeSyncResult {
+  status: string;
+  mission_id: number;
+  timestamp: string;
+  total_signals_imported: number;
+  source_breakdown: {
+    telegram: number;
+    linkedin: number;
+    instagram: number;
+    reddit: number;
+    youtube: number;
+    web_search: number;
+  };
+  opportunities_created: number;
+  leads_created: number;
+  total_pipeline_value_added_aed: number;
+}
+

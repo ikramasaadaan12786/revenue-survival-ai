@@ -108,3 +108,27 @@ async def ingest_signal(payload: SignalIngestionRequest, db: AsyncSession = Depe
         "created_at": signal.created_at.isoformat() if signal.created_at else None
     }
 
+
+# UAE Buyer Radar Bridge Endpoints
+@router.post("/bridge/sync/{mission_id}")
+async def sync_buyer_radar_bridge(mission_id: int, source: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+    """
+    Triggers UAE Buyer Radar Bridge sync:
+    Pulls live signals across Telegram MTProto, LinkedIn, Instagram, Reddit, YouTube, Web Search,
+    normalizes them into RevenueSignals, classifies per mission industries, and creates RevenueOpportunity + CRM Leads.
+    """
+    from app.services.connectors.uae_buyer_radar_bridge import uae_buyer_radar_bridge
+    result = await uae_buyer_radar_bridge.sync_mission_signals(db, mission_id, filter_source=source)
+    return result
+
+
+@router.get("/bridge/health")
+async def get_connector_health_dashboard(db: AsyncSession = Depends(get_db)):
+    """
+    Returns live connector health telemetry for Telegram MTProto, LinkedIn, Instagram, Reddit, YouTube, Web Search:
+    Source, Last Sync, Signals Found Today, Status, Errors, Latency.
+    """
+    from app.services.connectors.uae_buyer_radar_bridge import uae_buyer_radar_bridge
+    health = await uae_buyer_radar_bridge.get_connector_health_dashboard(db)
+    return health
+
