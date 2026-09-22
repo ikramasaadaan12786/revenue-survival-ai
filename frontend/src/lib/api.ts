@@ -1,4 +1,4 @@
-import { RevenueEmpireData, EmployeeScorecard, MorningCEOReport, ScalingEngineData } from "@/types";
+import { RevenueEmpireData, EmployeeScorecard, MorningCEOReport, ScalingEngineData, EnterpriseNetworkData } from "@/types";
 
 const getApiBase = (): string => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -460,7 +460,30 @@ export const api = {
     fetcher<any>(`/scaling-engine/content-factory${missionId ? `?mission_id=${missionId}` : ""}`),
   getSalesAutomation: (missionId?: number) =>
     fetcher<any>(`/scaling-engine/sales-automation${missionId ? `?mission_id=${missionId}` : ""}`),
+
+  // Autonomous AI Enterprise Network v9
+  getEnterpriseNetworkOverview: () =>
+    fetcher<EnterpriseNetworkData>("/enterprise-network/overview"),
+  getEnterpriseCompanies: () =>
+    fetcher<any[]>("/enterprise-network/companies"),
+  createEnterpriseCompany: (data: any) =>
+    fetcher<any>("/enterprise-network/companies", { method: "POST", body: JSON.stringify(data) }),
+  getEnterpriseCompanyWorkspace: (companyId: number) =>
+    fetcher<any>(`/enterprise-network/companies/${companyId}`),
+  getEmployeeMarketplace: () =>
+    fetcher<any[]>("/enterprise-network/marketplace"),
+  assignAIEmployee: (companyId: number, data: { employee_catalog_id: string; custom_name?: string; custom_goals?: string[] }) =>
+    fetcher<any>(`/enterprise-network/companies/${companyId}/assign-employee`, { method: "POST", body: JSON.stringify(data) }),
+  consultClientAssistant: (companyId: number, data: { assistant_type: string; client_name: string; query_text: string; client_contact?: string; channel?: string }) =>
+    fetcher<any>(`/enterprise-network/companies/${companyId}/assistant-query`, { method: "POST", body: JSON.stringify(data) }),
+  getAvailableSubscriptionPlans: () =>
+    fetcher<any[]>("/enterprise-network/plans"),
+  getCompanyBillingStatus: (companyId: number) =>
+    fetcher<any>(`/enterprise-network/companies/${companyId}/billing`),
+  upgradeCompanyPlan: (companyId: number, newPlanName: string) =>
+    fetcher<any>(`/enterprise-network/companies/${companyId}/upgrade-plan`, { method: "POST", body: JSON.stringify({ new_plan_name: newPlanName }) }),
 };
+
 
 
 

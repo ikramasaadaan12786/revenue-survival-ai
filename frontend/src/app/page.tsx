@@ -18,6 +18,7 @@ import { RevenueControlRoom } from "@/components/RevenueControlRoom";
 import { GrowthCommandCenter } from "@/components/GrowthCommandCenter";
 import { AICompanyCommandCenter } from "@/components/AICompanyCommandCenter";
 import { AIScalingCommandCenter } from "@/components/AIScalingCommandCenter";
+import { AIEnterpriseNetworkCenter } from "@/components/AIEnterpriseNetworkCenter";
 import NewMissionModal from "@/components/NewMissionModal";
 import { DashboardSummary } from "@/types";
 import { api } from "@/lib/api";
@@ -160,6 +161,11 @@ export default function Home() {
                   onRefreshSummary={() => fetchSummary(missionId)}
                 />
               </div>
+            )}
+
+            {/* Autonomous AI Enterprise Network v9 */}
+            {activeTab === "enterprise-network" && (
+              <AIEnterpriseNetworkCenter />
             )}
 
             {/* Autonomous AI Business Scaling Engine v8 */}

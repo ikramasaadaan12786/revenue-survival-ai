@@ -568,6 +568,85 @@ class BrandContentPipeline(Base):
     mission = relationship("Mission")
 
 
+class EnterpriseCompany(Base):
+    __tablename__ = "enterprise_companies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    slug = Column(String(100), unique=True, index=True)
+    industry = Column(String(100), default="AI Automation")
+    country = Column(String(100), default="United Arab Emirates")
+    currency = Column(String(10), default="AED")
+    tier_plan = Column(String(50), default="PROFESSIONAL")  # STARTER, PROFESSIONAL, BUSINESS, ENTERPRISE
+    status = Column(String(50), default="ACTIVE")
+    settings = Column(JSON, default=dict)
+    business_metrics = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    ai_employees = relationship("CompanyAIEmployeeAssignment", back_populates="company", cascade="all, delete-orphan")
+    assistant_sessions = relationship("ClientFacingAssistantSession", back_populates="company", cascade="all, delete-orphan")
+    subscriptions = relationship("EnterpriseSubscriptionBilling", back_populates="company", cascade="all, delete-orphan")
+
+
+class CompanyAIEmployeeAssignment(Base):
+    __tablename__ = "company_ai_employee_assignments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("enterprise_companies.id"), nullable=False)
+    employee_catalog_id = Column(String(100), nullable=False)
+    name = Column(String(255), nullable=False)
+    role = Column(String(100), nullable=False)
+    department = Column(String(100), nullable=False)
+    skills = Column(JSON, default=list)
+    custom_goals = Column(JSON, default=list)
+    assigned_tasks = Column(JSON, default=list)
+    status = Column(String(50), default="ACTIVE")  # ACTIVE, IDLE, PAUSED
+    performance_score = Column(Float, default=95.0)
+    monthly_fee_aed = Column(Float, default=2500.0)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    company = relationship("EnterpriseCompany", back_populates="ai_employees")
+
+
+class ClientFacingAssistantSession(Base):
+    __tablename__ = "client_facing_assistant_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("enterprise_companies.id"), nullable=False)
+    assistant_type = Column(String(50), default="SALES")  # SALES, SUPPORT, PROPERTY, CONSULTANT
+    client_name = Column(String(255), nullable=False)
+    client_contact = Column(String(255), nullable=True)
+    channel = Column(String(50), default="WhatsApp")
+    query = Column(Text, nullable=False)
+    requirements_extracted = Column(JSON, default=dict)
+    ai_recommendations = Column(JSON, default=list)
+    report_summary = Column(Text, nullable=True)
+    status = Column(String(50), default="RESOLVED")  # RESOLVED, ESCALATED, IN_PROGRESS
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    company = relationship("EnterpriseCompany", back_populates="assistant_sessions")
+
+
+class EnterpriseSubscriptionBilling(Base):
+    __tablename__ = "enterprise_subscription_billings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("enterprise_companies.id"), nullable=False)
+    plan_name = Column(String(50), default="PROFESSIONAL")  # STARTER, PROFESSIONAL, BUSINESS, ENTERPRISE
+    monthly_price_aed = Column(Float, default=4999.0)
+    billing_cycle = Column(String(50), default="MONTHLY")
+    ai_employee_limit = Column(Integer, default=5)
+    ai_employees_active = Column(Integer, default=3)
+    api_call_quota = Column(Integer, default=50000)
+    api_calls_used = Column(Integer, default=1240)
+    status = Column(String(50), default="ACTIVE")  # ACTIVE, UPGRADED, PAST_DUE
+    renews_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    company = relationship("EnterpriseCompany", back_populates="subscriptions")
+
+
+
 
 
 

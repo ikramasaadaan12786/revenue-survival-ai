@@ -1187,6 +1187,68 @@ export interface ScalingEngineData {
   last_evaluated_at: string;
 }
 
+export interface EnterpriseCompanyOverview {
+  id: number;
+  name: string;
+  slug: string;
+  industry: string;
+  country: string;
+  currency: string;
+  tier_plan: string;
+  status: string;
+  active_ai_employees_count: number;
+  business_metrics: {
+    monthly_revenue_aed: number;
+    pipeline_value_aed: number;
+    active_clients_count: number;
+    efficiency_score: number;
+  };
+  created_at: string;
+}
+
+export interface AIEmployeeCatalogItem {
+  id: string;
+  name: string;
+  role: string;
+  department: string;
+  avatar_icon: string;
+  skills: string[];
+  tasks: string[];
+  performance_score: number;
+  monthly_fee_aed: number;
+  monthly_value_delivered_aed: number;
+  roi_multiplier: number;
+  availability: string;
+}
+
+export interface EnterpriseNetworkData {
+  network_status: string;
+  total_companies_count: number;
+  total_ai_workers_deployed: number;
+  total_mrr_aed: number;
+  total_arr_aed: number;
+  total_client_interactions_processed: number;
+  companies: EnterpriseCompanyOverview[];
+  marketplace_catalog: AIEmployeeCatalogItem[];
+  available_plans: {
+    plan_name: string;
+    monthly_price_aed: number;
+    ai_employee_limit: number;
+    api_call_quota: number;
+    included_features: string[];
+    target_business_size: string;
+  }[];
+  plan_distribution: Record<string, number>;
+  admin_system_health: {
+    tenant_isolation_status: string;
+    memory_leak_check: string;
+    webhook_uptime_pct: number;
+    api_latency_ms: number;
+  };
+  last_synced_at: string;
+}
+
+
 
 
 

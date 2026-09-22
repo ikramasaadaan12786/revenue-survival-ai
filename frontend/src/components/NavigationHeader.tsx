@@ -22,7 +22,8 @@ import {
   Cpu,
   TrendingUp,
   Crown,
-  Rocket
+  Rocket,
+  Network
 } from "lucide-react";
 import { DashboardSummary } from "@/types";
 
@@ -86,6 +87,7 @@ export default function NavigationHeader({
 
   const navItems = [
     { id: "command", label: "Command HUD", icon: Flame },
+    { id: "enterprise-network", label: "Enterprise Network v9", icon: Network, special: true },
     { id: "scaling-engine", label: "Scaling Engine v8", icon: Rocket, special: true },
     { id: "revenue-empire", label: "Revenue Empire v7", icon: Crown, special: true },
     { id: "growth-loop", label: "Growth Loop v6", icon: TrendingUp, special: true },
