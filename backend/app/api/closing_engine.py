@@ -338,3 +338,66 @@ async def run_full_closing_cycle(mission_id: int, db: AsyncSession = Depends(get
         "daily_plan": plan
     }
 
+
+# 6. Phase 13 Revenue Sprint & Priority Queue Endpoints
+
+@router.get("/priority-queue/{mission_id}")
+async def get_priority_approval_queue_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Returns Top 5 high-impact leads to contact first with expected revenue, closing probability, and recommended action.
+    """
+    from app.services.closing_engine.revenue_sprint_service import revenue_sprint_service
+    queue = await revenue_sprint_service.get_priority_approval_queue(db, mission_id)
+    return queue
+
+
+@router.get("/deal-probabilities/{mission_id}")
+async def get_deal_probabilities_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Calculates Estimated Value, Closing Probability %, and Weighted Revenue across all mission leads.
+    """
+    from app.services.closing_engine.revenue_sprint_service import revenue_sprint_service
+    result = await revenue_sprint_service.get_deal_probabilities(db, mission_id)
+    return result
+
+
+@router.get("/revenue-sprint/{mission_id}")
+async def get_revenue_sprint_mode_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Revenue Sprint Mode: Identifies the fastest closing opportunity, fastest offer, and fastest channel to hit target.
+    """
+    from app.services.closing_engine.revenue_sprint_service import revenue_sprint_service
+    result = await revenue_sprint_service.calculate_revenue_sprint(db, mission_id)
+    return result
+
+
+@router.post("/re-evaluate-leads/{mission_id}")
+async def re_evaluate_leads_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Runs strict 5-dimension validation (Intent, Budget, DM, Timeline, Clarity) across all leads, re-classifying HOT leads.
+    """
+    from app.services.closing_engine.deal_qualifier import deal_qualification_engine
+    leads_res = await db.execute(select(Lead).where(Lead.mission_id == mission_id))
+    leads = leads_res.scalars().all()
+
+    upgraded = []
+    for l in leads:
+        eval_res = await deal_qualification_engine.qualify_and_upgrade_lead(db, l.id)
+        if eval_res:
+            upgraded.append({
+                "lead_id": l.id,
+                "name": l.name,
+                "category": eval_res["category"],
+                "qualification_score": eval_res["qualification_score"],
+                "closing_probability": eval_res["closing_probability"],
+                "weighted_revenue_aed": eval_res["weighted_revenue_aed"]
+            })
+
+    return {
+        "status": "success",
+        "mission_id": mission_id,
+        "total_leads_re_evaluated": len(leads),
+        "results": upgraded
+    }
+
+

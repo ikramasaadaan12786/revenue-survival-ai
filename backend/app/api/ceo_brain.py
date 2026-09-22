@@ -107,3 +107,18 @@ async def get_morning_ceo_briefing(mission_id: int, db: AsyncSession = Depends(g
     """
     briefing = await weekly_reporter.generate_morning_ceo_briefing(db, mission_id)
     return briefing
+
+
+@router.get("/target-achievement-plan/{mission_id}")
+async def get_target_achievement_plan(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    CEO Brain: Calculates how to achieve mission revenue target in remaining hours:
+    - Calls needed
+    - Messages needed
+    - Offers needed
+    - Expected conversion rate
+    """
+    from app.services.ceo_brain.target_achievement_engine import target_achievement_engine
+    plan = await target_achievement_engine.calculate_target_achievement_plan(db, mission_id)
+    return plan
+

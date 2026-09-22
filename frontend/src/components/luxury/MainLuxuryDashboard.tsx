@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { DashboardHeroBanner } from './DashboardHeroBanner';
 import { KPICardsGrid } from './KPICardsGrid';
+import { MissionWarRoom } from './MissionWarRoom';
 import { AIGlobe } from './AIGlobe';
 import { AIDepartmentsGrid } from './AIDepartmentsGrid';
 import { RevenueGrowthChart } from './RevenueGrowthChart';
@@ -35,7 +36,7 @@ interface MainLuxuryDashboardProps {
 export const MainLuxuryDashboard: React.FC<MainLuxuryDashboardProps> = ({
   onNavigateTab,
   onRunOperatingCycle,
-  activeMissionId,
+  activeMissionId = 1006,
   metrics,
   missions = [],
   departments = [],
@@ -55,6 +56,8 @@ export const MainLuxuryDashboard: React.FC<MainLuxuryDashboardProps> = ({
     }
     setIsRunningCycle(false);
   };
+
+  const activeMission = missions.find((m) => m.id === activeMissionId) || missions[0];
 
   return (
     <div className="space-y-8 w-full max-w-[1640px] mx-auto">
@@ -86,7 +89,18 @@ export const MainLuxuryDashboard: React.FC<MainLuxuryDashboardProps> = ({
         <KPICardsGrid metrics={metrics} />
       </section>
 
-      {/* 3. Middle Row: 3D Holographic Globe & Real Opportunity Feed + AI Departments 3x3 Matrix */}
+      {/* 3. Mission War Room Section (Phase 13 Closing Optimization) */}
+      <section aria-label="Mission War Room">
+        <MissionWarRoom
+          missionId={activeMission?.id || activeMissionId}
+          missionTitle={activeMission?.title || 'Dubai AI Revenue Sprint — 18 Hour Challenge'}
+          targetRevenue={activeMission?.goal_amount || 2500}
+          currentRevenue={metrics?.totalRevenue || 0}
+          onNavigateTab={onNavigateTab}
+        />
+      </section>
+
+      {/* 4. Middle Row: 3D Holographic Globe & Real Opportunity Feed + AI Departments 3x3 Matrix */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         {/* Left: 3D Globe with Dubai Sky Atmosphere & Real Opportunity Feed */}
         <div className="lg:col-span-5 flex">
