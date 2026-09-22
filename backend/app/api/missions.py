@@ -20,6 +20,32 @@ async def list_missions(db: AsyncSession = Depends(get_db)):
 @router.post("/", response_model=MissionResponse)
 async def create_mission(payload: MissionCreate, db: AsyncSession = Depends(get_db)):
     expires_at = datetime.utcnow() + timedelta(hours=payload.deadline_hours)
+
+    all_default_industries = [
+        "Dubai Real Estate & Advisory",
+        "Digital Services & Consulting",
+        "AI Agents & Automation",
+        "Custom Software Development",
+        "SaaS Products",
+        "Website Development",
+        "Mobile Applications",
+        "E-Commerce & High Ticket Sales",
+        "Lead Generation Services",
+        "Marketing & Growth Services"
+    ]
+
+    selected_industries = (
+        payload.industries if (payload.industries and len(payload.industries) > 0)
+        else ([payload.industry] if payload.industry and payload.industry != "All Industries" else all_default_industries)
+    )
+
+    if len(selected_industries) == len(all_default_industries):
+        industry_str = "All Industries"
+    elif len(selected_industries) <= 2:
+        industry_str = ", ".join(selected_industries)
+    else:
+        industry_str = f"{selected_industries[0]}, {selected_industries[1]} (+{len(selected_industries) - 2} more)"
+
     mission = Mission(
         title=payload.title,
         goal_amount=payload.goal_amount,
@@ -30,7 +56,8 @@ async def create_mission(payload: MissionCreate, db: AsyncSession = Depends(get_
         revenue_generated=0.0,
         pipeline_value=0.0,
         total_commission_potential=0.0,
-        industry=payload.industry,
+        industry=industry_str,
+        industries=selected_industries,
         status="ACTIVE",
         current_day=1,
         total_days=max(1, payload.deadline_hours // 24),

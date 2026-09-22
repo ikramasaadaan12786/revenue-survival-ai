@@ -127,12 +127,22 @@ class SurvivalManagerAgent(BaseAgent):
         # Seed Long Term Memory if empty
         await long_term_memory_service.seed_default_memories_if_empty(session)
 
+        # Multi-industry strategy analysis
+        ind_list = getattr(mission, "industries", None) or []
+        if not ind_list and mission.industry:
+            ind_list = [i.strip() for i in mission.industry.split(",") if i.strip()]
+        
+        industry_summary = ", ".join(ind_list[:3]) if ind_list else "Cross-Sector"
+        if len(ind_list) > 3:
+            industry_summary += f" (+{len(ind_list) - 3} other niches)"
+
         mission.ai_strategy = (
-            f"Zero-budget tactical execution targeting {mission.goal_amount} {mission.currency} in {mission.deadline_hours}h. "
-            f"Strategy combines distress deal intelligence packaging with direct-response Telegram/WhatsApp conversion sprints."
+            f"Autonomous multi-industry execution targeting {mission.goal_amount} {mission.currency} in {mission.deadline_hours}h. "
+            f"Simultaneously monitoring {len(ind_list) if ind_list else 'all 10'} selected sectors ({industry_summary}) "
+            f"to synthesize high-margin cash offers, scrape distress opportunities, and route high-intent leads into the 8-stage CRM."
         )
-        mission.next_best_action = "Execute Day 1: Run Browser Research Agent to ingest high-intent market signals."
-        mission.confidence_score = 88.5
+        mission.next_best_action = f"Execute Day 1: Run Multi-Source Ingestion across all {len(ind_list) if ind_list else 'selected'} industries."
+        mission.confidence_score = 91.5
         mission.status = "ACTIVE"
         
         await session.commit()

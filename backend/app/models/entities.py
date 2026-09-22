@@ -29,7 +29,8 @@ class Mission(Base):
     revenue_generated = Column(Float, default=0.0)
     pipeline_value = Column(Float, default=0.0)
     total_commission_potential = Column(Float, default=0.0)
-    industry = Column(String(100), default="Real Estate & Digital Services")
+    industry = Column(String(255), default="All Industries")
+    industries = Column(JSON, default=list)
     status = Column(String(50), default="ACTIVE")  # ACTIVE, PIVOTING, CRITICAL, COMPLETED, PAUSED
     current_day = Column(Integer, default=1)
     total_days = Column(Integer, default=3)

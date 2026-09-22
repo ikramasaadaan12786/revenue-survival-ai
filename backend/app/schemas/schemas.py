@@ -256,7 +256,8 @@ class MissionBase(BaseModel):
     currency: str = "AED"
     deadline_hours: int = 72
     budget: float = 0.0
-    industry: str = "Real Estate & Digital Services"
+    industry: Optional[str] = "All Industries"
+    industries: Optional[List[str]] = Field(default_factory=list)
 
 class MissionCreate(MissionBase):
     user_id: Optional[int] = None

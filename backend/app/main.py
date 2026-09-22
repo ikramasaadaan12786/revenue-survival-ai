@@ -49,6 +49,11 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE communications ADD COLUMN read_at DATETIME"))
         except Exception:
             pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE missions ADD COLUMN industries JSON"))
+        except Exception:
+            pass
     yield
 
 app = FastAPI(

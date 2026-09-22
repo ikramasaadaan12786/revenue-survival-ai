@@ -11,6 +11,7 @@ export interface Mission {
   pipeline_value: number;
   total_commission_potential: number;
   industry: string;
+  industries?: string[];
   status: "ACTIVE" | "PIVOTING" | "CRITICAL" | "COMPLETED" | "PAUSED";
   current_day: number;
   total_days: number;
