@@ -612,7 +612,7 @@ export const AICompanyCommandCenter: React.FC<AICompanyCommandCenterProps> = ({ 
 
                 <div className="text-[11px] bg-[#0B101D] p-2 rounded-lg border border-white/[0.04]">
                   <span className="text-[9px] text-[#8C9BAE] uppercase">Revenue Attributed: </span>
-                  <strong className="text-emerald-400 font-bold font-serif">AED {sc.revenue_attributed_aed.toLocaleString()}</strong>
+                  <strong className="text-emerald-400 font-bold font-serif">AED {(sc.revenue_attributed_aed || 0).toLocaleString()}</strong>
                 </div>
 
                 <div className="text-[11px] text-[#CBD5E1]">

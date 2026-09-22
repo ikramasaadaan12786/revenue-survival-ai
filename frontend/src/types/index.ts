@@ -979,16 +979,32 @@ export interface GrowthCommandCenterStats {
   }[];
 }
 
+export interface DepartmentSummary {
+  name: string;
+  department_type?: string;
+  status: string;
+  active_tasks_count?: number;
+  workload_level?: string;
+  revenue_attributed_aed?: number;
+  agents_count?: number;
+  metrics?: Record<string, any>;
+}
+
 export interface EmployeeScorecard {
-  agent_role: string;
+  employee_id?: string;
+  agent_role?: string;
+  role?: string;
   department: string;
-  tasks_completed_today: number;
-  revenue_attributed_aed: number;
-  success_rate_pct: number;
-  efficiency_score: number;
-  grade: string;
-  strengths: string[];
-  focus_area: string;
+  tasks_completed_today?: number;
+  tasks_completed?: number;
+  revenue_attributed_aed?: number;
+  revenue_generated_aed?: number;
+  success_rate_pct?: number;
+  efficiency_score?: number;
+  workload_score?: number;
+  status?: string;
+  grade?: string;
+  strengths?: string[];
 }
 
 export interface MorningCEOReport {

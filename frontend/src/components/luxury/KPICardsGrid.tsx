@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Coins, BarChart3, Users2, UserCheck, Target, TrendingUp } from 'lucide-react';
+import { Coins, BarChart3, Users2, UserCheck, Target } from 'lucide-react';
 
 interface KPICardsGridProps {
   metrics?: {
@@ -11,24 +11,35 @@ interface KPICardsGridProps {
     aiEmployeesTotal?: number;
     activeClients?: number;
     growthScore?: number;
+    revenueGrowthRate?: number;
+    pipelineGrowthRate?: number;
   };
 }
 
 export const KPICardsGrid: React.FC<KPICardsGridProps> = ({ metrics }) => {
+  const formatAED = (num?: number) => {
+    if (num === undefined || num === null) return 'AED 0';
+    return `AED ${Number(num).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+  };
+
   const cards = [
     {
       title: 'Total Revenue',
-      value: metrics?.totalRevenue ? `AED ${metrics.totalRevenue.toLocaleString()}` : 'AED 482,500',
-      trend: '↑ +12.5% this month',
-      trendPositive: true,
+      value: formatAED(metrics?.totalRevenue),
+      trend: metrics?.revenueGrowthRate !== undefined && metrics.revenueGrowthRate !== null
+        ? `${metrics.revenueGrowthRate >= 0 ? '↑ +' : '↓ '}${metrics.revenueGrowthRate.toFixed(1)}% pace`
+        : 'Live Verified (DB)',
+      trendPositive: (metrics?.revenueGrowthRate ?? 0) >= 0,
       icon: Coins,
       iconColor: 'text-[#D4AF37]',
       glowColor: 'rgba(212,175,55,0.15)',
     },
     {
       title: 'Active Pipeline',
-      value: metrics?.pipelineValue ? `AED ${metrics.pipelineValue.toLocaleString()}` : 'AED 1,240,000',
-      trend: '↑ +18.2% this month',
+      value: formatAED(metrics?.pipelineValue),
+      trend: metrics?.pipelineGrowthRate !== undefined && metrics.pipelineGrowthRate !== null
+        ? `${metrics.pipelineGrowthRate >= 0 ? '↑ +' : '↓ '}${metrics.pipelineGrowthRate.toFixed(1)}% pipeline`
+        : 'Active Deals (CRM)',
       trendPositive: true,
       icon: BarChart3,
       iconColor: 'text-amber-400',
@@ -36,9 +47,11 @@ export const KPICardsGrid: React.FC<KPICardsGridProps> = ({ metrics }) => {
     },
     {
       title: 'AI Employees',
-      value: metrics?.aiEmployeesTotal ? `${metrics.aiEmployeesOnline || metrics.aiEmployeesTotal} / ${metrics.aiEmployeesTotal}` : '42 / 42',
-      trend: '● 100% Online',
-      trendPositive: true,
+      value: metrics?.aiEmployeesTotal !== undefined && metrics.aiEmployeesTotal !== null
+        ? `${metrics.aiEmployeesOnline ?? metrics.aiEmployeesTotal} / ${metrics.aiEmployeesTotal}`
+        : '0 / 0',
+      trend: (metrics?.aiEmployeesTotal ?? 0) > 0 ? '● Active Swarm' : '○ Standby Pool',
+      trendPositive: (metrics?.aiEmployeesTotal ?? 0) > 0,
       isStatus: true,
       icon: Users2,
       iconColor: 'text-cyan-400',
@@ -46,18 +59,22 @@ export const KPICardsGrid: React.FC<KPICardsGridProps> = ({ metrics }) => {
     },
     {
       title: 'Active Clients',
-      value: metrics?.activeClients ? `${metrics.activeClients}` : '28',
-      trend: '↑ +4 new this month',
-      trendPositive: true,
+      value: metrics?.activeClients !== undefined && metrics.activeClients !== null
+        ? `${metrics.activeClients}`
+        : '0',
+      trend: (metrics?.activeClients ?? 0) > 0 ? `${metrics?.activeClients} Retainer Accounts` : 'No Clients Onboarded',
+      trendPositive: (metrics?.activeClients ?? 0) > 0,
       icon: UserCheck,
       iconColor: 'text-emerald-400',
       glowColor: 'rgba(52,211,153,0.15)',
     },
     {
       title: 'Growth Score',
-      value: metrics?.growthScore ? `${metrics.growthScore} / 100` : '92.4 / 100',
-      trend: '↑ +6.8% this week',
-      trendPositive: true,
+      value: metrics?.growthScore !== undefined && metrics.growthScore !== null
+        ? `${metrics.growthScore} / 100`
+        : '0 / 100',
+      trend: metrics?.growthScore !== undefined && metrics.growthScore > 0 ? 'Growth Loop Synced' : 'No Data Available',
+      trendPositive: (metrics?.growthScore ?? 0) > 50,
       icon: Target,
       iconColor: 'text-[#F3E5AB]',
       glowColor: 'rgba(243,229,171,0.15)',
@@ -95,12 +112,12 @@ export const KPICardsGrid: React.FC<KPICardsGridProps> = ({ metrics }) => {
 
               <div className="mt-1 flex items-center gap-1.5 text-[10px] font-semibold">
                 {card.isStatus ? (
-                  <span className="text-emerald-400 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className={`${card.trendPositive ? 'text-emerald-400' : 'text-[#8C9BAE]'} flex items-center gap-1`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${card.trendPositive ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
                     {card.trend}
                   </span>
                 ) : (
-                  <span className="text-emerald-400">
+                  <span className={card.trendPositive ? 'text-emerald-400' : 'text-[#8C9BAE]'}>
                     {card.trend}
                   </span>
                 )}
