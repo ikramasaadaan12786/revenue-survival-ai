@@ -815,6 +815,122 @@ export interface CEOBriefing {
   recommended_strategy: string;
 }
 
+export interface ControlRoomTelemetry {
+  total_active_missions: number;
+  total_missions_count: number;
+  current_mission: {
+    id: number | null;
+    title: string;
+    goal_amount: number;
+    revenue_generated: number;
+    currency: string;
+    status: string;
+  } | null;
+  total_revenue_target_aed: number;
+  total_revenue_achieved_aed: number;
+  total_active_pipeline_aed: number;
+  total_leads_in_pipeline: number;
+  pending_approvals_count: number;
+  best_performing_industry: string;
+  best_performing_source: string;
+  best_performing_offer: string;
+  hunter_fleet: HunterFleetItem[];
+  timestamp: string;
+}
+
+export interface HunterFleetItem {
+  source_key: string;
+  display_name: string;
+  efficiency_tier: string;
+  signals_discovered: number;
+  deals_won: number;
+  revenue_generated_aed: number;
+  priority_level: string;
+  recommended_action: string;
+  status: string;
+}
+
+export interface MissionBlueprint {
+  mission_name: string;
+  goal_amount: number;
+  currency: string;
+  deadline_hours: number;
+  selected_industries: string[];
+  selected_sources: string[];
+  strategy_summary: string;
+  creation_rationale: string;
+  confidence_score: number;
+  expected_revenue_aed: number;
+  estimated_leads_needed: number;
+  generated_at: string;
+}
+
+export interface TieredOfferPackage {
+  tier: "STARTER" | "GROWTH" | "ENTERPRISE";
+  package_name: string;
+  price_aed: number;
+  delivery_days: number;
+  deliverables: string[];
+  expected_roi: string;
+  pitch: string;
+}
+
+export interface TieredOfferMatrix {
+  industry: string;
+  lead_requirement: string;
+  tiers: {
+    starter: TieredOfferPackage;
+    growth: TieredOfferPackage;
+    enterprise: TieredOfferPackage;
+  };
+}
+
+export interface OperatorActionItem {
+  id: number;
+  type: "OPERATOR_ACTION";
+  action_type: string;
+  title: string;
+  description: string;
+  confidence_score: number;
+  revenue_impact_aed: number;
+  created_at: string;
+  status: string;
+  payload: Record<string, any>;
+}
+
+export interface OperatorCommunicationItem {
+  id: number;
+  type: "OUTREACH_COMMUNICATION";
+  channel: string;
+  message_type: string;
+  subject: string;
+  body: string;
+  lead_id: number;
+  created_at: string;
+  status: string;
+}
+
+export interface PendingApprovalQueue {
+  total_pending_count: number;
+  pending_operator_actions: OperatorActionItem[];
+  pending_communications: OperatorCommunicationItem[];
+}
+
+export interface BusinessGrowthMemoryItem {
+  id: number;
+  mission_id?: number;
+  cycle_type: string;
+  insight_summary: string;
+  best_industries: string[];
+  best_offers: string[];
+  best_sources: string[];
+  winning_strategies: string[];
+  revenue_generated_aed: number;
+  efficiency_gain_pct: number;
+  created_at: string;
+}
+
+
 
 
 

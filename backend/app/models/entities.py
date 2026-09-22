@@ -436,4 +436,42 @@ class CEODecisionMemory(Base):
     mission = relationship("Mission")
 
 
+class BusinessGrowthMemory(Base):
+    __tablename__ = "business_growth_memories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
+    cycle_type = Column(String(100), default="AUTONOMOUS_CYCLE")  # AUTONOMOUS_CYCLE, PIVOT, SCALING, MARKET_SHIFT, OFFER_EVOLUTION
+    insight_summary = Column(Text, nullable=False)
+    best_industries = Column(JSON, default=list)
+    best_offers = Column(JSON, default=list)
+    best_sources = Column(JSON, default=list)
+    winning_strategies = Column(JSON, default=list)
+    revenue_generated_aed = Column(Float, default=0.0)
+    efficiency_gain_pct = Column(Float, default=0.0)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    mission = relationship("Mission")
+
+
+class OperatorActionLog(Base):
+    __tablename__ = "operator_action_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
+    action_type = Column(String(100), nullable=False)  # CREATE_MISSION, OPTIMIZE_OFFER, SCALE_CHANNEL, PIVOT_INDUSTRY, DISPATCH_LEAD_HUNTER, STAGE_OUTREACH
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    status = Column(String(50), default="PENDING_APPROVAL")  # PENDING_APPROVAL, APPROVED, EXECUTED, REJECTED
+    action_payload = Column(JSON, default=dict)
+    revenue_impact_aed = Column(Float, default=0.0)
+    confidence_score = Column(Float, default=90.0)
+    executed_by = Column(String(100), default="AUTONOMOUS_OPERATOR")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    executed_at = Column(DateTime, nullable=True)
+
+    mission = relationship("Mission")
+
+
+
 

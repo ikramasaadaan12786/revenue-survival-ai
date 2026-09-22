@@ -24,6 +24,7 @@ from app.api import (
     closing_engine,
     learning,
     ceo_brain,
+    business_operator,
 )
 
 @asynccontextmanager
@@ -166,6 +167,7 @@ app.include_router(copilot.router, prefix=settings.API_V1_STR)
 app.include_router(closing_engine.router, prefix=settings.API_V1_STR)
 app.include_router(learning.router, prefix=settings.API_V1_STR)
 app.include_router(ceo_brain.router, prefix=settings.API_V1_STR)
+app.include_router(business_operator.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():

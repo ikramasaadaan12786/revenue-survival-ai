@@ -18,7 +18,8 @@ import {
   ChevronDown,
   CheckCircle2,
   FolderGit2,
-  Brain
+  Brain,
+  Cpu
 } from "lucide-react";
 import { DashboardSummary } from "@/types";
 
@@ -82,6 +83,7 @@ export default function NavigationHeader({
 
   const navItems = [
     { id: "command", label: "Command HUD", icon: Flame },
+    { id: "control-room", label: "Control Room v5", icon: Cpu, special: true },
     { id: "ceo-brain", label: "CEO Brain v4", icon: Brain, special: true },
     { id: "closing-engine", label: "Closing Engine", icon: Target, special: true },
     { id: "strategy-brain", label: "Strategy Brain & Marketplace", icon: Sparkles, brain: true },

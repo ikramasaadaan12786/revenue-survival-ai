@@ -361,7 +361,53 @@ export const api = {
     fetcher<any[]>(`/analytics/experiments/${missionId}`),
   getMemory: () =>
     fetcher<any[]>("/analytics/memory"),
+
+  // Autonomous Business Operator v5: Control Room & Execution Layer
+  getControlRoomStats: (missionId?: number) =>
+    fetcher<any>(`/business-operator/control-room-stats${missionId ? `?mission_id=${missionId}` : ""}`),
+  runAutonomousCycle: (missionId?: number) =>
+    fetcher<any>(`/business-operator/run-autonomous-cycle${missionId ? `?mission_id=${missionId}` : ""}`, { method: "POST" }),
+  generateMissionBlueprint: (marketFocusOverride?: string) =>
+    fetcher<any>("/business-operator/generate-mission-blueprint", {
+      method: "POST",
+      body: JSON.stringify({ market_focus_override: marketFocusOverride || null }),
+    }),
+  createAutonomousMission: (blueprint?: any) =>
+    fetcher<any>("/business-operator/create-autonomous-mission", {
+      method: "POST",
+      body: JSON.stringify({ blueprint: blueprint || null }),
+    }),
+  getMissionSelfOptimizations: (missionId: number) =>
+    fetcher<any>(`/business-operator/self-optimizations/${missionId}`),
+  generateTieredOffers: (leadId: number) =>
+    fetcher<any>(`/business-operator/generate-tiered-offers/${leadId}`, { method: "POST" }),
+  getHunterFleetStatus: () =>
+    fetcher<any[]>("/business-operator/hunter-fleet-status"),
+  dispatchLeadHunters: (missionId?: number, sources?: string[]) =>
+    fetcher<any>("/business-operator/dispatch-lead-hunters", {
+      method: "POST",
+      body: JSON.stringify({ mission_id: missionId || null, sources: sources || null }),
+    }),
+  getOperatorApprovalQueue: (missionId?: number) =>
+    fetcher<any>(`/business-operator/approval-queue${missionId ? `?mission_id=${missionId}` : ""}`),
+  approveOperatorAction: (actionId: number) =>
+    fetcher<any>(`/business-operator/approve-action/${actionId}`, { method: "POST" }),
+  rejectOperatorAction: (actionId: number, reason?: string) =>
+    fetcher<any>(`/business-operator/reject-action/${actionId}`, {
+      method: "POST",
+      body: JSON.stringify({ reason: reason || null }),
+    }),
+  approveOperatorCommunication: (commId: number) =>
+    fetcher<any>(`/business-operator/approve-communication/${commId}`, { method: "POST" }),
+  batchApproveOperatorQueue: (missionId?: number) =>
+    fetcher<any>("/business-operator/batch-approve", {
+      method: "POST",
+      body: JSON.stringify({ mission_id: missionId || null }),
+    }),
+  getBusinessGrowthMemory: (limit: number = 10) =>
+    fetcher<any[]>(`/business-operator/growth-memory?limit=${limit}`),
 };
+
 
 
 

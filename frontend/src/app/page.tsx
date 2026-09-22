@@ -14,6 +14,7 @@ import MultiIndustryStrategyBrainView from "@/components/MultiIndustryStrategyBr
 import RevenueIntelligenceCenter from "@/components/RevenueIntelligenceCenter";
 import AutonomousClosingCenter from "@/components/AutonomousClosingCenter";
 import AICEOCommandCenter from "@/components/AICEOCommandCenter";
+import { RevenueControlRoom } from "@/components/RevenueControlRoom";
 import NewMissionModal from "@/components/NewMissionModal";
 import { DashboardSummary } from "@/types";
 import { api } from "@/lib/api";
@@ -156,6 +157,14 @@ export default function Home() {
                   onRefreshSummary={() => fetchSummary(missionId)}
                 />
               </div>
+            )}
+
+            {/* Autonomous Business Operator v5: Revenue Control Room */}
+            {activeTab === "control-room" && (
+              <RevenueControlRoom
+                activeMissionId={missionId}
+                onRefreshAll={() => fetchSummary(missionId)}
+              />
             )}
 
             {/* Autonomous CEO Brain v4 Command Center View */}
