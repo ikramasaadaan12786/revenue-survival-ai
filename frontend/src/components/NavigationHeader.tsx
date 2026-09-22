@@ -82,6 +82,7 @@ export default function NavigationHeader({
 
   const navItems = [
     { id: "command", label: "Command HUD", icon: Flame },
+    { id: "ceo-brain", label: "CEO Brain v4", icon: Brain, special: true },
     { id: "closing-engine", label: "Closing Engine", icon: Target, special: true },
     { id: "strategy-brain", label: "Strategy Brain & Marketplace", icon: Sparkles, brain: true },
     { id: "planner", label: "Day Plan & Swarm", icon: Layers },
@@ -95,7 +96,7 @@ export default function NavigationHeader({
       badge: summary?.pending_approvals ? summary.pending_approvals : undefined 
     },
     { id: "real-estate", label: "Dubai Real Estate Mode", icon: Building2, special: true },
-    { id: "intelligence", label: "Revenue Intelligence", icon: Brain, special: true },
+    { id: "intelligence", label: "Revenue Intelligence", icon: Sparkles, special: true },
     { id: "analytics", label: "Analytics & Memory", icon: BarChart3 },
   ];
 

@@ -417,3 +417,23 @@ class RevenueLearning(Base):
     mission = relationship("Mission", back_populates="revenue_learnings")
 
 
+class CEODecisionMemory(Base):
+    __tablename__ = "ceo_decision_memories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
+    decision_type = Column(String(100), default="STRATEGY_PIVOT")  # STRATEGY_PIVOT, OFFER_SCALE, INDUSTRY_FOCUS, BUDGET_ESCALATION, RISK_ALERT
+    recommendation = Column(Text, nullable=False)
+    reason = Column(Text, nullable=False)
+    confidence_score = Column(Float, default=87.0)  # 0 to 100
+    expected_impact_aed = Column(Float, default=0.0)
+    action_taken = Column(String(255), nullable=True)
+    result_status = Column(String(50), default="EXECUTED")  # EXECUTED, SUCCESS, FAILED, PENDING
+    actual_revenue_impact_aed = Column(Float, default=0.0)
+    metrics_snapshot = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    mission = relationship("Mission")
+
+
+

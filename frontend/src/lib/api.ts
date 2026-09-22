@@ -328,6 +328,30 @@ export const api = {
   getWeeklyPerformanceReport: (missionId: number) =>
     fetcher<any>(`/learning/performance-report/${missionId}`),
 
+  // Autonomous CEO Brain v4: Strategy & Self-Optimization
+  getCEODailyDecision: (missionId: number) =>
+    fetcher<any>(`/ceo-brain/daily-decision/${missionId}`),
+  getHistoricalCEODecisions: (missionId: number) =>
+    fetcher<any[]>(`/ceo-brain/historical-decisions/${missionId}`),
+  getIndustryIntelligence: (missionId?: number) =>
+    fetcher<any[]>(`/ceo-brain/industry-intelligence${missionId ? `?mission_id=${missionId}` : ""}`),
+  getOfferOptimization: (missionId?: number) =>
+    fetcher<any[]>(`/ceo-brain/offer-optimization${missionId ? `?mission_id=${missionId}` : ""}`),
+  getSourceIntelligence: (missionId?: number) =>
+    fetcher<any[]>(`/ceo-brain/source-intelligence${missionId ? `?mission_id=${missionId}` : ""}`),
+  getRevenueGapAnalysis: (missionId: number) =>
+    fetcher<any>(`/ceo-brain/revenue-gap/${missionId}`),
+  getTopPriorities: (missionId: number) =>
+    fetcher<any[]>(`/ceo-brain/top-priorities/${missionId}`),
+  getCEOExperiments: (missionId: number) =>
+    fetcher<any[]>(`/ceo-brain/experiments/${missionId}`),
+  createCEOExperiment: (data: { mission_id: number; name: string; hypothesis: string; variant_a: string; variant_b: string }) =>
+    fetcher<any>("/ceo-brain/experiments/create", { method: "POST", body: JSON.stringify(data) }),
+  getExecutiveWeeklyReport: (missionId: number) =>
+    fetcher<any>(`/ceo-brain/weekly-report/${missionId}`),
+  getMorningCEOBriefing: (missionId: number) =>
+    fetcher<any>(`/ceo-brain/morning-briefing/${missionId}`),
+
   // Analytics & Memory
   getRevenues: (missionId: number) =>
     fetcher<any[]>(`/analytics/revenue/${missionId}`),

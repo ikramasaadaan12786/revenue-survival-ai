@@ -23,6 +23,7 @@ from app.api import (
     copilot,
     closing_engine,
     learning,
+    ceo_brain,
 )
 
 @asynccontextmanager
@@ -164,6 +165,7 @@ app.include_router(marketplace.router, prefix=settings.API_V1_STR)
 app.include_router(copilot.router, prefix=settings.API_V1_STR)
 app.include_router(closing_engine.router, prefix=settings.API_V1_STR)
 app.include_router(learning.router, prefix=settings.API_V1_STR)
+app.include_router(ceo_brain.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():

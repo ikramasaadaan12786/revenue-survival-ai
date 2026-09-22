@@ -689,5 +689,132 @@ export interface SalesCopilotSequence {
   staged_communication_ids?: number[];
 }
 
+export interface CEODailyDecision {
+  decision_id: number;
+  mission_id: number;
+  decision: string;
+  recommendation: string;
+  reason: string;
+  confidence_score: number;
+  expected_impact_aed: number;
+  best_industry: string;
+  best_offer: string;
+  best_source: string;
+  risk_alert?: string;
+  gap_analysis?: any;
+  created_at?: string;
+}
+
+export interface IndustryPerformanceItem {
+  industry: string;
+  opportunities_generated: number;
+  qualified_leads: number;
+  proposals_sent: number;
+  won_deals: number;
+  lost_deals: number;
+  revenue_generated_aed: number;
+  pipeline_value_aed: number;
+  conversion_rate_pct: number;
+  performance_tier: "BEST_PERFORMING" | "NEEDS_IMPROVEMENT" | "LOW_PRIORITY";
+  recommendation: string;
+}
+
+export interface OfferOptimizationItem {
+  offer_id: number;
+  product_name: string;
+  unit_pricing_aed: number;
+  target_audience: string;
+  created_count: number;
+  replies_count: number;
+  deals_won_count: number;
+  revenue_generated_aed: number;
+  conversion_rate_pct: number;
+  reply_rate_pct: number;
+  action: "SCALE_OFFER" | "MODIFY_PRICING" | "MODIFY_PITCH" | "PAUSE";
+  recommendation: string;
+  confidence_score: number;
+}
+
+export interface SourcePerformanceItem {
+  source_name: string;
+  display_name: string;
+  signals_found: number;
+  qualified_leads: number;
+  deals_won: number;
+  revenue_generated_aed: number;
+  pipeline_value_aed: number;
+  conversion_rate_pct: number;
+  efficiency_tier: string;
+  efficiency_label: string;
+}
+
+export interface RevenueGapAnalysis {
+  mission_id: number;
+  target_revenue_aed: number;
+  confirmed_revenue_aed: number;
+  raw_pipeline_value_aed: number;
+  weighted_pipeline_value_aed: number;
+  net_revenue_gap_aed: number;
+  deadline_hours: number;
+  required_velocity_aed_per_hour: number;
+  required_qualified_leads: number;
+  required_discovery_calls: number;
+  required_proposals: number;
+  required_closing_deals: number;
+  action_summary: string;
+}
+
+export interface TopPriorityAction {
+  lead_id: number;
+  mission_id: number;
+  prospect_name: string;
+  company: string;
+  channel: string;
+  action_title: string;
+  action_type: string;
+  deal_value_aed: number;
+  closing_probability: number;
+  qualification_score: number;
+  priority_score: number;
+  recommendation_reason: string;
+  rank: number;
+}
+
+export interface WeeklyBusinessReport {
+  mission_id: number;
+  report_period: string;
+  revenue: {
+    generated_aed: number;
+    pipeline_aed: number;
+    target_aed: number;
+    deals_won_count: number;
+    deals_lost_count: number;
+  };
+  performance: {
+    best_source: string;
+    best_industry: string;
+    best_offer: string;
+    overall_conversion_rate_pct: number;
+  };
+  problems_and_bottlenecks: string[];
+  next_week_strategy: string[];
+}
+
+export interface CEOBriefing {
+  mission_id: number;
+  briefing_date: string;
+  yesterday_performance: {
+    revenue_closed_aed: number;
+    active_leads_in_pipeline: number;
+    hot_opportunities_active: number;
+  };
+  today_revenue_target_aed: number;
+  top_opportunities_summary: string;
+  top_actions: TopPriorityAction[];
+  risk_alerts: string[];
+  recommended_strategy: string;
+}
+
+
 
 
