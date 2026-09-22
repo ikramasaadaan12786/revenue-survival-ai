@@ -1064,6 +1064,130 @@ export interface RevenueEmpireData {
   strategic_recommendations: string[];
 }
 
+export interface ScalingEngineData {
+  scaling_engine_status: string;
+  company_growth_score: number;
+  scaling_modules_active: number;
+  hiring_intelligence: {
+    active_workload_summary: {
+      active_pipeline_leads: number;
+      total_workload_index_pct: number;
+      bottlenecks_detected: number;
+    };
+    department_workloads: any[];
+    hiring_recommendations: {
+      role_needed: string;
+      engagement_type: string;
+      target_department: string;
+      reason: string;
+      estimated_monthly_cost_aed: number;
+      projected_revenue_unlocked_aed: number;
+      expected_roi_multiplier: number;
+      urgency: string;
+      status: string;
+    }[];
+    executive_summary: string;
+  };
+  outsource_intelligence: {
+    kpis: {
+      active_outsource_packages: number;
+      total_outsource_budget_aed: number;
+      total_client_value_unlocked_aed: number;
+      blended_margin_pct: number;
+    };
+    outsource_packages: any[];
+    vendor_guidelines: string[];
+  };
+  partnership_intelligence: {
+    kpis: {
+      active_partner_opportunities: number;
+      total_partner_pipeline_aed: number;
+      highest_impact_niche: string;
+      ecosystem_expansion_rate: string;
+    };
+    partnerships: any[];
+    partnership_principles: string[];
+  };
+  investor_intelligence: {
+    kpis: {
+      funding_readiness_score: number;
+      implied_valuation_range_aed: string;
+      optimal_fundraising_timeline: string;
+      primary_growth_narrative: string;
+    };
+    investor_profiles: any[];
+    capital_strategy_recommendations: string[];
+  };
+  market_expansion: {
+    kpis: {
+      markets_analyzed_count: number;
+      expand_markets_count: number;
+      test_markets_count: number;
+      ignore_markets_count: number;
+      total_expansion_tam_aed: number;
+    };
+    markets: any[];
+    strategic_expansion_directives: string[];
+  };
+  competitor_intelligence: {
+    kpis: {
+      competitors_tracked_count: number;
+      market_gaps_identified_count: number;
+      pricing_competitiveness_index: string;
+      speed_to_value_multiplier: string;
+    };
+    competitors: any[];
+    market_gaps: string[];
+    competitive_advantage_recommendations: string[];
+  };
+  brand_growth: {
+    kpis: {
+      platforms_active_count: number;
+      total_weekly_content_touchpoints: number;
+      authority_index_score: number;
+      monthly_organic_reach_target: number;
+    };
+    platforms_strategy: any[];
+    brand_milestones: any[];
+    authority_recommendations: string[];
+  };
+  content_pipeline: {
+    kpis: {
+      daily_content_batch_size: number;
+      platforms_covered: string[];
+      content_readiness_score: number;
+      projected_weekly_impressions: number;
+    };
+    daily_assets: {
+      platform: string;
+      content_type: string;
+      title: string;
+      hook: string;
+      body: string;
+      call_to_action: string;
+      target_audience: string;
+      status: string;
+    }[];
+    content_factory_rules: string[];
+  };
+  sales_automation: {
+    kpis: {
+      active_pipeline_leads: number;
+      stalled_deals_monitored: number;
+      deal_rescues_active: number;
+      upsell_pipeline_potential_aed: number;
+      automated_closing_velocity_multiplier: number;
+    };
+    prioritized_leads: any[];
+    deal_rescue_recommendations: any[];
+    follow_up_intelligence: any[];
+    upsell_opportunities: any[];
+  };
+  top_scaling_directives: string[];
+  last_evaluated_at: string;
+}
+
+
 
 
 

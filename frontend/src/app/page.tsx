@@ -17,6 +17,7 @@ import AICEOCommandCenter from "@/components/AICEOCommandCenter";
 import { RevenueControlRoom } from "@/components/RevenueControlRoom";
 import { GrowthCommandCenter } from "@/components/GrowthCommandCenter";
 import { AICompanyCommandCenter } from "@/components/AICompanyCommandCenter";
+import { AIScalingCommandCenter } from "@/components/AIScalingCommandCenter";
 import NewMissionModal from "@/components/NewMissionModal";
 import { DashboardSummary } from "@/types";
 import { api } from "@/lib/api";
@@ -159,6 +160,13 @@ export default function Home() {
                   onRefreshSummary={() => fetchSummary(missionId)}
                 />
               </div>
+            )}
+
+            {/* Autonomous AI Business Scaling Engine v8 */}
+            {activeTab === "scaling-engine" && (
+              <AIScalingCommandCenter
+                activeMissionId={missionId}
+              />
             )}
 
             {/* Autonomous Revenue Empire v7: AI Company Operating System */}

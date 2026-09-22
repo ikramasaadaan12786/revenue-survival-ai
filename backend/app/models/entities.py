@@ -529,6 +529,46 @@ class CompanyPerformanceScorecard(Base):
     evaluated_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 
+class ScalingIntelligenceLog(Base):
+    __tablename__ = "scaling_intelligence_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
+    category = Column(String(100), nullable=False)  # HIRING, OUTSOURCING, PARTNERSHIP, INVESTOR, MARKET_EXPANSION, COMPETITOR
+    title = Column(String(255), nullable=False)
+    recommendation = Column(Text, nullable=False)
+    action_type = Column(String(100), default="EXPAND")  # HIRE, OUTSOURCE, PARTNER, INVEST, EXPAND, DEFEND
+    expected_roi_multiplier = Column(Float, default=3.5)
+    estimated_cost_aed = Column(Float, default=0.0)
+    projected_revenue_aed = Column(Float, default=0.0)
+    confidence_score = Column(Float, default=92.0)
+    status = Column(String(50), default="ACTIVE")  # ACTIVE, EXECUTED, ARCHIVED
+    details = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    mission = relationship("Mission")
+
+
+class BrandContentPipeline(Base):
+    __tablename__ = "brand_content_pipelines"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
+    platform = Column(String(50), default="LINKEDIN")  # LINKEDIN, INSTAGRAM, YOUTUBE, X
+    content_type = Column(String(50), default="POST")  # POST, VIDEO_SCRIPT, ARTICLE, CASE_STUDY
+    title = Column(String(255), nullable=False)
+    hook = Column(Text, nullable=False)
+    body = Column(Text, nullable=True)
+    call_to_action = Column(String(255), nullable=True)
+    target_audience = Column(String(255), default="B2B Founders & Real Estate Leaders")
+    status = Column(String(50), default="SCHEDULED")  # DRAFT, SCHEDULED, PUBLISHED
+    scheduled_date = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    mission = relationship("Mission")
+
+
+
 
 
 

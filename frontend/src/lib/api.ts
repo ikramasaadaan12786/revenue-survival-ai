@@ -1,4 +1,4 @@
-import { RevenueEmpireData, EmployeeScorecard, MorningCEOReport } from "@/types";
+import { RevenueEmpireData, EmployeeScorecard, MorningCEOReport, ScalingEngineData } from "@/types";
 
 const getApiBase = (): string => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -436,7 +436,32 @@ export const api = {
     fetcher<any[]>(`/revenue-empire/clients${missionId ? `?mission_id=${missionId}` : ""}`),
   createClientAccount: (data: any, missionId?: number) =>
     fetcher<any>(`/revenue-empire/clients${missionId ? `?mission_id=${missionId}` : ""}`, { method: "POST", body: JSON.stringify(data) }),
+
+  // Autonomous AI Business Scaling Engine v8
+  getScalingCommandCenter: (missionId?: number) =>
+    fetcher<ScalingEngineData>(`/scaling-engine/command-center${missionId ? `?mission_id=${missionId}` : ""}`),
+  runScaleAnalysis: (missionId?: number) =>
+    fetcher<any>(`/scaling-engine/run-scale-analysis${missionId ? `?mission_id=${missionId}` : ""}`, { method: "POST" }),
+  getHiringIntelligence: (missionId?: number) =>
+    fetcher<any>(`/scaling-engine/hiring${missionId ? `?mission_id=${missionId}` : ""}`),
+  getOutsourceIntelligence: (missionId?: number) =>
+    fetcher<any>(`/scaling-engine/outsource${missionId ? `?mission_id=${missionId}` : ""}`),
+  getPartnershipIntelligence: (missionId?: number) =>
+    fetcher<any>(`/scaling-engine/partnerships${missionId ? `?mission_id=${missionId}` : ""}`),
+  getInvestorIntelligence: (missionId?: number) =>
+    fetcher<any>(`/scaling-engine/investors${missionId ? `?mission_id=${missionId}` : ""}`),
+  getMarketExpansion: (missionId?: number) =>
+    fetcher<any>(`/scaling-engine/market-expansion${missionId ? `?mission_id=${missionId}` : ""}`),
+  getCompetitorIntelligence: (missionId?: number) =>
+    fetcher<any>(`/scaling-engine/competitors${missionId ? `?mission_id=${missionId}` : ""}`),
+  getBrandGrowth: (missionId?: number) =>
+    fetcher<any>(`/scaling-engine/brand${missionId ? `?mission_id=${missionId}` : ""}`),
+  getContentFactory: (missionId?: number) =>
+    fetcher<any>(`/scaling-engine/content-factory${missionId ? `?mission_id=${missionId}` : ""}`),
+  getSalesAutomation: (missionId?: number) =>
+    fetcher<any>(`/scaling-engine/sales-automation${missionId ? `?mission_id=${missionId}` : ""}`),
 };
+
 
 
 
