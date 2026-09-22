@@ -401,3 +401,57 @@ async def re_evaluate_leads_endpoint(mission_id: int, db: AsyncSession = Depends
     }
 
 
+# 7. Phase 14 Autonomous Revenue Execution Engine Endpoints
+
+@router.get("/activity-tracker/{mission_id}")
+async def get_mission_activity_tracker_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Returns real Mission Activity Tracker: Messages, Calls, Proposals, and Deals closed vs required.
+    """
+    from app.services.closing_engine.sales_manager_execution_service import sales_manager_execution_service
+    result = await sales_manager_execution_service.get_mission_activity_tracker(db, mission_id)
+    return result
+
+
+@router.post("/run-operating-cycle/{mission_id}")
+async def run_daily_operating_cycle_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Executes AI Sales Manager Daily Operating Cycle:
+    Qualifies radar leads, attaches high-ticket offers, stages outbound sequences, and updates activity quotas.
+    """
+    from app.services.closing_engine.sales_manager_execution_service import sales_manager_execution_service
+    result = await sales_manager_execution_service.run_daily_operating_cycle(db, mission_id)
+    return result
+
+
+@router.post("/convert-signal")
+async def convert_radar_signal_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Converts a Buyer Radar signal directly into an active Lead with tailored offer and staged sequence.
+    """
+    from app.services.closing_engine.sales_manager_execution_service import sales_manager_execution_service
+    result = await sales_manager_execution_service.convert_radar_signal_to_lead(
+        session=db,
+        mission_id=payload.get("mission_id", 1006),
+        name=payload.get("name", "Verified Buyer"),
+        company=payload.get("company", "UAE Enterprise"),
+        interest=payload.get("interest", "AI Automation"),
+        source=payload.get("source", "BUYER RADAR"),
+        country=payload.get("country", "United Arab Emirates"),
+        budget=float(payload.get("budget", 25000.0)),
+        channel=payload.get("channel", "WhatsApp")
+    )
+    return result
+
+
+@router.get("/deal-room/{mission_id}")
+async def get_deal_room_crm_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Returns full Deal Room CRM board with grouped stages, lead cards, and weighted pipeline values.
+    """
+    from app.services.closing_engine.sales_manager_execution_service import sales_manager_execution_service
+    result = await sales_manager_execution_service.get_deal_room_crm(db, mission_id)
+    return result
+
+
+

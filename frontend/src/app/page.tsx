@@ -23,6 +23,11 @@ import { GrowthCommandCenter } from "@/components/GrowthCommandCenter";
 import { AICompanyCommandCenter } from "@/components/AICompanyCommandCenter";
 import { AIScalingCommandCenter } from "@/components/AIScalingCommandCenter";
 import { AIEnterpriseNetworkCenter } from "@/components/AIEnterpriseNetworkCenter";
+import { RevenueWarRoom } from "@/components/luxury/RevenueWarRoom";
+import { HotBuyerTerminal } from "@/components/luxury/HotBuyerTerminal";
+import { CommunicationCenter } from "@/components/luxury/CommunicationCenter";
+import { ProposalDesk } from "@/components/luxury/ProposalDesk";
+import { DealClosingBoard } from "@/components/luxury/DealClosingBoard";
 import NewMissionModal from "@/components/NewMissionModal";
 import { DashboardSummary, DepartmentSummary, EmployeeScorecard } from "@/types";
 import { api } from "@/lib/api";
@@ -374,6 +379,45 @@ export default function Home() {
                     onRefreshSummary={() => fetchSummary(missionId)}
                   />
                 </div>
+              )}
+
+              {/* Phase 14 Execution Engine Tabs */}
+              {activeTab === "war_room" && (
+                <RevenueWarRoom
+                  missionId={missionId}
+                  missionTitle={summary?.mission?.title || "Dubai AI Revenue Sprint — 18 Hour Challenge"}
+                  targetRevenue={summary?.target_amount || 2500}
+                  currentRevenue={summary?.revenue_achieved || 0}
+                  onNavigateTab={setActiveTab}
+                />
+              )}
+
+              {activeTab === "hot_buyers" && (
+                <HotBuyerTerminal
+                  missionId={missionId}
+                  onNavigateTab={setActiveTab}
+                />
+              )}
+
+              {(activeTab === "comms_center" || activeTab === "communication_center") && (
+                <CommunicationCenter
+                  missionId={missionId}
+                  onNavigateTab={setActiveTab}
+                />
+              )}
+
+              {activeTab === "proposal_desk" && (
+                <ProposalDesk
+                  missionId={missionId}
+                  onNavigateTab={setActiveTab}
+                />
+              )}
+
+              {(activeTab === "deal_room" || activeTab === "deal_closing_board") && (
+                <DealClosingBoard
+                  missionId={missionId}
+                  onNavigateTab={setActiveTab}
+                />
               )}
 
               {/* 9. CRM & Lead Kanban */}

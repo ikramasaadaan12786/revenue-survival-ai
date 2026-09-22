@@ -15,6 +15,9 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Flame,
+  MessageSquare,
+  FileText,
 } from 'lucide-react';
 
 interface LuxurySidebarProps {
@@ -30,6 +33,11 @@ export const LuxurySidebar: React.FC<LuxurySidebarProps> = ({
 }) => {
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'war_room', label: 'War Room', icon: Flame, badge: 'v14' },
+    { id: 'hot_buyers', label: 'Hot Buyers', icon: UserCheck },
+    { id: 'comms_center', label: 'Comms Center', icon: MessageSquare, alertCount: pendingApprovalsCount },
+    { id: 'proposal_desk', label: 'Proposal Desk', icon: FileText },
+    { id: 'deal_room', label: 'Deal Room CRM', icon: TrendingUp },
     { id: 'ceo_brain', label: 'CEO Brain', icon: BrainCircuit, badge: 'v4' },
     { id: 'revenue_empire', label: 'Revenue Empire', icon: Building2, badge: 'v7' },
     { id: 'scaling_engine', label: 'Scaling Engine', icon: Rocket, badge: 'v8' },
@@ -42,6 +50,7 @@ export const LuxurySidebar: React.FC<LuxurySidebarProps> = ({
     { id: 'approvals', label: 'Approvals', icon: ShieldCheck, alertCount: pendingApprovalsCount },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
 
   return (
     <aside className="w-72 flex-shrink-0 min-h-screen bg-gradient-to-b from-[#06080F]/95 via-[#04060A]/98 to-[#020306] backdrop-blur-2xl border-r border-[#D4AF37]/25 flex flex-col justify-between select-none relative z-30 shadow-[4px_0_30px_rgba(0,0,0,0.8)]">
