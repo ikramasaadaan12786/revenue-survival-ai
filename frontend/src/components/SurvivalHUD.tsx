@@ -25,10 +25,14 @@ import {
   Layers,
   Flame,
   Radio,
-  Share2
+  Share2,
+  Key
 } from "lucide-react";
 import { DashboardSummary, GlobalMissionsOverview } from "@/types";
 import { api } from "@/lib/api";
+import MissionEscalationCard from "./MissionEscalationCard";
+import AcquisitionFunnelForecast from "./AcquisitionFunnelForecast";
+import ConnectorAuthModal from "./ConnectorAuthModal";
 
 interface Props {
   summary: DashboardSummary | null;
@@ -50,8 +54,24 @@ export default function SurvivalHUD({
   allMissions = []
 }: Props) {
   const [runningCycle, setRunningCycle] = useState(false);
+  const [runningSweep, setRunningSweep] = useState(false);
+  const [showConnectorModal, setShowConnectorModal] = useState(false);
   const [globalOverview, setGlobalOverview] = useState<GlobalMissionsOverview | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<number | null>(null);
+
+  const handleRunAutoDiscoverySweep = async () => {
+    if (!summary?.mission?.id) return;
+    try {
+      setRunningSweep(true);
+      await api.runAutoDiscoverySweep(summary.mission.id);
+      onRefreshSummary();
+      fetchOverview();
+    } catch (err) {
+      console.error("Auto discovery sweep failed", err);
+    } finally {
+      setRunningSweep(false);
+    }
+  };
 
   const fetchOverview = async () => {
     try {
@@ -155,7 +175,26 @@ export default function SurvivalHUD({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowConnectorModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-cyan-300 bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/40 transition-all shadow-sm"
+              title="Manage API keys & connection for 6 public signal connectors"
+            >
+              <Key className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Connectors Auth</span>
+            </button>
+
+            <button
+              onClick={handleRunAutoDiscoverySweep}
+              disabled={runningSweep}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold text-black bg-cyan-400 hover:bg-cyan-300 shadow-glow transition-all disabled:opacity-50"
+              title="Autonomous Daily Sweep: Scan feeds, score opportunities & stage new AI offers"
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${runningSweep ? "animate-spin" : ""}`} />
+              <span>{runningSweep ? "Sweeping..." : "Daily Auto Sweep"}</span>
+            </button>
+
             <button
               onClick={() => {
                 onRefreshSummary();
@@ -417,6 +456,15 @@ export default function SurvivalHUD({
         </div>
       </div>
 
+      {/* 2.5 AI Mission Escalation Recommendation Banner */}
+      <MissionEscalationCard
+        missionId={mission.id}
+        onEscalationApplied={() => {
+          onRefreshSummary();
+          fetchOverview();
+        }}
+      />
+
       {/* 3. Hero Banner: Current Selected Mission HUD */}
       <div className="relative overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-b from-[#0e172a]/90 via-[#0a0f1d]/90 to-[#060911]/90 p-6 md:p-8 backdrop-blur-xl shadow-cardGlow">
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -529,6 +577,18 @@ export default function SurvivalHUD({
           </div>
         </div>
       </div>
+
+      {/* 5. Acquisition Funnel, Revenue Forecast & Source Performance Matrix */}
+      <AcquisitionFunnelForecast
+        summary={summary}
+        globalOverview={globalOverview}
+      />
+
+      {/* Connector Auth Modal */}
+      <ConnectorAuthModal
+        isOpen={showConnectorModal}
+        onClose={() => setShowConnectorModal(false)}
+      />
     </div>
   );
 }

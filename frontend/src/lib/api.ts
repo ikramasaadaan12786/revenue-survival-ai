@@ -223,6 +223,36 @@ export const api = {
       body: JSON.stringify({ industry })
     }),
 
+  // Acquisition Engine v2: Connector Authentication Framework
+  getConnectorAuthStatus: () =>
+    fetcher<any[]>("/connectors/auth/status"),
+  configureConnectorAuth: (data: { connector_name: string; auth_type?: string; credentials: Record<string, any> }) =>
+    fetcher<any>("/connectors/auth/configure", { method: "POST", body: JSON.stringify(data) }),
+  testConnectorAuth: (connectorName: string) =>
+    fetcher<any>(`/connectors/auth/test/${encodeURIComponent(connectorName)}`, { method: "POST" }),
+
+  // Acquisition Engine v2: Autonomous Daily Scheduler
+  runAutoDiscoverySweep: (missionId?: number) =>
+    fetcher<any>(`/scheduler/auto-discovery-sweep${missionId ? `?mission_id=${missionId}` : ""}`, { method: "POST" }),
+
+  // Acquisition Engine v2: Revenue Copilot
+  analyzeOpportunityWithCopilot: (data: {
+    opportunity_id?: number;
+    revenue_opportunity_id?: number;
+    problem_text?: string;
+    company?: string;
+    industry?: string;
+    target_budget?: number;
+    currency?: string;
+  }) =>
+    fetcher<any>("/copilot/analyze-opportunity", { method: "POST", body: JSON.stringify(data) }),
+
+  // Acquisition Engine v2: Mission Escalation
+  getMissionEscalation: (missionId: number) =>
+    fetcher<any>(`/missions/${missionId}/escalation-recommendation`),
+  applyMissionEscalation: (missionId: number, data: { action_type: string; new_goal_amount?: number; new_strategy_angle?: string }) =>
+    fetcher<any>(`/missions/${missionId}/apply-escalation`, { method: "POST", body: JSON.stringify(data) }),
+
   // Analytics & Memory
   getRevenues: (missionId: number) =>
     fetcher<any[]>(`/analytics/revenue/${missionId}`),
@@ -233,4 +263,5 @@ export const api = {
   getMemory: () =>
     fetcher<any[]>("/analytics/memory"),
 };
+
 

@@ -462,3 +462,70 @@ class DailyStrategyDecision(BaseModel):
     prescribed_actions: List[str]
     confidence_rating: float
 
+
+# Connector Authentication Framework Schemas
+class ConnectorAuthConfig(BaseModel):
+    connector_name: str  # REDDIT, TELEGRAM, YOUTUBE, LINKEDIN, WEB_SEARCH, BUSINESS_DIRECTORIES
+    auth_type: str = "API_KEY"  # API_KEY, OAUTH2, BOT_TOKEN, COOKIE, PUBLIC
+    credentials: Dict[str, Any] = {}
+
+class ConnectorAuthResponse(BaseModel):
+    id: int
+    connector_name: str
+    auth_type: str
+    status: str
+    credentials_masked: Dict[str, str] = {}
+    last_tested: Optional[datetime] = None
+    latency_ms: int = 45
+    capabilities: List[str] = []
+    class Config:
+        from_attributes = True
+
+
+# Revenue Copilot Schemas
+class CopilotOpportunityAnalysisRequest(BaseModel):
+    opportunity_id: Optional[int] = None
+    revenue_opportunity_id: Optional[int] = None
+    problem_text: Optional[str] = None
+    company: Optional[str] = None
+    industry: Optional[str] = None
+    target_budget: Optional[float] = None
+    currency: str = "AED"
+
+class CopilotOpportunityAnalysisResponse(BaseModel):
+    opportunity_title: str
+    company_context: str
+    industry: str
+    problem_analysis: str
+    buyer_bottleneck: str
+    recommended_service: str
+    service_scope: List[str]
+    delivery_sla_hours: int
+    suggested_pricing_aed: float
+    upfront_deposit_aed: float
+    roi_multiplier: str
+    conversion_confidence: float
+    pitch_message: str
+    follow_up_sequence: List[Dict[str, str]]  # day, hook, body
+
+
+# Mission Escalation Engine Schemas
+class MissionEscalationRecommendation(BaseModel):
+    mission_id: int
+    current_goal: float
+    pipeline_value: float
+    coverage_ratio: float
+    urgency_tier: str
+    action_type: str  # INCREASE_TARGET, PIVOT_STRATEGY, FOCUS_HIGH_VALUE, MAINTAIN_COURSE
+    title: str
+    recommended_new_goal: Optional[float] = None
+    reasoning: str
+    recommended_actions: List[str]
+    confidence: float
+
+class MissionEscalationApplyRequest(BaseModel):
+    action_type: str  # INCREASE_TARGET, PIVOT_STRATEGY, FOCUS_HIGH_VALUE
+    new_goal_amount: Optional[float] = None
+    new_strategy_angle: Optional[str] = None
+
+

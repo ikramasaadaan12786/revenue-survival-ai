@@ -4,10 +4,41 @@ from sqlalchemy.future import select
 from typing import List, Dict, Any, Optional
 from app.core.database import get_db
 from app.models.entities import MarketSignal
-from app.schemas.schemas import SignalIngestionRequest
+from app.schemas.schemas import SignalIngestionRequest, ConnectorAuthConfig, ConnectorAuthResponse
 from app.services.connectors.data_acquisition import data_acquisition_engine
+from app.services.connectors.auth_manager import connector_auth_manager
 
 router = APIRouter(prefix="/connectors", tags=["connectors"])
+
+@router.get("/auth/status", response_model=List[ConnectorAuthResponse])
+async def get_connector_auth_status(db: AsyncSession = Depends(get_db)):
+    """
+    Returns authentication and connection states for all 6 public signal connectors:
+    Reddit, Telegram, YouTube, LinkedIn, Web Search, Business Directories.
+    """
+    statuses = await connector_auth_manager.get_all_connector_statuses(db)
+    return statuses
+
+@router.post("/auth/configure")
+async def configure_connector_auth(payload: ConnectorAuthConfig, db: AsyncSession = Depends(get_db)):
+    """
+    Configures API keys, tokens, or credentials for a specified connector.
+    """
+    result = await connector_auth_manager.configure_connector(
+        session=db,
+        connector_name=payload.connector_name,
+        auth_type=payload.auth_type,
+        credentials=payload.credentials
+    )
+    return result
+
+@router.post("/auth/test/{connector_name}")
+async def test_connector_auth(connector_name: str, db: AsyncSession = Depends(get_db)):
+    """
+    Runs a live ping test verifying connector authentication and latency.
+    """
+    result = await connector_auth_manager.test_connector_connection(db, connector_name)
+    return result
 
 @router.get("/signals/{mission_id}")
 async def get_mission_signals(mission_id: int, source: Optional[str] = None, db: AsyncSession = Depends(get_db)):

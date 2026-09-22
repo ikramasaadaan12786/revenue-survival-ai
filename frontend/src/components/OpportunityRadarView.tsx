@@ -17,10 +17,12 @@ import {
   RefreshCw,
   MessageSquare,
   Flame,
-  CheckCircle2
+  CheckCircle2,
+  Cpu
 } from "lucide-react";
 import { Opportunity, MarketSignal, RevenueOpportunity } from "@/types";
 import { api } from "@/lib/api";
+import RevenueCopilotModal from "./RevenueCopilotModal";
 
 interface Props {
   missionId: number;
@@ -37,6 +39,10 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
   const [scanningConnectors, setScanningConnectors] = useState(false);
   const [runningBrowserAgent, setRunningBrowserAgent] = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>("ALL");
+
+  // Revenue Copilot State
+  const [copilotOpportunity, setCopilotOpportunity] = useState<any>(null);
+  const [showCopilotModal, setShowCopilotModal] = useState(false);
 
   // Ingest custom signal modal
   const [showIngestModal, setShowIngestModal] = useState(false);
@@ -392,12 +398,20 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
                       </div>
                     </div>
 
-                    <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between pt-1">
-                      <span>Source: <strong className="text-cyan-400 font-medium">{ro.source}</strong></span>
-                      <span className="text-emerald-400 flex items-center gap-1 font-semibold">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        CRM Ingested & Staged
-                      </span>
+                    <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
+                      <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                        <span>Source: <strong className="text-cyan-400 font-medium">{ro.source}</strong></span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setCopilotOpportunity(ro);
+                          setShowCopilotModal(true);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all shadow-sm"
+                      >
+                        <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Revenue Copilot</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -448,32 +462,48 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
                   </div>
 
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-white/[0.05] text-xs space-y-1.5 font-mono">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Target Buyer:</span>
-                      <span className="text-slate-200 font-medium">{opp.target_customer}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Price Estimate:</span>
-                      <span className="text-cyan-400 font-bold">{opp.price_estimate} AED</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Fulfillment Difficulty:</span>
-                      <span className="text-emerald-400 font-semibold">{opp.difficulty}</span>
-                    </div>
+                    <div className="text-slate-400">Target Segment: <strong className="text-slate-200">{opp.target_customer}</strong></div>
+                    <div className="text-slate-400">Price Estimate: <strong className="text-amber-300">{opp.price_estimate} AED</strong></div>
+                    <div className="text-slate-400">Fulfillment Difficulty: <strong className="text-emerald-400">{opp.difficulty}</strong></div>
                   </div>
                 </div>
 
                 <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
                   <span className="text-[11px] font-mono text-slate-400">Status: {opp.status}</span>
-                  <span className="text-xs font-mono font-medium text-cyan-400 flex items-center gap-1">
-                    Ready for Offer Studio <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
+                  <button
+                    onClick={() => {
+                      setCopilotOpportunity({
+                        id: opp.id,
+                        name: opp.offer_idea,
+                        company: opp.target_customer,
+                        industry: opp.market,
+                        requirement: opp.problem,
+                        estimated_value: opp.price_estimate || 3500
+                      });
+                      setShowCopilotModal(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all"
+                  >
+                    <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Revenue Copilot</span>
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Revenue Copilot Drawer/Modal */}
+      <RevenueCopilotModal
+        isOpen={showCopilotModal}
+        onClose={() => setShowCopilotModal(false)}
+        opportunity={copilotOpportunity}
+        onOfferStaged={() => {
+          onRefreshSummary();
+          fetchOppsAndSignals();
+        }}
+      />
 
       {/* Manual Signal Ingestion Modal */}
       {showIngestModal && (

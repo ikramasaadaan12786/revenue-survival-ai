@@ -336,3 +336,18 @@ class Analytics(Base):
     agent_name = Column(String(100), nullable=True)
     payload = Column(JSON, default=dict)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class ConnectorAuth(Base):
+    __tablename__ = "connector_auths"
+
+    id = Column(Integer, primary_key=True, index=True)
+    connector_name = Column(String(50), unique=True, index=True, nullable=False)  # REDDIT, TELEGRAM, YOUTUBE, LINKEDIN, WEB_SEARCH, BUSINESS_DIRECTORIES
+    auth_type = Column(String(50), default="API_KEY")  # API_KEY, OAUTH2, BOT_TOKEN, COOKIE, PUBLIC
+    credentials = Column(JSON, default=dict)
+    status = Column(String(50), default="CONNECTED")  # CONNECTED, CONFIGURED, ERROR, DISCONNECTED
+    last_tested = Column(DateTime, default=datetime.datetime.utcnow)
+    latency_ms = Column(Integer, default=45)
+    capabilities = Column(JSON, default=list)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+

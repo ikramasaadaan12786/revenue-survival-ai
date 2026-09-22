@@ -5,8 +5,19 @@ from typing import List, Dict, Any
 from datetime import datetime, timedelta
 from app.core.database import get_db
 from app.models.entities import Mission, Opportunity, RevenueOpportunity, Lead, Communication, RevenueTracking, Task, Offer, RealEstateDeal, MarketSignal
-from app.schemas.schemas import MissionCreate, MissionResponse, DashboardSummary, TaskResponse, MissionStatusUpdate, GlobalMissionsOverview, RevenueOpportunityResponse
+from app.schemas.schemas import (
+    MissionCreate,
+    MissionResponse,
+    DashboardSummary,
+    TaskResponse,
+    MissionStatusUpdate,
+    GlobalMissionsOverview,
+    RevenueOpportunityResponse,
+    MissionEscalationRecommendation,
+    MissionEscalationApplyRequest,
+)
 from app.agents.survival_manager import SurvivalManagerAgent
+from app.services.mission_escalation import mission_escalation_engine
 
 router = APIRouter(prefix="/missions", tags=["missions"])
 survival_manager = SurvivalManagerAgent()
@@ -332,5 +343,33 @@ async def execute_live_autonomous_cycle(mission_id: int, db: AsyncSession = Depe
 async def get_live_mission_roadmap(mission_id: int, total_days: int = 30, db: AsyncSession = Depends(get_db)):
     result = await survival_manager.generate_live_multi_day_roadmap(db, mission_id, total_days)
     return result
+
+@router.get("/{mission_id}/escalation-recommendation", response_model=MissionEscalationRecommendation)
+async def get_mission_escalation_recommendation(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    AI Mission Escalation Engine:
+    Recommends target increase (+50%), strategy pivot, or high-value focus based on real-time pipeline velocity.
+    """
+    result = await mission_escalation_engine.get_escalation_recommendation(db, mission_id)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=404, detail=result.get("message", "Mission not found"))
+    return result
+
+@router.post("/{mission_id}/apply-escalation")
+async def apply_mission_escalation(mission_id: int, payload: MissionEscalationApplyRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Executes AI Escalation recommendation on active mission.
+    """
+    result = await mission_escalation_engine.apply_escalation(
+        session=db,
+        mission_id=mission_id,
+        action_type=payload.action_type,
+        new_goal_amount=payload.new_goal_amount,
+        new_strategy_angle=payload.new_strategy_angle
+    )
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("message", "Failed to apply escalation"))
+    return result
+
 
 
