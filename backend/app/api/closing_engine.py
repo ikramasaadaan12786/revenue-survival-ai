@@ -454,4 +454,116 @@ async def get_deal_room_crm_endpoint(mission_id: int, db: AsyncSession = Depends
     return result
 
 
+# 8. Phase 15 Real Revenue Execution Engine Endpoints
+
+@router.get("/real-execution-stats/{mission_id}")
+async def get_real_execution_stats_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Returns 100% real database counters: Tasks, Messages, Replies, Calls, Proposals, Deals, and Closed Revenue.
+    """
+    from app.services.closing_engine.real_execution_engine import real_revenue_execution_engine
+    result = await real_revenue_execution_engine.get_real_execution_stats(db, mission_id)
+    return result
+
+
+@router.get("/action-logs/{mission_id}")
+async def get_agent_action_logs_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Retrieves chronological AI Agent Action Logs for the mission.
+    """
+    from app.services.closing_engine.real_execution_engine import real_revenue_execution_engine
+    logs = await real_revenue_execution_engine.get_agent_action_logs(db, mission_id)
+    return logs
+
+
+@router.post("/create-tasks/{mission_id}")
+async def create_tasks_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Converts planned activities for top priority leads into real executable tasks in the database.
+    """
+    from app.services.closing_engine.real_execution_engine import real_revenue_execution_engine
+    tasks = await real_revenue_execution_engine.create_executable_tasks_from_pipeline(db, mission_id)
+    return {"status": "success", "created_tasks": tasks}
+
+
+@router.post("/execute-task/{task_id}")
+async def execute_task_endpoint(task_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Executes a task and marks it as COMPLETED with database logs.
+    """
+    from app.services.closing_engine.real_execution_engine import real_revenue_execution_engine
+    result = await real_revenue_execution_engine.execute_task_action(db, task_id)
+    return result
+
+
+@router.post("/send-message/{comm_id}")
+async def send_message_endpoint(comm_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Dispatches an approved message, marking delivery_status as SENT.
+    """
+    from app.services.closing_engine.real_execution_engine import real_revenue_execution_engine
+    result = await real_revenue_execution_engine.approve_and_send_message(db, comm_id)
+    return result
+
+
+@router.post("/record-reply")
+async def record_reply_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Records an inbound buyer reply and advances the lead to Discovery Call stage.
+    """
+    from app.services.closing_engine.real_execution_engine import real_revenue_execution_engine
+    result = await real_revenue_execution_engine.record_inbound_reply(
+        session=db,
+        comm_id=payload["comm_id"],
+        reply_message=payload.get("reply_message", "Salam, please send me details and pricing.")
+    )
+    return result
+
+
+@router.post("/complete-call")
+async def complete_call_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Records a completed discovery call with outcome notes.
+    """
+    from app.services.closing_engine.real_execution_engine import real_revenue_execution_engine
+    result = await real_revenue_execution_engine.book_and_complete_call(
+        session=db,
+        lead_id=payload["lead_id"],
+        call_outcome=payload.get("call_outcome", "OFFER_ACCEPTED"),
+        notes=payload.get("notes", "Requirements verified. Proposal requested.")
+    )
+    return result
+
+
+@router.post("/update-proposal-status")
+async def update_proposal_status_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Updates proposal status to SENT or ACCEPTED.
+    """
+    from app.services.closing_engine.real_execution_engine import real_revenue_execution_engine
+    result = await real_revenue_execution_engine.send_and_accept_proposal(
+        session=db,
+        proposal_id=payload["proposal_id"],
+        status=payload.get("status", "SENT")
+    )
+    return result
+
+
+@router.post("/close-deal")
+async def close_deal_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Closes a won deal, records confirmed revenue in RevenueTracking, and updates Mission revenue.
+    """
+    from app.services.closing_engine.real_execution_engine import real_revenue_execution_engine
+    result = await real_revenue_execution_engine.close_won_deal(
+        session=db,
+        mission_id=payload.get("mission_id", 1006),
+        lead_id=payload["lead_id"],
+        actual_revenue_aed=float(payload.get("actual_revenue_aed", 2500.0)),
+        source=payload.get("source", "CLOSING_ENGINE")
+    )
+    return result
+
+
+
 

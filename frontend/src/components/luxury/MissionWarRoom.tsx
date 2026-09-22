@@ -184,10 +184,49 @@ export const MissionWarRoom: React.FC<MissionWarRoomProps> = ({
 
   const [approvedLeads, setApprovedLeads] = useState<number[]>([]);
 
+  useEffect(() => {
+    const fetchWarRoomData = async () => {
+      try {
+        const [queueRes, sprintRes, planRes] = await Promise.allSettled([
+          fetch(`https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/priority-queue/${missionId}`),
+          fetch(`https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/revenue-sprint/${missionId}`),
+          fetch(`https://backend-sigma-six-79.vercel.app/api/v1/ceo-brain/target-achievement-plan/${missionId}`),
+        ]);
+
+        if (queueRes.status === 'fulfilled' && queueRes.value.ok) {
+          const qJson = await queueRes.value.json();
+          if (Array.isArray(qJson) && qJson.length > 0) {
+            setPriorityQueue(qJson);
+          }
+        }
+
+        if (sprintRes.status === 'fulfilled' && sprintRes.value.ok) {
+          const sJson = await sprintRes.value.json();
+          if (sJson && sJson.target_revenue_aed) {
+            setSprintData(sJson);
+          }
+        }
+
+        if (planRes.status === 'fulfilled' && planRes.value.ok) {
+          const pJson = await planRes.value.json();
+          if (pJson && pJson.quotas) {
+            setTargetPlan(pJson);
+          }
+        }
+      } catch (e) {
+        console.error('War Room fetch failed', e);
+      }
+    };
+
+    fetchWarRoomData();
+    const interval = setInterval(fetchWarRoomData, 15000);
+    return () => clearInterval(interval);
+  }, [missionId]);
+
   const handleApproveAction = (leadId: number) => {
     setApprovedLeads((prev) => [...prev, leadId]);
     setTimeout(() => {
-      onNavigateTab('closing_engine');
+      onNavigateTab('comms_center');
     }, 400);
   };
 
