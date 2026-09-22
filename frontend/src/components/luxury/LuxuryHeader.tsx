@@ -1,107 +1,87 @@
 'use client';
 
 import React from 'react';
-import { Search, Bell, Sparkles, ChevronDown } from 'lucide-react';
+import { Search, Bell, Sparkles, ChevronDown, ShieldCheck, Crown } from 'lucide-react';
 
 interface LuxuryHeaderProps {
   onSearch?: (query: string) => void;
   unreadNotificationsCount?: number;
   onOpenNotifications?: () => void;
   onProfileClick?: () => void;
+  activeSectionTitle?: string;
 }
 
 export const LuxuryHeader: React.FC<LuxuryHeaderProps> = ({
   onSearch,
-  unreadNotificationsCount = 3,
+  unreadNotificationsCount = 0,
   onOpenNotifications,
   onProfileClick,
+  activeSectionTitle = 'Sovereign AI Command Center',
 }) => {
   return (
-    <header className="w-full pt-6 pb-4 px-8 border-b border-[#D4AF37]/15 bg-gradient-to-b from-[#06080F]/90 via-[#06080F]/60 to-transparent backdrop-blur-md relative z-20">
-      {/* Top Utility Bar: Search, Quote, Notifications, Profile */}
-      <div className="flex items-center justify-between gap-6 mb-5">
-        {/* Search Bar */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-[#8C9BAE] absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search anything across empire..."
-            onChange={(e) => onSearch && onSearch(e.target.value)}
-            className="w-full bg-[#0B101D]/70 border border-[#D4AF37]/20 rounded-full pl-10 pr-4 py-1.5 text-xs text-[#F9F6EE] placeholder-[#64748B] focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/40 transition-all duration-300"
-          />
+    <header className="w-full py-4 px-6 lg:px-8 border-b border-[#D4AF37]/20 bg-gradient-to-b from-[#06080F]/95 via-[#04060A]/80 to-transparent backdrop-blur-xl relative z-20">
+      <div className="flex items-center justify-between gap-6">
+        {/* Left Search Bar & Section Indicator */}
+        <div className="flex items-center gap-4 flex-1 max-w-xl">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-[#8C9BAE] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search across sovereign empire (missions, leads, revenue, deals)..."
+              onChange={(e) => onSearch && onSearch(e.target.value)}
+              className="w-full bg-[#080C16]/90 border border-[#D4AF37]/25 rounded-full pl-10 pr-4 py-2 text-xs text-[#F9F6EE] placeholder-[#64748B] focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/50 shadow-[inset_0_2px_8px_rgba(0,0,0,0.6)] transition-all duration-300"
+            />
+          </div>
         </div>
 
-        {/* Right side quote & controls */}
-        <div className="flex items-center gap-6">
+        {/* Right side quote, notifications & CEO profile */}
+        <div className="flex items-center gap-4 lg:gap-6">
           {/* Dubai Vision Quote */}
-          <div className="hidden lg:block text-right">
-            <span className="font-serif italic text-xs tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#F3E5AB] via-[#D4AF37] to-[#C5A059]">
+          <div className="hidden xl:flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
+            <span className="font-serif italic text-xs tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#FFF6E5] via-[#F5D77F] to-[#D4AF37]">
               &ldquo;From Dubai To The World&rdquo;
             </span>
           </div>
 
-          {/* Notification Bell */}
+          {/* Human Safety Barrier Gate Badge */}
           <button
             onClick={onOpenNotifications}
-            className="relative p-2 rounded-full bg-[#0B101D]/80 border border-[#D4AF37]/25 text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all duration-300"
-            title="Notifications"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0B101D]/90 border border-[#D4AF37]/30 hover:border-[#D4AF37]/60 text-xs font-semibold text-[#F9F6EE] transition-all shadow-[0_2px_12px_rgba(0,0,0,0.5)]"
           >
-            <Bell className="w-4 h-4" />
-            {unreadNotificationsCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" />
+            <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
+            <span className="hidden sm:inline text-[11px] text-[#8C9BAE]">Safety Queue</span>
+            {unreadNotificationsCount > 0 ? (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                {unreadNotificationsCount}
+              </span>
+            ) : (
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
             )}
           </button>
 
-          {/* CEO Profile Card */}
+          {/* CEO Profile Jewel */}
           <div
             onClick={onProfileClick}
-            className="flex items-center gap-3 pl-3 pr-4 py-1.5 rounded-full bg-[#0B101D]/90 border border-[#D4AF37]/30 hover:border-[#D4AF37]/60 cursor-pointer transition-all duration-300 shadow-[0_2px_15px_rgba(0,0,0,0.5)] group"
+            className="flex items-center gap-2.5 pl-2.5 pr-4 py-1 rounded-full bg-[#0B101D]/95 border border-[#D4AF37]/35 hover:border-[#D4AF37]/70 cursor-pointer transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.6)] group select-none"
           >
             <div className="relative">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#D4AF37] via-[#F3E5AB] to-[#996515] p-[1.5px]">
-                <div className="w-full h-full rounded-full bg-[#06080F] flex items-center justify-center overflow-hidden">
-                  <span className="text-xs font-bold text-[#D4AF37]">IK</span>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#D4AF37] via-[#FFF6E5] to-[#AA771C] p-[1.5px] shadow-[0_0_10px_rgba(212,175,55,0.4)]">
+                <div className="w-full h-full rounded-full bg-[#04060A] flex items-center justify-center overflow-hidden">
+                  <span className="text-xs font-bold text-[#F5D77F] font-serif">IK</span>
                 </div>
               </div>
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#06080F]" />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#04060A] shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
             </div>
 
-            <div className="text-left">
+            <div className="text-left hidden sm:block">
               <div className="flex items-center gap-1">
-                <span className="text-xs font-bold text-[#F9F6EE] tracking-wide">Ikrama</span>
+                <span className="text-xs font-bold text-[#F9F6EE] tracking-wide font-serif">Ikrama</span>
                 <ChevronDown className="w-3 h-3 text-[#8C9BAE] group-hover:text-[#D4AF37] transition-colors" />
               </div>
-              <p className="text-[10px] text-[#C5A059] font-medium tracking-wider">CEO & Founder</p>
+              <p className="text-[9.5px] text-[#D4AF37] font-semibold tracking-wider uppercase">Executive CEO</p>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Hero Headline Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-1">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-xs font-semibold text-[#8C9BAE] uppercase tracking-[0.2em] flex items-center gap-1.5">
-              <span>Good Morning, Ikrama</span>
-              <span className="text-sm">👑</span>
-            </h3>
-          </div>
-
-          <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#FFFFFF] via-[#F3E5AB] to-[#D4AF37] drop-shadow-sm leading-tight">
-            Your AI Business Empire
-            <br />
-            Is Operating Beautifully.
-          </h1>
-
-          <p className="mt-2 text-xs md:text-sm text-[#94A3B8] flex items-center flex-wrap gap-2 tracking-wide font-light">
-            <span className="text-[#D4AF37] font-medium">7 Departments</span>
-            <span className="text-[#475569]">•</span>
-            <span className="text-[#F9F6EE]">42 AI Agents</span>
-            <span className="text-[#475569]">•</span>
-            <span className="text-[#38BDF8]">Global Opportunities</span>
-            <span className="text-[#475569]">•</span>
-            <span className="text-[#A7F3D0]">Infinite Possibilities</span>
-          </p>
         </div>
       </div>
     </header>

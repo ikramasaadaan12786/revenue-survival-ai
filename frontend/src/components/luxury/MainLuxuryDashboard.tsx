@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { DashboardHeroBanner } from './DashboardHeroBanner';
 import { KPICardsGrid } from './KPICardsGrid';
 import { AIGlobe } from './AIGlobe';
 import { AIDepartmentsGrid } from './AIDepartmentsGrid';
@@ -56,14 +57,24 @@ export const MainLuxuryDashboard: React.FC<MainLuxuryDashboardProps> = ({
   };
 
   return (
-    <div className="space-y-6 w-full max-w-[1600px] mx-auto">
-      {/* 1. Top KPI Cards Row (Real DB values) */}
+    <div className="space-y-8 w-full max-w-[1640px] mx-auto">
+      {/* 1. Cinematic Dubai Hero Section */}
+      <section aria-label="Command Center Hero">
+        <DashboardHeroBanner
+          onExploreMissions={() => onNavigateTab('missions')}
+          onOpenRadar={() => onNavigateTab('market_radar')}
+          activeMissionsCount={missions.length}
+          totalOpportunitiesCount={opportunities.length}
+        />
+      </section>
+
+      {/* 2. Top KPI Cards Row (Floating 3D Gold Glass) */}
       <section aria-label="Key Performance Indicators">
         <KPICardsGrid metrics={metrics} />
       </section>
 
-      {/* 2. Middle Row: 3D Holographic Globe & Real Opportunity Feed + AI Departments Real-Time Telemetry */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      {/* 3. Middle Row: 3D Holographic Globe & Real Opportunity Feed + AI Departments 3x3 Matrix */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         {/* Left: 3D Globe with Dubai Sky Atmosphere & Real Opportunity Feed */}
         <div className="lg:col-span-5 flex">
           <AIGlobe
@@ -84,8 +95,8 @@ export const MainLuxuryDashboard: React.FC<MainLuxuryDashboardProps> = ({
         </div>
       </section>
 
-      {/* 3. Bottom Row: Revenue Growth Chart, Real Active Missions Widget, Today's Strategic Priorities */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+      {/* 4. Bottom Row: Revenue Growth Financial Terminal, Active Missions Widget, Today's Strategic Priorities */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
         {/* Revenue Analytics Chart */}
         <div className="flex">
           <div className="w-full">
