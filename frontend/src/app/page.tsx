@@ -15,6 +15,7 @@ import RevenueIntelligenceCenter from "@/components/RevenueIntelligenceCenter";
 import AutonomousClosingCenter from "@/components/AutonomousClosingCenter";
 import AICEOCommandCenter from "@/components/AICEOCommandCenter";
 import { RevenueControlRoom } from "@/components/RevenueControlRoom";
+import { GrowthCommandCenter } from "@/components/GrowthCommandCenter";
 import NewMissionModal from "@/components/NewMissionModal";
 import { DashboardSummary } from "@/types";
 import { api } from "@/lib/api";
@@ -163,6 +164,14 @@ export default function Home() {
             {activeTab === "control-room" && (
               <RevenueControlRoom
                 activeMissionId={missionId}
+                onRefreshAll={() => fetchSummary(missionId)}
+              />
+            )}
+
+            {/* Autonomous Growth Loop v6 Command Center */}
+            {activeTab === "growth-loop" && (
+              <GrowthCommandCenter
+                missionId={missionId}
                 onRefreshAll={() => fetchSummary(missionId)}
               />
             )}

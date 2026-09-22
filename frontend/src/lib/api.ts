@@ -406,7 +406,18 @@ export const api = {
     }),
   getBusinessGrowthMemory: (limit: number = 10) =>
     fetcher<any[]>(`/business-operator/growth-memory?limit=${limit}`),
+
+  // Autonomous Growth Loop v6: Optimization & Experiments
+  getGrowthCommandCenterStats: (missionId?: number) =>
+    fetcher<any>(`/growth-loop/command-center${missionId ? `?mission_id=${missionId}` : ""}`),
+  runGrowthOptimizationCycle: (missionId?: number) =>
+    fetcher<any>(`/growth-loop/run-optimization-cycle${missionId ? `?mission_id=${missionId}` : ""}`, { method: "POST" }),
+  createGrowthExperiment: (data: { mission_id?: number; name: string; category?: string; hypothesis: string; variant_a: string; variant_b: string }) =>
+    fetcher<any>("/growth-loop/create-experiment", { method: "POST", body: JSON.stringify(data) }),
+  getPricingIntelligence: () =>
+    fetcher<any[]>("/growth-loop/pricing-intelligence"),
 };
+
 
 
 

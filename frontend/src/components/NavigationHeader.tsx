@@ -19,7 +19,8 @@ import {
   CheckCircle2,
   FolderGit2,
   Brain,
-  Cpu
+  Cpu,
+  TrendingUp
 } from "lucide-react";
 import { DashboardSummary } from "@/types";
 
@@ -84,6 +85,7 @@ export default function NavigationHeader({
   const navItems = [
     { id: "command", label: "Command HUD", icon: Flame },
     { id: "control-room", label: "Control Room v5", icon: Cpu, special: true },
+    { id: "growth-loop", label: "Growth Loop v6", icon: TrendingUp, special: true },
     { id: "ceo-brain", label: "CEO Brain v4", icon: Brain, special: true },
     { id: "closing-engine", label: "Closing Engine", icon: Target, special: true },
     { id: "strategy-brain", label: "Strategy Brain & Marketplace", icon: Sparkles, brain: true },

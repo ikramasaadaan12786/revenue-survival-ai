@@ -25,6 +25,7 @@ from app.api import (
     learning,
     ceo_brain,
     business_operator,
+    growth_loop,
 )
 
 @asynccontextmanager
@@ -168,6 +169,7 @@ app.include_router(closing_engine.router, prefix=settings.API_V1_STR)
 app.include_router(learning.router, prefix=settings.API_V1_STR)
 app.include_router(ceo_brain.router, prefix=settings.API_V1_STR)
 app.include_router(business_operator.router, prefix=settings.API_V1_STR)
+app.include_router(growth_loop.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():

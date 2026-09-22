@@ -930,6 +930,55 @@ export interface BusinessGrowthMemoryItem {
   created_at: string;
 }
 
+export interface GrowthCommandCenterStats {
+  growth_score: number;
+  best_strategy: string;
+  winning_offer: string;
+  winning_source: string;
+  active_experiments_count: number;
+  concluded_experiments_count: number;
+  learning_metrics: {
+    won_deals_count: number;
+    lost_deals_count: number;
+    total_revenue_generated_aed: number;
+    overall_conversion_rate: number;
+    best_performing_industry: string;
+    best_performing_source: string;
+    best_performing_offer: string;
+    best_pitch_strategy: string;
+    optimization_recommendations: string[];
+    growth_score: number;
+  };
+  experiments: {
+    id: number;
+    name: string;
+    hypothesis: string;
+    variant_a: string;
+    variant_b: string;
+    status: string;
+    winning_variant: string;
+    confidence_score: number;
+    recommendation: string;
+  }[];
+  strategy_pivots: {
+    type: string;
+    target: string;
+    action: string;
+    expected_impact: string;
+    confidence_score: number;
+    trigger_reason: string;
+  }[];
+  pricing_intelligence: {
+    offer_name: string;
+    current_price_aed: number;
+    historical_conversion_rate: number;
+    pricing_recommendation: string;
+    recommended_new_price_aed: number;
+    rationale: string;
+    confidence_score: number;
+  }[];
+}
+
 
 
 
