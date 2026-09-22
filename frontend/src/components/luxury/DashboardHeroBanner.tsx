@@ -62,8 +62,14 @@ export const DashboardHeroBanner: React.FC<DashboardHeroBannerProps> = ({
       <div className="relative z-10 p-6 md:p-8 lg:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
         {/* Left Headline & Salutation */}
         <div className="max-w-2xl space-y-4">
+          {/* Temporary Production Verification Marker */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#D4AF37] text-[#06080F] font-mono text-xs font-black tracking-widest uppercase shadow-[0_0_15px_rgba(212,175,55,0.8)] animate-pulse">
+            <span>✨</span>
+            <span>LUXURY V2 ACTIVE</span>
+          </div>
+
           {/* Greeting Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#D4AF37]/20 via-[#D4AF37]/10 to-transparent border border-[#D4AF37]/40 backdrop-blur-xl shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#D4AF37]/20 via-[#D4AF37]/10 to-transparent border border-[#D4AF37]/40 backdrop-blur-xl shadow-[0_0_15px_rgba(212,175,55,0.2)] w-fit">
             <span className="text-base drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]">👑</span>
             <span className="font-serif text-xs md:text-sm font-bold tracking-wider text-[#F9F6EE]">
               Good Morning, Ikrama

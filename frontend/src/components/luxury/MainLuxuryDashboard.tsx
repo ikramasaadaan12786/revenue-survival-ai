@@ -58,6 +58,19 @@ export const MainLuxuryDashboard: React.FC<MainLuxuryDashboardProps> = ({
 
   return (
     <div className="space-y-8 w-full max-w-[1640px] mx-auto">
+      {/* Top Luxury v2 Active Production Marker */}
+      <div className="w-full flex items-center justify-between px-4 py-2 rounded-xl bg-gradient-to-r from-[#D4AF37]/25 via-[#0B101D] to-[#04060A] border border-[#D4AF37]/50 shadow-[0_0_25px_rgba(212,175,55,0.25)]">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#D4AF37] animate-ping" />
+          <span className="font-mono text-xs font-black text-[#F5D77F] tracking-widest uppercase">
+            LUXURY V2 ACTIVE • SOVEREIGN DUBAI AI ENTERPRISE COMMAND CENTER
+          </span>
+        </div>
+        <div className="text-[10px] font-bold text-emerald-400 font-mono">
+          100% REAL PRODUCTION TELEMETRY
+        </div>
+      </div>
+
       {/* 1. Cinematic Dubai Hero Section */}
       <section aria-label="Command Center Hero">
         <DashboardHeroBanner
