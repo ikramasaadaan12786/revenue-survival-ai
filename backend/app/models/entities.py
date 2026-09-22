@@ -192,7 +192,7 @@ class Lead(Base):
     decision_maker_probability = Column(Float, default=0.85)
     qualification_notes = Column(Text, nullable=True)
     
-    # Phase 16 Verification Layer
+    # Phase 16 & 17 Real Evidence & Verification Layer
     source_type = Column(String(50), default="REAL")  # REAL, SYSTEM, TEST
     verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
     client_identity = Column(String(255), nullable=True)
@@ -200,6 +200,18 @@ class Lead(Base):
     payment_status = Column(String(50), nullable=True)  # SETTLED, PENDING, UNPAID, FAILED
     payment_reference = Column(String(255), nullable=True)
     revenue_verification_status = Column(String(50), default="UNVERIFIED")  # VERIFIED, PENDING, UNVERIFIED
+
+    # Phase 17 Real Evidence Fields
+    source_platform = Column(String(100), default="Telegram")  # Telegram, LinkedIn, Instagram, Reddit, YouTube, Web Search
+    source_url = Column(Text, nullable=True)
+    profile_url = Column(Text, nullable=True)
+    evidence_reference = Column(String(255), nullable=True)
+    discovery_timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    calendar_event_id = Column(String(255), nullable=True)
+    meeting_link = Column(String(255), nullable=True)
+    call_status = Column(String(50), default="NONE")  # NONE, CALL_REQUESTED, CALL_BOOKED, CALL_COMPLETED, QUALIFIED
+    call_notes = Column(Text, nullable=True)
+    call_completed_at = Column(DateTime, nullable=True)
 
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -224,13 +236,17 @@ class Communication(Base):
     recipient = Column(String(255), nullable=True)
     provider_name = Column(String(50), default="WHATSAPP_BUSINESS")  # WHATSAPP_BUSINESS, TWILIO, SENDGRID_EMAIL
     provider_message_id = Column(String(255), nullable=True)
+    provider_confirmation = Column(String(255), nullable=True)
     delivery_confirmation = Column(String(255), nullable=True)
     reply_source = Column(String(50), default="CLIENT_DIRECT")  # CLIENT_DIRECT, INBOUND_WEBHOOK, SIMULATED
+    reply_status = Column(String(50), default="NONE")  # NONE, REPLIED_INTERESTED, REPLIED_NEED_INFO, REPLIED_PRICE_CONCERN, REPLIED_TIMING_ISSUE, REPLIED_NOT_INTERESTED, REPLIED_MEETING_REQUEST
+    reply_classification = Column(String(100), nullable=True)
+    followup_sequence_step = Column(Integer, default=0)  # 0=Initial, 1=4h Value, 2=24h ROI, 3=48h Final
     source_type = Column(String(50), default="REAL")  # REAL, SYSTEM, TEST
     verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
     requires_approval = Column(Boolean, default=True)
     approval_status = Column(String(50), default="PENDING")  # PENDING, APPROVED, REJECTED, MODIFIED
-    delivery_status = Column(String(50), default="DRAFT")  # DRAFT, QUEUED, SENT, DELIVERED, READ, REPLIED, FAILED
+    delivery_status = Column(String(50), default="DRAFT")  # DRAFT, APPROVAL_REQUIRED, APPROVED, QUEUED, SENT, DELIVERED, READ, REPLIED, FAILED
     scheduled_for = Column(DateTime, nullable=True)
     sent_at = Column(DateTime, nullable=True)
     delivered_at = Column(DateTime, nullable=True)
@@ -337,8 +353,11 @@ class RevenueTracking(Base):
     payer_name = Column(String(255), nullable=True)
     client_identity = Column(String(255), nullable=True)
     proposal_id = Column(Integer, nullable=True)
+    payment_id = Column(String(255), nullable=True)
+    transaction_reference = Column(String(255), nullable=True)
     payment_status = Column(String(50), default="SETTLED")  # SETTLED, PENDING, UNPAID, FAILED, REFUNDED
     payment_reference = Column(String(255), nullable=True)
+    settlement_date = Column(DateTime, default=datetime.datetime.utcnow)
     revenue_verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
     deal_status = Column(String(50), default="CONFIRMED")
     commission_collected = Column(Float, default=0.0)
@@ -413,11 +432,16 @@ class Proposal(Base):
     payment_terms = Column(String(255), default="50% upfront deposit, 50% upon deployment")
     payment_status = Column(String(50), default="UNPAID")  # UNPAID, SETTLED, PENDING, REFUNDED
     payment_reference = Column(String(255), nullable=True)
+    recipient_confirmation = Column(String(255), nullable=True)
+    client_response = Column(Text, nullable=True)
+    viewed_at = Column(DateTime, nullable=True)
+    accepted_at = Column(DateTime, nullable=True)
+    rejected_at = Column(DateTime, nullable=True)
     source_type = Column(String(50), default="REAL")  # REAL, SYSTEM, TEST
     verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
     expected_outcomes = Column(JSON, default=list)
     full_proposal_markdown = Column(Text, nullable=True)
-    status = Column(String(50), default="DRAFT")  # DRAFT, SENT, ACCEPTED, REJECTED
+    status = Column(String(50), default="DRAFT")  # DRAFT, SENT, VIEWED, ACCEPTED, REJECTED
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     mission = relationship("Mission", back_populates="proposals")
@@ -674,6 +698,29 @@ class EnterpriseSubscriptionBilling(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     company = relationship("EnterpriseCompany", back_populates="subscriptions")
+
+
+class OvernightExecutionLog(Base):
+    __tablename__ = "overnight_execution_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=False)
+    cycle_type = Column(String(100), default="INTERVAL_15M")  # INTERVAL_15M, HOURLY_BOTTLENECK, CEO_REVIEW_6H, MORNING_REPORT
+    status = Column(String(50), default="SUCCESS")
+    summary = Column(Text, nullable=False)
+    leads_audited = Column(Integer, default=0)
+    replies_processed = Column(Integer, default=0)
+    followups_staged = Column(Integer, default=0)
+    proposals_prepared = Column(Integer, default=0)
+    bottlenecks_detected = Column(JSON, default=list)
+    strategy_recommendations = Column(JSON, default=list)
+    metrics_snapshot = Column(JSON, default=dict)
+    source_type = Column(String(50), default="SYSTEM")
+    verification_status = Column(String(50), default="VERIFIED")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    mission = relationship("Mission")
+
 
 
 

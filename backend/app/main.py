@@ -162,7 +162,29 @@ async def lifespan(app: FastAPI):
             "ALTER TABLE tasks ADD COLUMN source_type VARCHAR(50) DEFAULT 'SYSTEM'",
             "ALTER TABLE tasks ADD COLUMN verification_status VARCHAR(50) DEFAULT 'VERIFIED'",
             "ALTER TABLE operator_action_logs ADD COLUMN source_type VARCHAR(50) DEFAULT 'SYSTEM'",
-            "ALTER TABLE operator_action_logs ADD COLUMN verification_status VARCHAR(50) DEFAULT 'VERIFIED'"
+            "ALTER TABLE operator_action_logs ADD COLUMN verification_status VARCHAR(50) DEFAULT 'VERIFIED'",
+            "ALTER TABLE leads ADD COLUMN source_platform VARCHAR(100) DEFAULT 'Telegram'",
+            "ALTER TABLE leads ADD COLUMN source_url TEXT",
+            "ALTER TABLE leads ADD COLUMN profile_url TEXT",
+            "ALTER TABLE leads ADD COLUMN evidence_reference VARCHAR(255)",
+            "ALTER TABLE leads ADD COLUMN discovery_timestamp DATETIME",
+            "ALTER TABLE leads ADD COLUMN calendar_event_id VARCHAR(255)",
+            "ALTER TABLE leads ADD COLUMN meeting_link VARCHAR(255)",
+            "ALTER TABLE leads ADD COLUMN call_status VARCHAR(50) DEFAULT 'NONE'",
+            "ALTER TABLE leads ADD COLUMN call_notes TEXT",
+            "ALTER TABLE leads ADD COLUMN call_completed_at DATETIME",
+            "ALTER TABLE communications ADD COLUMN provider_confirmation VARCHAR(255)",
+            "ALTER TABLE communications ADD COLUMN reply_status VARCHAR(50) DEFAULT 'NONE'",
+            "ALTER TABLE communications ADD COLUMN reply_classification VARCHAR(100)",
+            "ALTER TABLE communications ADD COLUMN followup_sequence_step INTEGER DEFAULT 0",
+            "ALTER TABLE proposals ADD COLUMN recipient_confirmation VARCHAR(255)",
+            "ALTER TABLE proposals ADD COLUMN client_response TEXT",
+            "ALTER TABLE proposals ADD COLUMN viewed_at DATETIME",
+            "ALTER TABLE proposals ADD COLUMN accepted_at DATETIME",
+            "ALTER TABLE proposals ADD COLUMN rejected_at DATETIME",
+            "ALTER TABLE revenue_tracking ADD COLUMN payment_id VARCHAR(255)",
+            "ALTER TABLE revenue_tracking ADD COLUMN transaction_reference VARCHAR(255)",
+            "ALTER TABLE revenue_tracking ADD COLUMN settlement_date DATETIME"
         ]:
             try:
                 from sqlalchemy import text

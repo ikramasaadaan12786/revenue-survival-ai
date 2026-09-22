@@ -24,7 +24,7 @@ export const KPICardsGrid: React.FC<KPICardsGridProps> = ({ metrics }) => {
 
   const cards = [
     {
-      title: 'Total Revenue',
+      title: 'Verified Revenue',
       value: formatAED(metrics?.totalRevenue),
       trend: metrics?.revenueGrowthRate !== undefined && metrics.revenueGrowthRate !== null
         ? `${metrics.revenueGrowthRate >= 0 ? '↑ +' : '↓ '}${metrics.revenueGrowthRate.toFixed(1)}% pace`

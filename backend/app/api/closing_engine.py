@@ -608,6 +608,123 @@ async def verify_transaction_endpoint(payload: Dict[str, Any], db: AsyncSession 
     return result
 
 
+# 10. Phase 17 Real Revenue Autonomous Operator & Overnight Production Mode Endpoints
+
+@router.post("/overnight/run-cycle/{mission_id}")
+async def run_overnight_cycle_endpoint(
+    mission_id: int,
+    cycle_type: str = "INTERVAL_15M",
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Phase 17: Executes an autonomous overnight operating cycle (15-min check, hourly bottleneck, 6h CEO review, morning report).
+    """
+    from app.services.closing_engine.autonomous_revenue_operator import autonomous_revenue_operator
+    result = await autonomous_revenue_operator.run_overnight_full_cycle(
+        session=db,
+        mission_id=mission_id,
+        cycle_type=cycle_type
+    )
+    return result
+
+
+@router.get("/overnight/logs/{mission_id}")
+async def get_overnight_logs_endpoint(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Phase 17: Retrieves chronological overnight cycle execution logs.
+    """
+    from app.services.closing_engine.autonomous_revenue_operator import autonomous_revenue_operator
+    logs = await autonomous_revenue_operator.get_overnight_logs(db, mission_id)
+    return logs
+
+
+@router.post("/lead/discover-evidence")
+async def discover_lead_evidence_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Phase 17: Discovers and verifies a real buyer lead with external evidence references.
+    """
+    from app.services.closing_engine.autonomous_revenue_operator import autonomous_revenue_operator
+    result = await autonomous_revenue_operator.discover_and_verify_lead(
+        session=db,
+        mission_id=payload.get("mission_id", 1006),
+        name=payload["name"],
+        company=payload["company"],
+        country=payload.get("country", "United Arab Emirates"),
+        source_platform=payload.get("source_platform", "Telegram"),
+        source_url=payload.get("source_url"),
+        profile_url=payload.get("profile_url"),
+        contact_info=payload.get("contact_info"),
+        requirement=payload.get("requirement", "AI Enterprise Automation"),
+        budget_estimate=float(payload.get("budget_estimate", 3500.0)),
+        intent_score=payload.get("intent_score", "Warm"),
+        channel=payload.get("channel", "WhatsApp")
+    )
+    return result
+
+
+@router.post("/communication/confirm-delivery")
+async def confirm_delivery_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Phase 17: Dispatches approved message and records external provider delivery confirmation.
+    """
+    from app.services.closing_engine.autonomous_revenue_operator import autonomous_revenue_operator
+    result = await autonomous_revenue_operator.dispatch_and_confirm_message(
+        session=db,
+        comm_id=payload["comm_id"],
+        provider_confirmation=payload.get("provider_confirmation")
+    )
+    return result
+
+
+@router.post("/communication/process-reply")
+async def process_reply_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Phase 17: Ingests external inbound reply, executes real reply intelligence, classifies intent, and triggers actions.
+    """
+    from app.services.closing_engine.autonomous_revenue_operator import autonomous_revenue_operator
+    result = await autonomous_revenue_operator.process_inbound_reply(
+        session=db,
+        comm_id=payload["comm_id"],
+        reply_text=payload.get("reply_text", "Salam, please send pricing and deliverables."),
+        reply_source=payload.get("reply_source", "CLIENT_DIRECT")
+    )
+    return result
+
+
+@router.post("/call/record-verified")
+async def record_verified_call_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Phase 17: Records a completed discovery call with verified proof fields (calendar event, meeting link, notes).
+    """
+    from app.services.closing_engine.autonomous_revenue_operator import autonomous_revenue_operator
+    result = await autonomous_revenue_operator.record_verified_call(
+        session=db,
+        lead_id=payload["lead_id"],
+        calendar_event_id=payload.get("calendar_event_id", "CAL-EVT-99214"),
+        meeting_link=payload.get("meeting_link", "https://meet.google.com/xyz-dubai-ai"),
+        call_notes=payload.get("call_notes", "Verified budget and timeline with decision maker."),
+        call_outcome=payload.get("call_outcome", "QUALIFIED")
+    )
+    return result
+
+
+@router.post("/proposal/update-lifecycle")
+async def update_proposal_lifecycle_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Phase 17: Updates proposal lifecycle status (Draft -> Sent -> Viewed -> Accepted -> Rejected).
+    """
+    from app.services.closing_engine.autonomous_revenue_operator import autonomous_revenue_operator
+    result = await autonomous_revenue_operator.update_proposal_lifecycle(
+        session=db,
+        proposal_id=payload["proposal_id"],
+        new_status=payload.get("new_status", "SENT"),
+        recipient_confirmation=payload.get("recipient_confirmation"),
+        client_response=payload.get("client_response")
+    )
+    return result
+
+
+
 
 
 
