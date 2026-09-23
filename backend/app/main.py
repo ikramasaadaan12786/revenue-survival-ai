@@ -165,6 +165,13 @@ if os.path.exists(static_dir):
     if os.path.exists(_next_dir):
         app.mount("/_next", StaticFiles(directory=_next_dir), name="next_static")
 
+@app.get("/whatsapp-coexistence.html")
+async def whatsapp_coexistence_page():
+    coex_file = os.path.join(static_dir, "whatsapp-coexistence.html")
+    if os.path.exists(coex_file):
+        return FileResponse(coex_file)
+    return {"error": "whatsapp-coexistence.html not found"}
+
 @app.get("/")
 async def root():
     index_file = os.path.join(static_dir, "index.html")
