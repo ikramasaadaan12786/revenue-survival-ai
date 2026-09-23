@@ -249,16 +249,16 @@ async def diagnose_meta_whatsapp():
             if waba_details_res.status_code == 200:
                 results["waba_details"] = waba_details_res.json()
 
-            # 3. Inspect Phone Registration / PIN State (Read-only)
-            phone_reg_res = await client.get(
-                f"https://graph.facebook.com/v21.0/{phone_id}",
-                params={"fields": "id,display_phone_number,code_verification_status,is_pin_enabled,name_status,status"},
+            # 4. Check Facebook Login for Business Configurations
+            app_id = results.get("app_id", "1379013277028626")
+            config_res = await client.get(
+                f"https://graph.facebook.com/v21.0/{app_id}/login_configurations",
                 headers={"Authorization": f"Bearer {token}"}
             )
-            if phone_reg_res.status_code == 200:
-                results["phone_reg_info"] = phone_reg_res.json()
+            if config_res.status_code == 200:
+                results["login_configurations"] = config_res.json().get("data", [])
             else:
-                results["phone_reg_info_error"] = phone_reg_res.json()
+                results["login_configurations_error"] = config_res.json()
 
     except Exception as e:
         results["waba_query_exception"] = str(e)

@@ -155,8 +155,21 @@ app.include_router(system.router)
 app.include_router(webhooks.router, prefix=settings.API_V1_STR)
 app.include_router(webhooks.router)
 
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    _next_dir = os.path.join(static_dir, "_next")
+    if os.path.exists(_next_dir):
+        app.mount("/_next", StaticFiles(directory=_next_dir), name="next_static")
+
 @app.get("/")
 async def root():
+    index_file = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
     return {
         "platform": settings.PROJECT_NAME,
         "version": settings.VERSION,
@@ -164,3 +177,4 @@ async def root():
         "survival_mode": "ACTIVE",
         "docs_url": "/docs"
     }
+
