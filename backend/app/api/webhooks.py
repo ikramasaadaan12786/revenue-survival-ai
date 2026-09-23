@@ -196,52 +196,47 @@ async def diagnose_meta_whatsapp():
     except Exception as e:
         results["debug_api_exception"] = str(e)
 
-    # 3. Discover WABA and Subscriptions
-    waba_id = None
-    waba_discovery_log = []
+    # 3. WABA Subscribed Apps Configuration
+    waba_id = os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID") or "971398669179205"
+    results["waba_id"] = waba_id
+    
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            app_id = results.get("app_id") or "1379013277028626"
-
-            # Check App's Webhook Subscriptions (shows if messages webhook is active)
-            r_app_sub = await client.get(
-                f"https://graph.facebook.com/v21.0/{app_id}/subscriptions",
+            # 1. POST to subscribe Growthpilot AI to the real WABA
+            sub_post = await client.post(
+                f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
                 headers={"Authorization": f"Bearer {token}"}
             )
-            waba_discovery_log.append({"method": "app_subscriptions", "status": r_app_sub.status_code, "data": r_app_sub.json() if r_app_sub.status_code == 200 else r_app_sub.text})
-            if r_app_sub.status_code == 200:
-                results["app_subscriptions"] = r_app_sub.json()
+            results["waba_subscribe_post_status"] = sub_post.status_code
+            results["waba_subscribe_post_body"] = sub_post.json() if sub_post.status_code == 200 else sub_post.text
 
-            # Query /me
-            r_me = await client.get(
-                "https://graph.facebook.com/v21.0/me",
+            # 2. GET to verify subscribed apps on the real WABA
+            sub_get = await client.get(
+                f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
                 headers={"Authorization": f"Bearer {token}"}
             )
-            waba_discovery_log.append({"method": "me", "status": r_me.status_code, "data": r_me.json() if r_me.status_code == 200 else r_me.text})
+            results["waba_subscribed_apps_status"] = sub_get.status_code
+            if sub_get.status_code == 200:
+                sub_data = sub_get.json().get("data", [])
+                results["waba_subscribed_apps"] = sub_data
+                results["growthpilot_subscribed"] = any(
+                    str(app.get("id") or app.get("whatsapp_business_api_data", {}).get("id")) == str(results.get("app_id", "1379013277028626")) or
+                    "Growthpilot" in str(app.get("name", ""))
+                    for app in sub_data
+                ) if sub_data else (sub_post.status_code == 200)
+            else:
+                results["waba_subscribed_apps_error"] = sub_get.text
 
-            # Query /me/assigned_whatsapp_business_accounts
-            r_assigned_waba = await client.get(
-                "https://graph.facebook.com/v21.0/me/assigned_whatsapp_business_accounts",
+            # 3. Query WABA Details
+            waba_details_res = await client.get(
+                f"https://graph.facebook.com/v21.0/{waba_id}",
+                params={"fields": "id,name,currency,timezone_id,message_template_namespace"},
                 headers={"Authorization": f"Bearer {token}"}
             )
-            waba_discovery_log.append({"method": "me_assigned_waba", "status": r_assigned_waba.status_code, "data": r_assigned_waba.json() if r_assigned_waba.status_code == 200 else r_assigned_waba.text})
-            if r_assigned_waba.status_code == 200:
-                data = r_assigned_waba.json().get("data", [])
-                if data:
-                    waba_id = data[0].get("id")
-                    results["waba_name"] = data[0].get("name")
-
-            # Query /me/accounts
-            r_me_acc = await client.get(
-                "https://graph.facebook.com/v21.0/me/accounts",
-                headers={"Authorization": f"Bearer {token}"}
-            )
-            waba_discovery_log.append({"method": "me_accounts", "status": r_me_acc.status_code, "data": r_me_acc.json() if r_me_acc.status_code == 200 else r_me_acc.text})
+            if waba_details_res.status_code == 200:
+                results["waba_details"] = waba_details_res.json()
 
     except Exception as e:
-        waba_discovery_log.append({"exception": str(e)})
-
-    results["waba_id"] = waba_id
-    results["waba_discovery_log"] = waba_discovery_log
+        results["waba_subscribe_exception"] = str(e)
 
     return results
