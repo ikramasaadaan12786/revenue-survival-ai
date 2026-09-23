@@ -87,16 +87,33 @@ class CanonicalTelemetryService:
         leads_total_res = await session.execute(select(func.count(Lead.id)).where(*lead_filter))
         leads_total = leads_total_res.scalar() or 0
 
-        verified_leads_filter = list(lead_filter) + [Lead.verification_status == "VERIFIED", Lead.source_type == "REAL"]
+        verified_leads_filter = list(lead_filter) + [
+            Lead.verification_status.in_(["VERIFIED", "SOURCE_VERIFIED"]),
+            Lead.source_type == "REAL",
+            Lead.pipeline_stage.notin_(["DISQUALIFIED", "TEST_INTERNAL", "LOST"])
+        ]
         verified_leads_res = await session.execute(select(func.count(Lead.id)).where(*verified_leads_filter))
         verified_leads = verified_leads_res.scalar() or 0
 
         qualified_leads_filter = list(lead_filter) + [
             or_(Lead.classification == "QUALIFIED", Lead.qualification_score >= 70.0),
-            Lead.source_type == "REAL"
+            Lead.source_type == "REAL",
+            Lead.pipeline_stage.notin_(["DISQUALIFIED", "TEST_INTERNAL", "LOST"])
         ]
         qualified_leads_res = await session.execute(select(func.count(Lead.id)).where(*qualified_leads_filter))
         qualified_leads = qualified_leads_res.scalar() or 0
+
+        # Contact Ready Gate: SOURCE_VERIFIED + genuine non-quarantined/non-placeholder contact route
+        contact_ready_filter = list(verified_leads_filter) + [
+            and_(
+                Lead.contact_info.isnot(None),
+                Lead.contact_info != "",
+                ~Lead.contact_info.like("%@%.internal%"),
+                ~Lead.contact_info.like("%quarantined%")
+            )
+        ]
+        contact_ready_res = await session.execute(select(func.count(Lead.id)).where(*contact_ready_filter))
+        contact_ready_count = contact_ready_res.scalar() or 0
 
         # 4. Communications Telemetry (Resend + Channels)
         emails_queued_filter = list(comm_filter) + [Communication.delivery_status.in_(["DRAFT", "QUEUED", "APPROVED"])]
@@ -244,7 +261,7 @@ class CanonicalTelemetryService:
                 "total_discovered": leads_total,
                 "verified_real": verified_leads,
                 "qualified": qualified_leads,
-                "contact_ready": max(0, qualified_leads - unique_prospects_contacted)
+                "contact_ready": contact_ready_count
             },
             "communications": {
                 "emails_queued": emails_queued,

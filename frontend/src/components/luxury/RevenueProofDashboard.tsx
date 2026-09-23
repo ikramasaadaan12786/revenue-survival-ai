@@ -50,23 +50,23 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
 }) => {
   const [validationData, setValidationData] = useState<any>({
     real_business_results: {
-      verified_leads: 21,
-      verified_messages: 1,
-      verified_replies: 1,
-      verified_calls: 2,
-      verified_proposals: 1,
-      verified_revenue: 7500,
-      verification_badge: '100% AUDIT_CONFIRMED',
+      verified_leads: 0,
+      verified_messages: 0,
+      verified_replies: 0,
+      verified_calls: 0,
+      verified_proposals: 0,
+      verified_revenue: 0,
+      verification_badge: 'ZERO_FAKE_REVENUE_VERIFIED',
     },
     system_activity: {
-      ai_generated_tasks: 14,
-      draft_messages: 166,
-      predicted_revenue: 350225,
-      pipeline_value: 566500,
+      ai_generated_tasks: 0,
+      draft_messages: 0,
+      predicted_revenue: 0,
+      pipeline_value: 0,
       system_status: 'ONLINE_ACTIVE',
     },
     target_revenue_aed: 2500,
-    verification_ratio_pct: 300,
+    verification_ratio_pct: 0,
   });
 
   const [ledger, setLedger] = useState<any[]>([]);
@@ -316,7 +316,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
                 <UserCheck className="w-3.5 h-3.5" />
               </div>
               <div className="text-2xl font-mono font-black text-white">
-                {real.verified_leads ?? 21}
+                {real.verified_leads ?? 0}
               </div>
               <div className="text-[10px] text-slate-400 font-mono">Evidence reference stored</div>
             </div>
@@ -328,7 +328,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
                 <Send className="w-3.5 h-3.5" />
               </div>
               <div className="text-2xl font-mono font-black text-white">
-                {real.verified_messages ?? 1}
+                {real.verified_messages ?? 0}
               </div>
               <div className="text-[10px] text-slate-400 font-mono">Provider confirmation token</div>
             </div>
@@ -340,7 +340,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
                 <MessageSquare className="w-3.5 h-3.5" />
               </div>
               <div className="text-2xl font-mono font-black text-white">
-                {real.verified_replies ?? 1}
+                {real.verified_replies ?? 0}
               </div>
               <div className="text-[10px] text-slate-400 font-mono">Inbound client intent</div>
             </div>
@@ -352,7 +352,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
                 <PhoneCall className="w-3.5 h-3.5" />
               </div>
               <div className="text-2xl font-mono font-black text-white">
-                {real.verified_calls ?? 2}
+                {real.verified_calls ?? 0}
               </div>
               <div className="text-[10px] text-slate-400 font-mono">Calendar event &amp; link</div>
             </div>
@@ -364,7 +364,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
                 <FileCheck className="w-3.5 h-3.5" />
               </div>
               <div className="text-2xl font-mono font-black text-white">
-                {real.verified_proposals ?? 1}
+                {real.verified_proposals ?? 0}
               </div>
               <div className="text-[10px] text-slate-400 font-mono">Signed commercial agreements</div>
             </div>
@@ -376,11 +376,11 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
                 <DollarSign className="w-4 h-4 text-emerald-400" />
               </div>
               <div className="text-xl md:text-2xl font-mono font-black text-emerald-400">
-                AED {(real.verified_revenue ?? 7500).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                AED {(real.collected_revenue ?? real.verified_revenue ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </div>
               <div className="text-[10px] text-emerald-300 font-mono flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                <span>Escrow Bank Cleared</span>
+                <span>{((real.collected_revenue ?? real.verified_revenue ?? 0) > 0) ? 'Escrow Bank Cleared' : 'Awaiting External Bank Settlement'}</span>
               </div>
             </div>
           </div>
@@ -419,7 +419,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
             <div className="p-4 rounded-2xl bg-[#04060A]/80 border border-white/10 space-y-1">
               <div className="text-[11px] font-mono text-slate-400">AI Tasks Created</div>
               <div className="text-2xl font-mono font-black text-white">
-                {system.ai_generated_tasks ?? 14}
+                {system.ai_generated_tasks ?? 0}
               </div>
               <div className="text-[10px] text-slate-500 font-mono">Background swarm ops</div>
             </div>
@@ -428,7 +428,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
             <div className="p-4 rounded-2xl bg-[#04060A]/80 border border-white/10 space-y-1">
               <div className="text-[11px] font-mono text-slate-400">Generated Drafts</div>
               <div className="text-2xl font-mono font-black text-amber-400">
-                {system.draft_messages ?? 166}
+                {system.draft_messages ?? 0}
               </div>
               <div className="text-[10px] text-slate-500 font-mono">Unapproved in queue</div>
             </div>
@@ -437,7 +437,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
             <div className="p-4 rounded-2xl bg-[#04060A]/80 border border-white/10 space-y-1">
               <div className="text-[11px] font-mono text-slate-400">Predictions (Forecast)</div>
               <div className="text-xl font-mono font-black text-[#F5D77F]">
-                AED {(system.predicted_revenue ?? 350225).toLocaleString()}
+                AED {(system.projected_revenue ?? system.predicted_revenue ?? 0).toLocaleString()}
               </div>
               <div className="text-[10px] text-slate-500 font-mono">Weighted probability</div>
             </div>
@@ -446,9 +446,9 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
             <div className="p-4 rounded-2xl bg-[#04060A]/80 border border-white/10 space-y-1">
               <div className="text-[11px] font-mono text-slate-400">Pipeline Forecast</div>
               <div className="text-xl font-mono font-black text-cyan-400">
-                AED {(system.pipeline_value ?? 566500).toLocaleString()}
+                AED {(system.forecast_pipeline_value ?? system.pipeline_value ?? 0).toLocaleString()}
               </div>
-              <div className="text-[10px] text-slate-500 font-mono">Gross opportunity cap</div>
+              <div className="text-[10px] text-slate-500 font-mono">Commission / Deal potential</div>
             </div>
           </div>
         </div>

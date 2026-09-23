@@ -231,13 +231,27 @@ export const ProposalDesk: React.FC<ProposalDeskProps> = ({
             </div>
           </div>
 
-          <div className="pt-2 flex items-center justify-end gap-3 border-t border-white/10">
+          <div className="pt-2 flex flex-wrap items-center justify-end gap-2.5 border-t border-white/10">
+            <button
+              onClick={() => setNotice('Owner marked pricing as approved.')}
+              className="px-3.5 py-2 rounded-xl bg-blue-600/30 border border-blue-500 text-blue-200 font-mono text-xs font-bold hover:bg-blue-600/50 transition-all flex items-center gap-1.5"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Approve Pricing
+            </button>
+            <button
+              onClick={() => setNotice('Proposal approved by Owner. Ready for dispatch.')}
+              className="px-3.5 py-2 rounded-xl bg-[#D4AF37]/20 border border-[#D4AF37] text-[#F5D77F] font-mono text-xs font-bold hover:bg-[#D4AF37]/30 transition-all flex items-center gap-1.5"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Approve Proposal
+            </button>
             <button
               onClick={() => onNavigateTab('comms_center')}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 text-white font-mono text-xs font-bold shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-mono text-xs font-bold shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all flex items-center gap-1.5"
             >
               <Send className="w-3.5 h-3.5" />
-              Stage in Safety Gate & Dispatch
+              Send Approved Proposal
             </button>
           </div>
         </div>

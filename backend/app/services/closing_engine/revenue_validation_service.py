@@ -153,27 +153,32 @@ class RevenueValidationService:
         draft_msgs_res = await session.execute(
             select(func.count(Communication.id)).where(
                 Communication.mission_id == active_id,
-                Communication.delivery_status.in_(["DRAFT", "QUEUED", "PENDING"])
+                Communication.delivery_status.in_(["DRAFT", "QUEUED", "PENDING"]),
+                Communication.source_type == "REAL"
             )
         )
         draft_messages = draft_msgs_res.scalar() or 0
 
-        # C. AI Forecast Pipeline Value (Unsettled potential)
+        # C. AI Forecast Pipeline Value (Unsettled potential from genuine verified leads only)
         leads_res = await session.execute(
-            select(Lead).where(Lead.mission_id == active_id)
+            select(Lead).where(
+                Lead.mission_id == active_id,
+                Lead.source_type == "REAL",
+                Lead.verification_status.in_(["VERIFIED", "SOURCE_VERIFIED"]),
+                Lead.pipeline_stage.notin_(["WON", "PAID", "DISQUALIFIED", "LOST", "TEST_INTERNAL"]),
+                Lead.payment_status != "SETTLED"
+            )
         )
-        all_leads = leads_res.scalars().all()
+        valid_leads = leads_res.scalars().all()
         pipeline_value = sum(
-            l.expected_value or 3500.0
-            for l in all_leads
-            if l.pipeline_stage != "WON" and l.payment_status != "SETTLED"
+            (l.commission_potential if (l.commission_potential and l.commission_potential > 0) else (l.expected_value or 0.0))
+            for l in valid_leads
         )
 
         # D. AI Forecast Projected Revenue (Weighted by closing probability)
         projected_revenue = sum(
-            (l.expected_value or 3500.0) * (l.revenue_probability or 0.75)
-            for l in all_leads
-            if l.pipeline_stage != "WON" and l.payment_status != "SETTLED"
+            ((l.commission_potential if (l.commission_potential and l.commission_potential > 0) else (l.expected_value or 0.0))) * (l.revenue_probability or 0.5)
+            for l in valid_leads
         )
 
         target_amount = float(mission.goal_amount or 2500.0)
@@ -205,12 +210,12 @@ class RevenueValidationService:
             "ai_forecast": {
                 "forecast_pipeline_value": round(pipeline_value, 2),
                 "projected_revenue": round(projected_revenue, 2),
-                "ai_closing_probability_avg": 0.75,
+                "ai_closing_probability_avg": 0.50 if valid_leads else 0.0,
                 "badge_label": "AI Algorithmic Forecast"
             },
             "system_activity": {
-                "ai_generated_tasks": max(ai_generated_tasks, 13),
-                "draft_messages": max(draft_messages, 166),
+                "ai_generated_tasks": ai_generated_tasks,
+                "draft_messages": draft_messages,
                 "hourly_sweeps_completed": 24,
                 "system_status": "ONLINE_ACTIVE"
             },
@@ -429,16 +434,16 @@ class RevenueValidationService:
             lead_evidence_list.append({
                 "lead_id": l.id,
                 "name": l.name,
-                "company": l.company_name or "Private Entity",
-                "source_platform": l.source_platform or l.source or "Telegram",
-                "source_url": l.source_url or "https://t.me/DubaiRealEstateVIP",
-                "profile_url": l.profile_url or f"https://t.me/{l.name.lower().replace(' ', '_')}",
-                "evidence_reference": l.evidence_reference or f"EVID-RADAR-{l.id:04d}",
-                "requirement": l.interest or "Enterprise AI Agent & Automation deployment",
-                "contact_info": l.contact_info or "+971 50 892 4110 (Direct WhatsApp)",
-                "discovery_time": l.discovery_timestamp.strftime("%Y-%m-%d %H:%M:%S") if l.discovery_timestamp else l.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "evidence_score": round(l.qualification_score or 95.0, 1),
-                "estimated_budget": float(l.estimated_budget or 3500.0),
+                "company": l.company_name or "Individual Buyer",
+                "source_platform": l.source_platform or l.source or "Public Signal",
+                "source_url": l.source_url,
+                "profile_url": l.profile_url,
+                "evidence_reference": l.evidence_reference,
+                "requirement": l.interest or "Enterprise Requirement",
+                "contact_info": l.contact_info,
+                "discovery_time": l.discovery_timestamp.strftime("%Y-%m-%d %H:%M:%S") if l.discovery_timestamp else (l.created_at.strftime("%Y-%m-%d %H:%M:%S") if l.created_at else None),
+                "evidence_score": round(l.qualification_score or 50.0, 1),
+                "estimated_budget": float(l.estimated_budget) if l.estimated_budget is not None else None,
                 "pipeline_stage": l.pipeline_stage,
                 "reality_badge": badge,
                 "reality_badge_label": badge_label
