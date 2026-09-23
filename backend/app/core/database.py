@@ -1,8 +1,9 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from app.core.config import settings
+from app.core.config import settings, clean_database_url
 
-is_sqlite = "sqlite" in settings.DATABASE_URL.lower()
+db_url = clean_database_url(settings.DATABASE_URL)
+is_sqlite = "sqlite" in db_url.lower()
 
 engine_kwargs = {
     "echo": False,
@@ -18,7 +19,7 @@ else:
     engine_kwargs["max_overflow"] = 20
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    db_url,
     **engine_kwargs
 )
 
