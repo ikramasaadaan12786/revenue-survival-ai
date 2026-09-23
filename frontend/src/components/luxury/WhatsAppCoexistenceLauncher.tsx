@@ -115,6 +115,22 @@ export const WhatsAppCoexistenceLauncher: React.FC<WhatsAppCoexistenceLauncherPr
     window.addEventListener('message', sessionInfoListener);
 
     try {
+      const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID || undefined;
+      const loginOptions: any = {
+        scope: 'whatsapp_business_management,whatsapp_business_messaging',
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: {
+          feature: 'whatsapp_embedded_signup',
+          setup: {},
+          sessionInfoVersion: '3'
+        }
+      };
+
+      if (configId) {
+        loginOptions.config_id = configId;
+      }
+
       window.FB.login(
         async (response: any) => {
           window.removeEventListener('message', sessionInfoListener);
@@ -155,16 +171,7 @@ export const WhatsAppCoexistenceLauncher: React.FC<WhatsAppCoexistenceLauncherPr
           }
           setLoading(false);
         },
-        {
-          scope: 'whatsapp_business_management,whatsapp_business_messaging',
-          response_type: 'code',
-          override_default_response_type: true,
-          extras: {
-            setup: {},
-            featureType: 'whatsapp_business_app_onboarding',
-            sessionInfoVersion: '3'
-          }
-        }
+        loginOptions
       );
     } catch (e: any) {
       window.removeEventListener('message', sessionInfoListener);

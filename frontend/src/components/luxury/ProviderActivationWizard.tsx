@@ -40,7 +40,6 @@ export const ProviderActivationWizard: React.FC<ProviderActivationWizardProps> =
   const [waToken, setWaToken] = useState('');
   const [waPhoneId, setWaPhoneId] = useState('');
   const [waBusinessId, setWaBusinessId] = useState('');
-  const [waWebhookToken, setWaWebhookToken] = useState('dubai_revenue_agent_secret_2026');
   const [waSubmitting, setWaSubmitting] = useState(false);
   const [waResult, setWaResult] = useState<any | null>(null);
 
@@ -93,8 +92,7 @@ export const ProviderActivationWizard: React.FC<ProviderActivationWizardProps> =
         body: JSON.stringify({
           token: waToken,
           phone_number_id: waPhoneId,
-          business_account_id: waBusinessId,
-          webhook_verify_token: waWebhookToken
+          business_account_id: waBusinessId
         })
       });
       const data = await res.json();
