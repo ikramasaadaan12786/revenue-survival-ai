@@ -18,10 +18,23 @@ def _resolve_database_url() -> str:
         elif raw_url.startswith("postgresql://") and not raw_url.startswith("postgresql+asyncpg://"):
             raw_url = "postgresql+asyncpg://" + raw_url[len("postgresql://"):]
         
-        # Normalize sslmode for asyncpg
-        if "sslmode=require" in raw_url:
-            raw_url = raw_url.replace("sslmode=require", "ssl=require")
+        # Normalize query params for asyncpg (strip unsupported libpq args like channel_binding)
+        if "?" in raw_url:
+            base_part, query_part = raw_url.split("?", 1)
+            params = query_part.split("&")
+            clean_params = []
+            for p in params:
+                if not p or p.startswith("channel_binding="):
+                    continue
+                if p.startswith("sslmode="):
+                    p = "ssl=require"
+                clean_params.append(p)
+            if clean_params:
+                raw_url = f"{base_part}?{'&'.join(clean_params)}"
+            else:
+                raw_url = base_part
         return raw_url
+
 
     if is_cloud_prod and (os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT")):
         # Strict fail loudly in production cloud deployments
