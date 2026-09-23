@@ -491,10 +491,10 @@ class CanonicalTelemetryService:
                 records.append({
                     "id": b.id,
                     "company_id": b.company_id,
-                    "plan": b.tier_plan,
+                    "plan": b.plan_name,
                     "monthly_price_aed": b.monthly_price_aed,
-                    "billing_status": b.billing_status,
-                    "is_paying_customer": b.is_paying_customer
+                    "status": b.status,
+                    "billing_cycle": b.billing_cycle
                 })
             total_count = len(records)
             title = "Enterprise Network Billing & MRR Registry"

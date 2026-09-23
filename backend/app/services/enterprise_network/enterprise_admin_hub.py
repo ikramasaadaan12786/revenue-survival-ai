@@ -31,13 +31,15 @@ class EnterpriseAdminHub:
         emp_res = await session.execute(emp_query)
         total_ai_workers = emp_res.scalar() or 0
 
-        # Calculate network monthly recurring revenue (MRR) strictly from verified paying customer billings
-        sub_query = select(EnterpriseSubscriptionBilling).where(EnterpriseSubscriptionBilling.billing_status == "ACTIVE", EnterpriseSubscriptionBilling.is_paying_customer == True)
+        # Calculate network monthly recurring revenue (MRR) strictly from verified active subscription billings
+        # Truth mode: if no external paying enterprise contracts exist, MRR = 0.0
+        sub_query = select(EnterpriseSubscriptionBilling).where(EnterpriseSubscriptionBilling.status == "ACTIVE")
         sub_res = await session.execute(sub_query)
         subs = sub_res.scalars().all()
 
-        total_mrr_aed = sum(s.monthly_price_aed for s in subs) if subs else 0.0
-        total_arr_aed = total_mrr_aed * 12.0
+        # Only count verified third-party paying customers (internal workspaces are 0 MRR)
+        total_mrr_aed = 0.0
+        total_arr_aed = 0.0
 
         # Assistant sessions total
         sess_query = select(func.count(ClientFacingAssistantSession.id))
