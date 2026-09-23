@@ -1,0 +1,53 @@
+name: 24/7 Master Autonomous Revenue Cycle
+
+on:
+  schedule:
+    # Backup trigger every 6 hours offset
+    - cron: '43 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      mission_id:
+        description: 'Target Mission ID'
+        required: false
+        default: '1'
+
+concurrency:
+  group: revenue-full-cycle
+  cancel-in-progress: false
+
+jobs:
+  master-revenue-cycle:
+    name: Complete Autonomous Revenue Cycle (All Agents)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Execute End-to-End Master Revenue Cycle
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
+          EMAIL_SENDING_DOMAIN: ${{ secrets.EMAIL_SENDING_DOMAIN || 'altsofts.in' }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM || 'sales@altsofts.in' }}
+          EMAIL_REPLY_TO: ${{ secrets.EMAIL_REPLY_TO || 'sales@altsofts.in' }}
+          ENVIRONMENT: production
+          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '1' }}
+          WORKER_INSTANCE_ID: GITHUB-ACTIONS-MASTER-RUNNER
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+        run: |
+          python run_cloud_task.py all_cycle

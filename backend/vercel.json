@@ -14,12 +14,9 @@
   ],
   "crons": [
     {
-      "path": "/api/v1/system/worker/run-cycle",
-      "schedule": "*/15 * * * *"
-    },
-    {
       "path": "/api/v1/closing-engine/mission-control/run-auto-cycle/1",
       "schedule": "0 4 * * *"
     }
   ]
 }
+

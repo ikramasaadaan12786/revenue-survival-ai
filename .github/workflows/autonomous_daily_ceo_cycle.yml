@@ -1,0 +1,49 @@
+name: 24/7 Daily CEO Strategic Operating Cycle
+
+on:
+  schedule:
+    # Runs daily at 04:17 UTC (08:17 AM GST)
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+    inputs:
+      mission_id:
+        description: 'Target Mission ID'
+        required: false
+        default: '1'
+
+concurrency:
+  group: revenue-ceo-cycle
+  cancel-in-progress: false
+
+jobs:
+  ceo-operating-cycle:
+    name: CEO Revenue Strategy & Gap Analyzer
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Execute Daily CEO Strategic Cycle
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ENVIRONMENT: production
+          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '1' }}
+          WORKER_INSTANCE_ID: GITHUB-ACTIONS-CEO-BRAIN
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+        run: |
+          python run_cloud_task.py ceo_brain

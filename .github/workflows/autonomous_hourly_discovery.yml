@@ -1,0 +1,49 @@
+name: 24/7 Hourly Buyer Hunt & Opportunity Scanner
+
+on:
+  schedule:
+    # Runs hourly offset at minute 23
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      mission_id:
+        description: 'Target Mission ID'
+        required: false
+        default: '1'
+
+concurrency:
+  group: revenue-buyer-hunt
+  cancel-in-progress: false
+
+jobs:
+  buyer-discovery:
+    name: Multi-Sector Buyer Radar & Quality Control
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Execute Hourly Buyer Hunt & Deduplication
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ENVIRONMENT: production
+          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '1' }}
+          WORKER_INSTANCE_ID: GITHUB-ACTIONS-BUYER-HUNTER
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+        run: |
+          python run_cloud_task.py buyer_discovery

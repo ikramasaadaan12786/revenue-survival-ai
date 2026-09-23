@@ -1,0 +1,66 @@
+name: 24/7 Fast Outbound & Reply Dispatcher
+
+on:
+  schedule:
+    # Runs every 5 minutes with deliberate offset
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      mission_id:
+        description: 'Target Mission ID'
+        required: false
+        default: '1'
+
+concurrency:
+  group: revenue-fast-cadence
+  cancel-in-progress: false
+
+jobs:
+  outbound-and-replies:
+    name: Outbound Email & Inbound Reply Processor
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Process Outbound Email Queue
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
+          EMAIL_SENDING_DOMAIN: ${{ secrets.EMAIL_SENDING_DOMAIN || 'altsofts.in' }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM || 'sales@altsofts.in' }}
+          EMAIL_REPLY_TO: ${{ secrets.EMAIL_REPLY_TO || 'sales@altsofts.in' }}
+          ENVIRONMENT: production
+          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '1' }}
+          WORKER_INSTANCE_ID: GITHUB-ACTIONS-FAST-DISPATCHER
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+        run: |
+          python run_cloud_task.py outbound_queue
+
+      - name: Process Inbound Replies & Sentiment
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ENVIRONMENT: production
+          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '1' }}
+          WORKER_INSTANCE_ID: GITHUB-ACTIONS-FAST-DISPATCHER
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+        run: |
+          python run_cloud_task.py reply_processing
