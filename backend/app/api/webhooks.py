@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, Request, Response, HTTPException, Depends, Query, Header, status
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -114,3 +115,133 @@ async def get_whatsapp_provider_status(db: AsyncSession = Depends(get_db)):
     Returns WhatsApp Cloud API configuration and connectivity health status.
     """
     return await whatsapp_cloud_service.get_provider_status(db)
+
+@router.get("/whatsapp/meta-diagnose")
+async def diagnose_meta_whatsapp():
+    """
+    Real-time read-only Meta Graph API verification without leaking secrets.
+    """
+    token = whatsapp_cloud_service.access_token
+    phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID") or "1136248072908865"
+    app_secret = os.getenv("WHATSAPP_APP_SECRET")
+    verify_token = whatsapp_cloud_service.verify_token
+
+    if not token:
+        return {
+            "token_auth": "FAIL",
+            "error": "WHATSAPP_ACCESS_TOKEN is not configured in environment"
+        }
+
+    results: Dict[str, Any] = {
+        "token_present": True,
+        "token_length": len(token),
+        "phone_number_id": phone_id,
+        "app_secret_present": bool(app_secret),
+        "verify_token_present": bool(verify_token),
+    }
+
+    import httpx
+
+    # 1. Query Phone Number Details
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            phone_res = await client.get(
+                f"https://graph.facebook.com/v21.0/{phone_id}",
+                params={"fields": "id,display_phone_number,verified_name,quality_rating,name_status,code_verification_status"},
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            results["phone_api_status"] = phone_res.status_code
+            if phone_res.status_code == 200:
+                pdata = phone_res.json()
+                results["phone_verified"] = True
+                results["display_phone_number"] = pdata.get("display_phone_number")
+                results["verified_name"] = pdata.get("verified_name")
+                results["quality_rating"] = pdata.get("quality_rating")
+                results["name_status"] = pdata.get("name_status")
+                results["code_verification_status"] = pdata.get("code_verification_status")
+            else:
+                results["phone_verified"] = False
+                results["phone_api_error"] = phone_res.json()
+    except Exception as e:
+        results["phone_api_exception"] = str(e)
+
+    # 2. Inspect Token Debug & Permissions
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            debug_res = await client.get(
+                "https://graph.facebook.com/v21.0/debug_token",
+                params={"input_token": token, "access_token": token}
+            )
+            results["debug_api_status"] = debug_res.status_code
+            if debug_res.status_code == 200:
+                ddata = debug_res.json().get("data", {})
+                results["is_valid_token"] = ddata.get("is_valid")
+                results["app_id"] = ddata.get("app_id")
+                results["token_type"] = ddata.get("type")
+                scopes = ddata.get("scopes", [])
+                results["scopes"] = scopes
+                results["has_messaging_permission"] = "whatsapp_business_messaging" in scopes
+                results["has_management_permission"] = "whatsapp_business_management" in scopes
+                results["expires_at"] = ddata.get("expires_at")
+                results["target_ids"] = ddata.get("target_ids")
+                granular_scopes = ddata.get("granular_scopes", [])
+                results["granular_scopes"] = granular_scopes
+                for gs in granular_scopes:
+                    if gs.get("scope") in ["whatsapp_business_management", "whatsapp_business_messaging"]:
+                        t_ids = gs.get("target_ids", [])
+                        if t_ids and not results.get("waba_id"):
+                            results["waba_id"] = t_ids[0]
+            else:
+                results["debug_api_error"] = debug_res.json()
+    except Exception as e:
+        results["debug_api_exception"] = str(e)
+
+    # 3. Discover WABA and Subscriptions
+    waba_id = None
+    waba_discovery_log = []
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            app_id = results.get("app_id") or "1379013277028626"
+
+            # Check App's Webhook Subscriptions (shows if messages webhook is active)
+            r_app_sub = await client.get(
+                f"https://graph.facebook.com/v21.0/{app_id}/subscriptions",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            waba_discovery_log.append({"method": "app_subscriptions", "status": r_app_sub.status_code, "data": r_app_sub.json() if r_app_sub.status_code == 200 else r_app_sub.text})
+            if r_app_sub.status_code == 200:
+                results["app_subscriptions"] = r_app_sub.json()
+
+            # Query /me
+            r_me = await client.get(
+                "https://graph.facebook.com/v21.0/me",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            waba_discovery_log.append({"method": "me", "status": r_me.status_code, "data": r_me.json() if r_me.status_code == 200 else r_me.text})
+
+            # Query /me/assigned_whatsapp_business_accounts
+            r_assigned_waba = await client.get(
+                "https://graph.facebook.com/v21.0/me/assigned_whatsapp_business_accounts",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            waba_discovery_log.append({"method": "me_assigned_waba", "status": r_assigned_waba.status_code, "data": r_assigned_waba.json() if r_assigned_waba.status_code == 200 else r_assigned_waba.text})
+            if r_assigned_waba.status_code == 200:
+                data = r_assigned_waba.json().get("data", [])
+                if data:
+                    waba_id = data[0].get("id")
+                    results["waba_name"] = data[0].get("name")
+
+            # Query /me/accounts
+            r_me_acc = await client.get(
+                "https://graph.facebook.com/v21.0/me/accounts",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            waba_discovery_log.append({"method": "me_accounts", "status": r_me_acc.status_code, "data": r_me_acc.json() if r_me_acc.status_code == 200 else r_me_acc.text})
+
+    except Exception as e:
+        waba_discovery_log.append({"exception": str(e)})
+
+    results["waba_id"] = waba_id
+    results["waba_discovery_log"] = waba_discovery_log
+
+    return results
