@@ -18,6 +18,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { getApiBase } from '@/lib/api';
+import { WhatsAppCoexistenceLauncher } from './WhatsAppCoexistenceLauncher';
 
 export const ProviderConnectionHub: React.FC = () => {
   const [providerDetails, setProviderDetails] = useState<any | null>(null);
@@ -146,6 +147,11 @@ export const ProviderConnectionHub: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* WhatsApp Coexistence Flow Launcher */}
+      <WhatsAppCoexistenceLauncher
+        onSuccess={() => loadProviderStatuses()}
+      />
 
       {/* 2. Provider Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

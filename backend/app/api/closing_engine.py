@@ -1228,6 +1228,23 @@ async def activate_whatsapp_endpoint(payload: Dict[str, Any]):
     return result
 
 
+@router.post("/wizard/coexistence-onboard")
+async def coexistence_onboard_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Handles Meta Embedded Signup Coexistence onboarding from the activation wizard.
+    """
+    from app.services.communication.whatsapp_cloud_service import whatsapp_cloud_service
+    code = payload.get("code")
+    waba_id = payload.get("waba_id")
+    phone_id = payload.get("phone_number_id")
+    return await whatsapp_cloud_service.handle_coexistence_onboarding(
+        session=db,
+        code=code,
+        waba_id=waba_id,
+        phone_number_id=phone_id
+    )
+
+
 @router.post("/wizard/activate-email")
 async def activate_email_endpoint(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
     """

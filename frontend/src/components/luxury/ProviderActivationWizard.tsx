@@ -21,6 +21,7 @@ import {
   Link2
 } from 'lucide-react';
 import { getApiUrl } from '@/lib/api';
+import { WhatsAppCoexistenceLauncher } from './WhatsAppCoexistenceLauncher';
 
 interface ProviderActivationWizardProps {
   onActivationSuccess?: () => void;
@@ -293,87 +294,91 @@ export const ProviderActivationWizard: React.FC<ProviderActivationWizardProps> =
         {/* Left Form Panel (7 Cols) */}
         <div className="lg:col-span-7 rounded-3xl bg-[#080D18]/90 border border-[#D4AF37]/40 p-6 md:p-8 space-y-6 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
           {activeChannel === 'whatsapp' && (
-            <form onSubmit={handleActivateWhatsApp} className="space-y-4 text-xs font-mono">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <Key className="w-4 h-4 text-emerald-400" />
-                  <h3 className="text-base font-serif font-bold text-white">WhatsApp Business API Connection</h3>
-                </div>
-                <span className="text-slate-400 text-[11px]">Meta Graph API</span>
-              </div>
-
-              <div>
-                <label className="text-slate-300 block mb-1">Meta Permanent Access Token</label>
-                <input
-                  type="password"
-                  value={waToken}
-                  onChange={(e) => setWaToken(e.target.value)}
-                  placeholder="EAAG... (Meta Cloud API System User Token)"
-                  className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37]/30 text-white focus:outline-none focus:border-[#D4AF37]"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-slate-300 block mb-1">WhatsApp Phone Number ID</label>
-                <input
-                  type="text"
-                  value={waPhoneId}
-                  onChange={(e) => setWaPhoneId(e.target.value)}
-                  placeholder="e.g. 109824098234890"
-                  className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37]/30 text-white focus:outline-none focus:border-[#D4AF37]"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-slate-300 block mb-1">WhatsApp Business Account ID (WABA)</label>
-                <input
-                  type="text"
-                  value={waBusinessId}
-                  onChange={(e) => setWaBusinessId(e.target.value)}
-                  placeholder="e.g. 293840293840293"
-                  className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37]/30 text-white focus:outline-none focus:border-[#D4AF37]"
-                />
-              </div>
-
-              <div>
-                <label className="text-slate-300 block mb-1">Webhook Verify Token</label>
-                <input
-                  type="text"
-                  value={waWebhookToken}
-                  onChange={(e) => setWaWebhookToken(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37]/30 text-white focus:outline-none focus:border-[#D4AF37]"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={waSubmitting}
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-black font-mono font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:brightness-110 transition-all flex items-center gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  {waSubmitting ? 'Authenticating...' : 'Validate & Connect WhatsApp'}
-                </button>
-              </div>
-
-              {waResult && (
-                <div
-                  className={`p-4 rounded-2xl border text-xs font-mono space-y-1 ${
-                    waResult.status === 'CONNECTED'
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                      : 'bg-red-500/10 border-red-500/30 text-red-300'
-                  }`}
-                >
-                  <div className="font-bold flex items-center gap-2">
-                    {waResult.status === 'CONNECTED' ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-                    {waResult.message || waResult.error}
+            <div className="space-y-6">
+              {/* Primary: Official Meta Coexistence Launcher */}
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-950/40 via-slate-900/80 to-slate-950 border-2 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-500/20 pb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-emerald-400" />
+                      <h3 className="text-lg font-serif font-bold text-white">
+                        WhatsApp Business App Coexistence
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-[10px] font-mono text-emerald-300 font-bold">
+                        ZERO TOKEN ENTRY
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Connect your existing number <span className="font-mono font-bold text-white">+971 56 428 8630</span> without disconnecting your mobile WhatsApp Business App.
+                    </p>
                   </div>
-                  {waResult.webhook_endpoint && <div>Webhook Endpoint: {waResult.webhook_endpoint}</div>}
+                  <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30 self-start sm:self-center">
+                    Official Meta Flow
+                  </span>
                 </div>
-              )}
-            </form>
+
+                <WhatsAppCoexistenceLauncher
+                  onSuccess={() => {
+                    fetchProviderDetails();
+                    if (onActivationSuccess) onActivationSuccess();
+                  }}
+                />
+              </div>
+
+              {/* Collapsible Advanced Direct API Configuration */}
+              <details className="group rounded-2xl bg-[#04060A]/80 border border-white/10 p-4 transition-all">
+                <summary className="text-xs font-mono text-slate-400 cursor-pointer flex items-center justify-between hover:text-white">
+                  <span>Advanced Direct Meta Credentials (Optional / Custom System User)</span>
+                  <span className="text-[10px] text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+
+                <form onSubmit={handleActivateWhatsApp} className="space-y-4 text-xs font-mono pt-4 mt-3 border-t border-white/10">
+                  <div>
+                    <label className="text-slate-300 block mb-1">Meta Permanent Access Token</label>
+                    <input
+                      type="password"
+                      value={waToken}
+                      onChange={(e) => setWaToken(e.target.value)}
+                      placeholder="EAAG... (Stored securely in server environment)"
+                      className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37]/30 text-white focus:outline-none focus:border-[#D4AF37]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-300 block mb-1">WhatsApp Phone Number ID</label>
+                    <input
+                      type="text"
+                      value={waPhoneId}
+                      onChange={(e) => setWaPhoneId(e.target.value)}
+                      placeholder="1136248072908865"
+                      className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37]/30 text-white focus:outline-none focus:border-[#D4AF37]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-300 block mb-1">WhatsApp Business Account ID (WABA)</label>
+                    <input
+                      type="text"
+                      value={waBusinessId}
+                      onChange={(e) => setWaBusinessId(e.target.value)}
+                      placeholder="971398669179205"
+                      className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37]/30 text-white focus:outline-none focus:border-[#D4AF37]"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={waSubmitting}
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-black font-mono font-bold hover:brightness-110 transition-all flex items-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {waSubmitting ? 'Authenticating...' : 'Manual Save Credentials'}
+                    </button>
+                  </div>
+                </form>
+              </details>
+            </div>
           )}
 
           {activeChannel === 'email' && (

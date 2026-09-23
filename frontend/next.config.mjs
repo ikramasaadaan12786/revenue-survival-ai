@@ -12,7 +12,7 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "",
   },
   async rewrites() {
-    const backendTarget = process.env.NEXT_PUBLIC_API_URL || "https://backend-sigma-six-79.vercel.app/api/v1";
+    const backendTarget = process.env.NEXT_PUBLIC_API_URL || "https://backend-growth-540e.vercel.app/api/v1";
     const backendClean = backendTarget.replace(/\/+$/, "");
     return {
       beforeFiles: [],

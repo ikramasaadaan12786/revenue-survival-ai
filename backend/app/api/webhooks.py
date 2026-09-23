@@ -108,6 +108,27 @@ async def receive_whatsapp_webhook(
 
     res = await whatsapp_cloud_service.process_webhook_payload(db, payload)
     return res
+ 
+@router.post("/whatsapp/coexistence/onboard")
+async def onboard_whatsapp_coexistence(
+    payload: Dict[str, Any],
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Official Meta Embedded Signup / Coexistence Onboarding Endpoint.
+    Receives session info (WABA ID, Phone Number ID, OAuth Code) from Meta JS SDK.
+    Binds Growthpilot AI to WABA safely without disconnecting WhatsApp Business mobile app.
+    """
+    code = payload.get("code")
+    waba_id = payload.get("waba_id")
+    phone_id = payload.get("phone_number_id")
+    res = await whatsapp_cloud_service.handle_coexistence_onboarding(
+        session=db,
+        code=code,
+        waba_id=waba_id,
+        phone_number_id=phone_id
+    )
+    return res
 
 @router.get("/whatsapp/status")
 async def get_whatsapp_provider_status(db: AsyncSession = Depends(get_db)):
@@ -196,21 +217,13 @@ async def diagnose_meta_whatsapp():
     except Exception as e:
         results["debug_api_exception"] = str(e)
 
-    # 3. WABA Subscribed Apps Configuration
+    # 3. WABA Subscribed Apps (Read-only verification)
     waba_id = os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID") or "971398669179205"
     results["waba_id"] = waba_id
     
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            # 1. POST to subscribe Growthpilot AI to the real WABA
-            sub_post = await client.post(
-                f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
-                headers={"Authorization": f"Bearer {token}"}
-            )
-            results["waba_subscribe_post_status"] = sub_post.status_code
-            results["waba_subscribe_post_body"] = sub_post.json() if sub_post.status_code == 200 else sub_post.text
-
-            # 2. GET to verify subscribed apps on the real WABA
+            # 1. GET to verify subscribed apps on the real WABA
             sub_get = await client.get(
                 f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
                 headers={"Authorization": f"Bearer {token}"}
@@ -223,11 +236,11 @@ async def diagnose_meta_whatsapp():
                     str(app.get("id") or app.get("whatsapp_business_api_data", {}).get("id")) == str(results.get("app_id", "1379013277028626")) or
                     "Growthpilot" in str(app.get("name", ""))
                     for app in sub_data
-                ) if sub_data else (sub_post.status_code == 200)
+                ) if sub_data else False
             else:
                 results["waba_subscribed_apps_error"] = sub_get.text
 
-            # 3. Query WABA Details
+            # 2. Query WABA Details (Read-only)
             waba_details_res = await client.get(
                 f"https://graph.facebook.com/v21.0/{waba_id}",
                 params={"fields": "id,name,currency,timezone_id,message_template_namespace"},
@@ -236,7 +249,18 @@ async def diagnose_meta_whatsapp():
             if waba_details_res.status_code == 200:
                 results["waba_details"] = waba_details_res.json()
 
+            # 3. Inspect Phone Registration / PIN State (Read-only)
+            phone_reg_res = await client.get(
+                f"https://graph.facebook.com/v21.0/{phone_id}",
+                params={"fields": "id,display_phone_number,code_verification_status,is_pin_enabled,name_status,status"},
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            if phone_reg_res.status_code == 200:
+                results["phone_reg_info"] = phone_reg_res.json()
+            else:
+                results["phone_reg_info_error"] = phone_reg_res.json()
+
     except Exception as e:
-        results["waba_subscribe_exception"] = str(e)
+        results["waba_query_exception"] = str(e)
 
     return results
