@@ -258,7 +258,7 @@ export const WhatsAppCoexistenceLauncher: React.FC<WhatsAppCoexistenceLauncherPr
             ) : (
               <>
                 <Zap className="w-3.5 h-3.5" />
-                Connect Existing WhatsApp Business
+                CONNECT EXISTING WHATSAPP BUSINESS
               </>
             )}
           </button>
