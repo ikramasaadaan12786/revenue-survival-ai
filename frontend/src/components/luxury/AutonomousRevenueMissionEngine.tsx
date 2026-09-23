@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { getApiUrl } from '@/lib/api';
 
+import { MetricDrilldownModal } from './MetricDrilldownModal';
+
 interface TelemetryData {
   mission_id: number;
   title: string;
@@ -58,7 +60,7 @@ interface AutonomousRevenueMissionEngineProps {
 }
 
 export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEngineProps> = ({
-  missionId = 1006,
+  missionId = 1,
   onNavigateTab
 }) => {
   const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
@@ -68,14 +70,37 @@ export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEn
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
+  // Drilldown modal state
+  const [drilldownModal, setDrilldownModal] = useState<{
+    isOpen: boolean;
+    metricKey: string;
+    metricTitle: string;
+    metricValue?: string | number;
+    explanationFormula?: string;
+  }>({
+    isOpen: false,
+    metricKey: '',
+    metricTitle: '',
+  });
+
+  const openDrilldown = (metricKey: string, metricTitle: string, metricValue?: string | number, explanationFormula?: string) => {
+    setDrilldownModal({
+      isOpen: true,
+      metricKey,
+      metricTitle,
+      metricValue,
+      explanationFormula
+    });
+  };
+
   // New Mission Form State
-  const [newTitle, setNewTitle] = useState('Autonomous Revenue Sprint — 18 Hour Challenge');
-  const [newGoal, setNewGoal] = useState(2500);
+  const [newTitle, setNewTitle] = useState('Dubai Autonomous Distress Sprint');
+  const [newGoal, setNewGoal] = useState(50000);
   const [newBudget, setNewBudget] = useState(0);
-  const [newHours, setNewHours] = useState(18);
+  const [newHours, setNewHours] = useState(72);
 
   // Verify Payment Form State
-  const [payAmount, setPayAmount] = useState(2500);
+  const [payAmount, setPayAmount] = useState(5000);
   const [payRef, setPayRef] = useState('');
   const [payerName, setPayerName] = useState('');
   const [paySource, setPaySource] = useState('Bank Wire Transfer');
@@ -262,35 +287,50 @@ export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEn
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 2. THE 12 REAL DASHBOARD METRICS */}
-      {/* ========================================================================= */}
+      {/* Drilldown Modal */}
+      <MetricDrilldownModal
+        isOpen={drilldownModal.isOpen}
+        onClose={() => setDrilldownModal((prev) => ({ ...prev, isOpen: false }))}
+        metricKey={drilldownModal.metricKey}
+        metricTitle={drilldownModal.metricTitle}
+        metricValue={drilldownModal.metricValue}
+        missionId={missionId}
+        explanationFormula={drilldownModal.explanationFormula}
+        scopeLabel={`Mission #${missionId}`}
+      />
+
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-2">
             <Target className="w-5 h-5 text-[#F5D77F]" />
             <h2 className="text-lg md:text-xl font-serif font-black text-white uppercase tracking-wider">
-              Real Operating & Revenue Telemetry (12 Core Metrics)
+              Canonical Operating & Revenue Telemetry (12 Core Metrics)
             </h2>
           </div>
-          <span className="text-xs font-mono text-emerald-400">● Live External Channels</span>
+          <span className="text-xs font-mono text-[#8C9BAE]">Click any card to inspect underlying PostgreSQL records</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
           {/* 1. Mission Target */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-[#D4AF37]/30 hover:border-[#D4AF37]/60 transition-all">
+          <button
+            onClick={() => openDrilldown('mission_target', 'Mission Revenue Target', formatAED(telemetry?.mission_target || 50000), 'Primary revenue goal established for this autonomous mission.')}
+            className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-[#D4AF37]/30 hover:border-[#D4AF37] hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left group cursor-pointer"
+          >
             <div className="flex items-center justify-between text-[#8C9BAE] text-[11px] font-mono font-semibold uppercase mb-1">
               <span>1. Mission Target</span>
               <Target className="w-3.5 h-3.5 text-[#F5D77F]" />
             </div>
-            <div className="text-lg md:text-xl font-serif font-bold text-white">
-              {formatAED(telemetry?.mission_target || 2500)}
+            <div className="text-lg md:text-xl font-serif font-bold text-white group-hover:text-[#F5D77F]">
+              {formatAED(telemetry?.mission_target || 50000)}
             </div>
             <div className="text-[10px] font-mono text-[#8C9BAE] mt-1">Minimum Revenue Goal</div>
-          </div>
+          </button>
 
           {/* 2. Revenue Generated */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-emerald-500/40 hover:border-emerald-500/70 transition-all">
+          <button
+            onClick={() => openDrilldown('revenue_closed', 'Real Verified Paid Revenue', formatAED(telemetry?.revenue_generated || 0), 'Confirmed settled transactions with verifiable audit hash.')}
+            className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-emerald-500/40 hover:border-emerald-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left group cursor-pointer"
+          >
             <div className="flex items-center justify-between text-emerald-400 text-[11px] font-mono font-semibold uppercase mb-1">
               <span>2. Revenue Generated</span>
               <Coins className="w-3.5 h-3.5 text-emerald-400" />
@@ -299,34 +339,37 @@ export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEn
               {formatAED(telemetry?.revenue_generated || 0)}
             </div>
             <div className="text-[10px] font-mono text-emerald-500/80 mt-1">Real Verified Payments</div>
-          </div>
+          </button>
 
           {/* 3. Revenue Remaining */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-amber-500/30 hover:border-amber-500/60 transition-all">
+          <button
+            onClick={() => openDrilldown('revenue_remaining', 'Revenue Gap to Target', formatAED(telemetry?.revenue_remaining || (telemetry?.mission_target || 50000)), 'Target Amount minus Confirmed Paid Revenue.')}
+            className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-amber-500/30 hover:border-amber-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left group cursor-pointer"
+          >
             <div className="flex items-center justify-between text-amber-300 text-[11px] font-mono font-semibold uppercase mb-1">
               <span>3. Revenue Remaining</span>
               <DollarSign className="w-3.5 h-3.5 text-amber-400" />
             </div>
             <div className="text-lg md:text-xl font-serif font-bold text-amber-300">
-              {formatAED(telemetry?.revenue_remaining || 2500)}
+              {formatAED(telemetry?.revenue_remaining || (telemetry?.mission_target || 50000))}
             </div>
             <div className="text-[10px] font-mono text-[#8C9BAE] mt-1">Required to Complete</div>
-          </div>
+          </button>
 
           {/* 4. Time Remaining */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-cyan-500/30 hover:border-cyan-500/60 transition-all">
+          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-cyan-500/30 hover:border-cyan-500/60 transition-all text-left">
             <div className="flex items-center justify-between text-cyan-400 text-[11px] font-mono font-semibold uppercase mb-1">
               <span>4. Time Remaining</span>
               <Clock className="w-3.5 h-3.5 text-cyan-400" />
             </div>
             <div className="text-lg md:text-xl font-serif font-bold text-cyan-300">
-              {telemetry?.time_remaining_hours?.toFixed(1) || '18.0'}h
+              {telemetry?.time_remaining_hours?.toFixed(1) || '48.0'}h
             </div>
             <div className="text-[10px] font-mono text-[#8C9BAE] mt-1">Live Countdown</div>
           </div>
 
           {/* 5. Markets Tested */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-[#D4AF37]/50 transition-all">
+          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-[#D4AF37]/50 transition-all text-left">
             <div className="flex items-center justify-between text-[#8C9BAE] text-[11px] font-mono font-semibold uppercase mb-1">
               <span>5. Markets Tested</span>
               <Globe2 className="w-3.5 h-3.5 text-purple-400" />
@@ -338,7 +381,7 @@ export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEn
           </div>
 
           {/* 6. Products Tested */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-[#D4AF37]/50 transition-all">
+          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-[#D4AF37]/50 transition-all text-left">
             <div className="flex items-center justify-between text-[#8C9BAE] text-[11px] font-mono font-semibold uppercase mb-1">
               <span>6. Products Tested</span>
               <Layers className="w-3.5 h-3.5 text-blue-400" />
@@ -350,67 +393,85 @@ export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEn
           </div>
 
           {/* 7. Leads Found */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-emerald-500/50 transition-all">
+          <button
+            onClick={() => openDrilldown('leads', 'Verified Real Estate & Commercial Leads', telemetry?.leads_found_count || 0, 'Real leads ingested and verified in PostgreSQL database.')}
+            className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-emerald-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left group cursor-pointer"
+          >
             <div className="flex items-center justify-between text-[#8C9BAE] text-[11px] font-mono font-semibold uppercase mb-1">
               <span>7. Leads Found</span>
               <Target className="w-3.5 h-3.5 text-emerald-400" />
             </div>
-            <div className="text-lg md:text-xl font-serif font-bold text-white">
+            <div className="text-lg md:text-xl font-serif font-bold text-white group-hover:text-emerald-300">
               {telemetry?.leads_found_count || 0}
             </div>
             <div className="text-[10px] font-mono text-emerald-400 mt-1">Verified Evidence</div>
-          </div>
+          </button>
 
           {/* 8. Messages Sent */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-cyan-500/50 transition-all">
+          <button
+            onClick={() => openDrilldown('messages_sent', 'Dispatched Outbound Communications', telemetry?.messages_sent_count || 0, 'Emails sent through Resend connector.')}
+            className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-cyan-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left group cursor-pointer"
+          >
             <div className="flex items-center justify-between text-[#8C9BAE] text-[11px] font-mono font-semibold uppercase mb-1">
               <span>8. Messages Sent</span>
               <Send className="w-3.5 h-3.5 text-cyan-400" />
             </div>
-            <div className="text-lg md:text-xl font-serif font-bold text-white">
+            <div className="text-lg md:text-xl font-serif font-bold text-white group-hover:text-cyan-300">
               {telemetry?.messages_sent_count || 0}
             </div>
-            <div className="text-[10px] font-mono text-[#8C9BAE] mt-1">Delivered Only</div>
-          </div>
+            <div className="text-[10px] font-mono text-[#8C9BAE] mt-1">Delivered via Resend</div>
+          </button>
 
           {/* 9. Replies */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-emerald-500/50 transition-all">
+          <button
+            onClick={() => openDrilldown('replies', 'Genuine Prospect Replies', telemetry?.replies_count || 0, 'Genuine inbound client responses (excluding self-test webhook events).')}
+            className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-emerald-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left group cursor-pointer"
+          >
             <div className="flex items-center justify-between text-[#8C9BAE] text-[11px] font-mono font-semibold uppercase mb-1">
-              <span>9. Replies</span>
+              <span>9. Prospect Replies</span>
               <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
             </div>
-            <div className="text-lg md:text-xl font-serif font-bold text-white">
+            <div className="text-lg md:text-xl font-serif font-bold text-white group-hover:text-emerald-300">
               {telemetry?.replies_count || 0}
             </div>
-            <div className="text-[10px] font-mono text-[#8C9BAE] mt-1">Inbound Responses</div>
-          </div>
+            <div className="text-[10px] font-mono text-[#8C9BAE] mt-1">Verified Inbound</div>
+          </button>
 
           {/* 10. Calls */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-amber-500/50 transition-all">
+          <button
+            onClick={() => openDrilldown('leads', 'Discovery Calls Stage', telemetry?.calls_count || 0, 'Leads at DISCOVERY_CALL or higher negotiation pipeline stage.')}
+            className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-amber-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left group cursor-pointer"
+          >
             <div className="flex items-center justify-between text-[#8C9BAE] text-[11px] font-mono font-semibold uppercase mb-1">
               <span>10. Calls</span>
               <PhoneCall className="w-3.5 h-3.5 text-amber-400" />
             </div>
-            <div className="text-lg md:text-xl font-serif font-bold text-white">
+            <div className="text-lg md:text-xl font-serif font-bold text-white group-hover:text-amber-300">
               {telemetry?.calls_count || 0}
             </div>
             <div className="text-[10px] font-mono text-[#8C9BAE] mt-1">Booked / Completed</div>
-          </div>
+          </button>
 
           {/* 11. Proposals */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-purple-500/50 transition-all">
+          <button
+            onClick={() => openDrilldown('proposals_sent', 'Dispatched Commercial Proposals', telemetry?.proposals_count || 0, 'Proposals created and delivered to prospects.')}
+            className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-white/10 hover:border-purple-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left group cursor-pointer"
+          >
             <div className="flex items-center justify-between text-[#8C9BAE] text-[11px] font-mono font-semibold uppercase mb-1">
               <span>11. Proposals</span>
               <FileText className="w-3.5 h-3.5 text-purple-400" />
             </div>
-            <div className="text-lg md:text-xl font-serif font-bold text-white">
+            <div className="text-lg md:text-xl font-serif font-bold text-white group-hover:text-purple-300">
               {telemetry?.proposals_count || 0}
             </div>
             <div className="text-[10px] font-mono text-[#8C9BAE] mt-1">Sent Commercials</div>
-          </div>
+          </button>
 
           {/* 12. Payments */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-emerald-500/50 hover:border-emerald-400 transition-all">
+          <button
+            onClick={() => openDrilldown('revenue_closed', 'Settled Customer Payments', telemetry?.payments_count || 0, 'Verified customer payments recorded in RevenueTracking table.')}
+            className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-emerald-500/50 hover:border-emerald-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left group cursor-pointer"
+          >
             <div className="flex items-center justify-between text-emerald-400 text-[11px] font-mono font-semibold uppercase mb-1">
               <span>12. Payments</span>
               <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
@@ -419,7 +480,7 @@ export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEn
               {telemetry?.payments_count || 0}
             </div>
             <div className="text-[10px] font-mono text-emerald-400/80 mt-1">Settled Transactions</div>
-          </div>
+          </button>
         </div>
       </div>
 

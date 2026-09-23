@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Flame, Play, Clock, Zap, CheckCircle2, TrendingUp, AlertTriangle, MessageSquare, Phone, FileText, DollarSign, ArrowRight, ShieldCheck, Activity, Send, CheckSquare, Sparkles, UserCheck } from 'lucide-react';
 import { getApiUrl } from '@/lib/api';
+import { MetricDrilldownModal } from './MetricDrilldownModal';
 
 interface RevenueWarRoomProps {
   missionId?: number;
@@ -26,9 +27,9 @@ const DEFAULT_REAL_KPIS = {
 };
 
 export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
-  missionId = 1006,
-  missionTitle = 'Dubai AI Revenue Sprint — 18 Hour Challenge',
-  targetRevenue = 2500,
+  missionId = 1,
+  missionTitle = 'Dubai Autonomous Distress Sprint',
+  targetRevenue = 50000,
   currentRevenue = 0,
   onNavigateTab,
 }) => {
@@ -124,8 +125,42 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
     }
   };
 
+  const [drilldownModal, setDrilldownModal] = useState<{
+    isOpen: boolean;
+    metricKey: string;
+    metricTitle: string;
+    metricValue?: string | number;
+    explanationFormula?: string;
+  }>({
+    isOpen: false,
+    metricKey: '',
+    metricTitle: '',
+  });
+
+  const openDrilldown = (metricKey: string, metricTitle: string, metricValue?: string | number, explanationFormula?: string) => {
+    setDrilldownModal({
+      isOpen: true,
+      metricKey,
+      metricTitle,
+      metricValue,
+      explanationFormula
+    });
+  };
+
   return (
     <div className="space-y-8 w-full max-w-[1640px] mx-auto">
+      {/* Drilldown Modal */}
+      <MetricDrilldownModal
+        isOpen={drilldownModal.isOpen}
+        onClose={() => setDrilldownModal((prev) => ({ ...prev, isOpen: false }))}
+        metricKey={drilldownModal.metricKey}
+        metricTitle={drilldownModal.metricTitle}
+        metricValue={drilldownModal.metricValue}
+        missionId={missionId}
+        explanationFormula={drilldownModal.explanationFormula}
+        scopeLabel={`Mission #${missionId}`}
+      />
+
       {/* 1. Executive Mission Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0C1222] via-[#080D18] to-[#04060A] border-2 border-[#D4AF37]/50 shadow-[0_0_40px_rgba(212,175,55,0.2)] p-6 md:p-8">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-[100px] pointer-events-none" />
@@ -135,17 +170,17 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
             <div className="flex items-center gap-3">
               <span className="px-3.5 py-1 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/60 text-[#F5D77F] text-xs font-mono font-black tracking-widest uppercase flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                PHASE 15 REAL REVENUE EXECUTION MODE
+                ACTIVE REVENUE WAR ROOM
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-mono font-bold">
-                100% REAL DB VALUES
+              <span className="px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#F5D77F] border border-[#D4AF37]/30 text-xs font-mono font-bold">
+                SCOPE: MISSION #{missionId}
               </span>
             </div>
             <h2 className="text-3xl md:text-4xl font-serif font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-[#F5D77F] to-[#D4AF37]">
               {missionTitle}
             </h2>
             <p className="text-sm text-slate-300 font-sans max-w-2xl">
-              Real database execution cockpit. Every single metric corresponds to confirmed database transactions, tasks, and communications.
+              Real-time operational execution cockpit. Click any metric card below to inspect the underlying PostgreSQL database records.
             </p>
           </div>
 
@@ -179,74 +214,124 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
         )}
       </div>
 
-      {/* 2. The 8 Real Database Activity Counters */}
+      {/* 2. The 8 Real Database Activity Counters (Clickable Drilldowns) */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Activity className="w-5 h-5 text-emerald-400" />
-          <h3 className="text-lg font-serif font-bold text-white">Real Database Execution Telemetry</h3>
-          <span className="text-[10px] font-mono text-[#D4AF37] bg-[#D4AF37]/10 px-2.5 py-0.5 rounded-full border border-[#D4AF37]/30 ml-2">
-            Zero Mock Data
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Activity className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-lg font-serif font-bold text-white">Canonical Database Execution Telemetry</h3>
+          </div>
+          <span className="text-[11px] font-mono text-[#8C9BAE]">
+            Click any metric to drill down into records
           </span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {/* Tasks Created */}
-          <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-[#D4AF37]/30 space-y-1">
-            <div className="text-[10px] uppercase font-mono text-slate-400">Tasks Created</div>
-            <div className="text-2xl font-mono font-black text-white">{realKPIs?.tasks_created ?? 0}</div>
+          <button
+            onClick={() => openDrilldown('tasks', 'Tasks Created Registry', realKPIs?.tasks_created ?? 0, 'Total autonomous workflow tasks created for this mission in PostgreSQL.')}
+            className="p-4 rounded-2xl bg-[#080D18]/90 border border-[#D4AF37]/30 hover:border-[#D4AF37] hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left space-y-1 group cursor-pointer"
+          >
+            <div className="text-[10px] uppercase font-mono text-slate-400 group-hover:text-[#F5D77F] flex items-center justify-between">
+              <span>Tasks Created</span>
+              <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <div className="text-2xl font-mono font-black text-white group-hover:text-[#F5D77F]">{realKPIs?.tasks_created ?? 0}</div>
             <div className="text-[10px] text-slate-400 font-mono">DB `tasks` table</div>
-          </div>
+          </button>
 
           {/* Tasks Completed */}
-          <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-blue-500/30 space-y-1">
-            <div className="text-[10px] uppercase font-mono text-blue-300">Tasks Done</div>
+          <button
+            onClick={() => openDrilldown('tasks_completed', 'Completed Tasks Audit', realKPIs?.tasks_completed ?? 0, 'Tasks with status = COMPLETED.')}
+            className="p-4 rounded-2xl bg-[#080D18]/90 border border-blue-500/30 hover:border-blue-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left space-y-1 group cursor-pointer"
+          >
+            <div className="text-[10px] uppercase font-mono text-blue-300 flex items-center justify-between">
+              <span>Tasks Done</span>
+              <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
             <div className="text-2xl font-mono font-black text-blue-400">{realKPIs?.tasks_completed ?? 0}</div>
             <div className="text-[10px] text-blue-300/70 font-mono">Autonomous executed</div>
-          </div>
+          </button>
 
           {/* Messages Sent */}
-          <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-amber-500/30 space-y-1">
-            <div className="text-[10px] uppercase font-mono text-amber-300">Messages Sent</div>
+          <button
+            onClick={() => openDrilldown('messages_sent', 'Dispatched Outbound Messages', realKPIs?.messages_sent ?? 0, 'Emails successfully sent via Resend API provider.')}
+            className="p-4 rounded-2xl bg-[#080D18]/90 border border-amber-500/30 hover:border-amber-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left space-y-1 group cursor-pointer"
+          >
+            <div className="text-[10px] uppercase font-mono text-amber-300 flex items-center justify-between">
+              <span>Messages Sent</span>
+              <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
             <div className="text-2xl font-mono font-black text-amber-400">{realKPIs?.messages_sent ?? 0}</div>
-            <div className="text-[10px] text-amber-300/70 font-mono">Approved dispatches</div>
-          </div>
+            <div className="text-[10px] text-amber-300/70 font-mono">Resend Dispatches</div>
+          </button>
 
           {/* Replies Received */}
-          <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-cyan-500/30 space-y-1">
-            <div className="text-[10px] uppercase font-mono text-cyan-300">Replies Received</div>
+          <button
+            onClick={() => openDrilldown('replies', 'Prospect Replies Audit', realKPIs?.replies_received ?? 0, 'Genuine inbound external client responses (excluding self-test webhooks).')}
+            className="p-4 rounded-2xl bg-[#080D18]/90 border border-cyan-500/30 hover:border-cyan-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left space-y-1 group cursor-pointer"
+          >
+            <div className="text-[10px] uppercase font-mono text-cyan-300 flex items-center justify-between">
+              <span>Prospect Replies</span>
+              <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
             <div className="text-2xl font-mono font-black text-cyan-400">{realKPIs?.replies_received ?? 0}</div>
-            <div className="text-[10px] text-cyan-300/70 font-mono">Buyer responses</div>
-          </div>
+            <div className="text-[10px] text-cyan-300/70 font-mono">
+              {realKPIs?.test_replies > 0 ? `+${realKPIs.test_replies} test archived` : 'Verified inbound'}
+            </div>
+          </button>
 
           {/* Calls Booked */}
-          <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-indigo-500/30 space-y-1">
-            <div className="text-[10px] uppercase font-mono text-indigo-300">Calls Booked</div>
-            <div className="text-2xl font-mono font-black text-indigo-400">{realKPIs?.calls_booked ?? 0}</div>
-            <div className="text-[10px] text-indigo-300/70 font-mono">Discovery stage</div>
-          </div>
+          <button
+            onClick={() => openDrilldown('leads', 'Discovery Calls & Pipeline Stages', realKPIs?.calls_booked ?? 0, 'Leads at DISCOVERY_CALL or higher negotiation pipeline stages.')}
+            className="p-4 rounded-2xl bg-[#080D18]/90 border border-purple-500/30 hover:border-purple-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left space-y-1 group cursor-pointer"
+          >
+            <div className="text-[10px] uppercase font-mono text-purple-300 flex items-center justify-between">
+              <span>Calls Booked</span>
+              <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <div className="text-2xl font-mono font-black text-purple-400">{realKPIs?.calls_booked ?? 0}</div>
+            <div className="text-[10px] text-purple-300/70 font-mono">Discovery stage</div>
+          </button>
 
           {/* Proposals Sent */}
-          <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-purple-500/30 space-y-1">
-            <div className="text-[10px] uppercase font-mono text-purple-300">Proposals Sent</div>
-            <div className="text-2xl font-mono font-black text-purple-400">{realKPIs?.proposals_sent ?? 0}</div>
-            <div className="text-[10px] text-purple-300/70 font-mono">Contract delivery</div>
-          </div>
+          <button
+            onClick={() => openDrilldown('proposals_sent', 'Sent Proposals Registry', realKPIs?.proposals_sent ?? 0, 'Generated and dispatched commercial proposals.')}
+            className="p-4 rounded-2xl bg-[#080D18]/90 border border-emerald-500/30 hover:border-emerald-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left space-y-1 group cursor-pointer"
+          >
+            <div className="text-[10px] uppercase font-mono text-emerald-300 flex items-center justify-between">
+              <span>Proposals Sent</span>
+              <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <div className="text-2xl font-mono font-black text-emerald-400">{realKPIs?.proposals_sent ?? 0}</div>
+            <div className="text-[10px] text-emerald-300/70 font-mono">Formal offers</div>
+          </button>
 
           {/* Deals Won */}
-          <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-emerald-500/40 space-y-1 bg-emerald-500/[0.03]">
-            <div className="text-[10px] uppercase font-mono text-emerald-300 font-bold">Deals Won</div>
-            <div className="text-2xl font-mono font-black text-emerald-400">{realKPIs?.deals_won ?? 0}</div>
-            <div className="text-[10px] text-emerald-300/70 font-mono">Closed transactions</div>
-          </div>
+          <button
+            onClick={() => openDrilldown('deals_won', 'Closed Won Deals Registry', realKPIs?.deals_won ?? 0, 'Deals successfully won and confirmed.')}
+            className="p-4 rounded-2xl bg-[#080D18]/90 border border-yellow-500/30 hover:border-yellow-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left space-y-1 group cursor-pointer"
+          >
+            <div className="text-[10px] uppercase font-mono text-yellow-300 flex items-center justify-between">
+              <span>Deals Won</span>
+              <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <div className="text-2xl font-mono font-black text-yellow-400">{realKPIs?.deals_won ?? 0}</div>
+            <div className="text-[10px] text-yellow-300/70 font-mono">Closed won</div>
+          </button>
 
           {/* Revenue Closed */}
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-[#D4AF37]/20 via-[#080D18] to-[#04060A] border-2 border-[#D4AF37] space-y-1 shadow-[0_0_15px_rgba(212,175,55,0.2)]">
-            <div className="text-[10px] uppercase font-mono text-[#F5D77F] font-black">Revenue Closed</div>
-            <div className="text-lg font-mono font-black text-[#F5D77F] leading-tight mt-1">
-              AED {(revenueClosedTotal ?? 0).toLocaleString()}
+          <button
+            onClick={() => openDrilldown('revenue_closed', 'Settled Revenue Proof Ledger', `AED ${Number(realKPIs?.revenue_closed ?? 0).toLocaleString()}`, 'Verified settled cash transactions in RevenueTracking table.')}
+            className="p-4 rounded-2xl bg-[#080D18]/90 border border-emerald-500/50 hover:border-emerald-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left space-y-1 group cursor-pointer"
+          >
+            <div className="text-[10px] uppercase font-mono text-emerald-400 flex items-center justify-between">
+              <span>Paid Revenue</span>
+              <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-            <div className="text-[10px] text-emerald-400 font-mono font-bold">Target Exceeded</div>
-          </div>
+            <div className="text-2xl font-mono font-black text-emerald-400">AED {Number(realKPIs?.revenue_closed ?? 0).toLocaleString()}</div>
+            <div className="text-[10px] text-emerald-400/70 font-mono">Settled funds</div>
+          </button>
         </div>
       </div>
 

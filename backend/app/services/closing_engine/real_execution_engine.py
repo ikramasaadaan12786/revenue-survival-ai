@@ -25,102 +25,49 @@ class RealRevenueExecutionEngine:
         mission_id: int
     ) -> Dict[str, Any]:
         """
-        Calculates all 8 execution KPIs directly from real database records.
+        Calculates all execution KPIs directly via the Canonical Telemetry Service.
         Zero mock data. Zero hardcoded approximations.
         """
-        # 1. Mission Details
-        mission_res = await session.execute(select(Mission).where(Mission.id == mission_id))
-        mission = mission_res.scalar_one_or_none()
-        if not mission:
-            return {"error": "Mission not found"}
-
-        # 2. Tasks Created & Completed
-        tasks_created_res = await session.execute(
-            select(func.count(Task.id)).where(Task.mission_id == mission_id)
+        from app.services.telemetry_service import canonical_telemetry_service
+        telemetry = await canonical_telemetry_service.get_scoped_telemetry(
+            session=session,
+            mission_id=mission_id,
+            scope="CURRENT_MISSION"
         )
-        tasks_created = tasks_created_res.scalar() or 0
+        
+        mission_info = telemetry.get("mission") or {}
+        tasks = telemetry.get("tasks") or {}
+        comms = telemetry.get("communications") or {}
+        funnel = telemetry.get("funnel") or {}
+        financials = telemetry.get("financial_valuation") or {}
+        leads = telemetry.get("leads") or {}
 
-        tasks_completed_res = await session.execute(
-            select(func.count(Task.id)).where(
-                Task.mission_id == mission_id,
-                Task.status == "COMPLETED"
-            )
-        )
-        tasks_completed = tasks_completed_res.scalar() or 0
-
-        # 3. Messages Sent
-        msgs_sent_res = await session.execute(
-            select(func.count(Communication.id)).where(
-                Communication.mission_id == mission_id,
-                Communication.delivery_status.in_(["SENT", "DELIVERED", "READ", "REPLIED"])
-            )
-        )
-        messages_sent = msgs_sent_res.scalar() or 0
-
-        # 4. Replies Received
-        replies_res = await session.execute(
-            select(func.count(Communication.id)).where(
-                Communication.mission_id == mission_id,
-                (Communication.delivery_status == "REPLIED") | (Communication.response_received.isnot(None))
-            )
-        )
-        replies_received = replies_res.scalar() or 0
-
-        # 5. Calls Booked
-        calls_booked_res = await session.execute(
-            select(func.count(Lead.id)).where(
-                Lead.mission_id == mission_id,
-                Lead.pipeline_stage.in_(["DISCOVERY_CALL", "MEETING", "NEGOTIATION", "CLOSING", "WON"])
-            )
-        )
-        calls_booked = calls_booked_res.scalar() or 0
-
-        # 6. Proposals Sent
-        props_sent_res = await session.execute(
-            select(func.count(Proposal.id)).where(
-                Proposal.mission_id == mission_id,
-                Proposal.status.in_(["SENT", "ACCEPTED"])
-            )
-        )
-        proposals_sent = props_sent_res.scalar() or 0
-
-        # 7. Deals Won
-        deals_won_res = await session.execute(
-            select(func.count(Lead.id)).where(
-                Lead.mission_id == mission_id,
-                (Lead.pipeline_stage == "WON") | (Lead.status == "DEAL")
-            )
-        )
-        deals_won = deals_won_res.scalar() or 0
-
-        # 8. Revenue Closed (From confirmed transactions)
-        rev_closed_res = await session.execute(
-            select(func.coalesce(func.sum(RevenueTracking.amount), 0.0)).where(
-                RevenueTracking.mission_id == mission_id,
-                RevenueTracking.deal_status == "CONFIRMED"
-            )
-        )
-        revenue_closed = float(rev_closed_res.scalar() or 0.0)
-
-        # Remaining Gap
-        target_amount = float(mission.goal_amount or 2500.0)
+        target_amount = float(mission_info.get("target_amount_aed", 50000.0))
+        revenue_closed = float(financials.get("confirmed_paid_revenue_aed", 0.0))
         gap = max(0.0, target_amount - revenue_closed)
 
         return {
             "mission_id": mission_id,
-            "mission_title": mission.title,
+            "mission_title": mission_info.get("title", "Active Revenue Mission"),
             "target_revenue_aed": target_amount,
             "revenue_closed_aed": revenue_closed,
             "revenue_gap_aed": gap,
             "real_kpis": {
-                "tasks_created": tasks_created,
-                "tasks_completed": tasks_completed,
-                "messages_sent": messages_sent,
-                "replies_received": replies_received,
-                "calls_booked": calls_booked,
-                "proposals_sent": proposals_sent,
-                "deals_won": deals_won,
-                "revenue_closed": revenue_closed
+                "tasks_created": tasks.get("tasks_created", 0),
+                "tasks_completed": tasks.get("tasks_completed", 0),
+                "messages_sent": comms.get("emails_sent_resend", 0),
+                "replies_received": comms.get("prospect_replies", 0),
+                "test_replies": comms.get("test_replies", 0),
+                "calls_booked": funnel.get("calls_booked", 0),
+                "proposals_sent": funnel.get("proposals_sent", 0),
+                "deals_won": funnel.get("deals_won", 0),
+                "revenue_closed": revenue_closed,
+                "leads_found": leads.get("total_discovered", 0),
+                "verified_leads": leads.get("verified_real", 0),
+                "qualified_leads": leads.get("qualified", 0),
+                "raw_opportunity_value": financials.get("raw_opportunity_value_aed", 0.0),
+                "commission_potential": financials.get("commission_potential_aed", 0.0),
+                "weighted_pipeline": financials.get("weighted_pipeline_aed", 0.0)
             }
         }
 

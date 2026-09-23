@@ -297,3 +297,43 @@ async def pulse_heartbeat_endpoint(payload: Dict[str, Any] = {}):
         "worker_id": worker_id,
         "timestamp": now_str
     }
+
+
+@router.get("/telemetry")
+async def get_canonical_telemetry_endpoint(
+    mission_id: Optional[int] = 1,
+    scope: str = "CURRENT_MISSION",
+    db: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Canonical Telemetry API:
+    Returns scoped, reconciled metrics across Tasks, Leads, Communications, Funnel, and Valuations.
+    """
+    from app.services.telemetry_service import canonical_telemetry_service
+    return await canonical_telemetry_service.get_scoped_telemetry(
+        session=db,
+        mission_id=mission_id,
+        scope=scope
+    )
+
+
+@router.get("/drilldown/{metric_key}")
+async def get_metric_drilldown_endpoint(
+    metric_key: str,
+    mission_id: Optional[int] = 1,
+    limit: int = 50,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Returns real underlying database records for UI drill-down modals.
+    """
+    from app.services.telemetry_service import canonical_telemetry_service
+    return await canonical_telemetry_service.get_metric_drilldown(
+        session=db,
+        metric_key=metric_key,
+        mission_id=mission_id,
+        limit=limit,
+        offset=offset
+    )
+

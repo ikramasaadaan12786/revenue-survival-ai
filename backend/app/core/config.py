@@ -3,9 +3,13 @@ from pydantic import field_validator
 from typing import Optional
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
-_project_root = Path(__file__).resolve().parent.parent.parent.parent
-_default_db_file = (_project_root / "revenue_survival.db").resolve().as_posix()
+_backend_dir = Path(__file__).resolve().parent.parent.parent
+load_dotenv(_backend_dir / ".env")
+
+_project_root = _backend_dir.parent
+_default_db_file = (_backend_dir / "revenue_survival.db").resolve().as_posix()
 
 def clean_database_url(raw_url: Optional[str]) -> str:
     if not raw_url:

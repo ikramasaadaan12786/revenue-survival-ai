@@ -30,32 +30,46 @@ export const LuxuryHeader: React.FC<LuxuryHeaderProps> = ({
       .catch(() => null);
   }, []);
 
-  const anyProviderConnected =
-    providerAudit &&
-    (providerAudit.whatsapp?.connection_status === 'CONNECTED' ||
-      providerAudit.email?.connection_status === 'CONNECTED' ||
-      providerAudit.linkedin?.connection_status === 'CONNECTED');
+  const isEmailConnected = providerAudit?.email?.connection_status === 'CONNECTED';
+  const isWhatsAppConnected = providerAudit?.whatsapp?.connection_status === 'CONNECTED';
+  const isLinkedInConnected = providerAudit?.linkedin?.connection_status === 'CONNECTED';
+  const anyProviderConnected = isEmailConnected || isWhatsAppConnected || isLinkedInConnected;
 
   return (
     <header className="w-full border-b border-[#D4AF37]/20 bg-gradient-to-b from-[#06080F]/95 via-[#04060A]/90 to-transparent backdrop-blur-xl relative z-20">
-      {/* CEO Alert Banner if providers are not connected */}
-      {!anyProviderConnected && (
-        <div className="w-full bg-gradient-to-r from-amber-600/30 via-red-900/30 to-amber-600/30 border-b border-amber-500/40 px-6 py-2 flex items-center justify-between text-xs font-mono">
-          <div className="flex items-center gap-2 text-amber-300">
-            <AlertTriangle className="w-4 h-4 text-amber-400 animate-pulse" />
-            <span className="font-bold tracking-wide">CEO ALERT:</span>
-            <span>Waiting for provider activation (WhatsApp / Email / LinkedIn) to enable live dispatches.</span>
+      {/* Channel Readiness Status Strip */}
+      <div className="w-full bg-[#050811]/95 border-b border-[#D4AF37]/15 px-6 py-1.5 flex flex-wrap items-center justify-between text-[11px] font-mono">
+        <div className="flex items-center gap-4">
+          <span className="text-[#8C9BAE] uppercase tracking-wider font-semibold">Channels:</span>
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${isEmailConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+            <span className={isEmailConnected ? 'text-emerald-300 font-bold' : 'text-slate-400'}>
+              Email {isEmailConnected ? '(sales@altsofts.in - Connected)' : '(Offline)'}
+            </span>
           </div>
-          {onNavigateTab && (
-            <button
-              onClick={() => onNavigateTab('providers')}
-              className="text-amber-200 font-bold hover:underline flex items-center gap-1 text-[11px]"
-            >
-              Open Activation Wizard <ArrowRight className="w-3 h-3" />
-            </button>
-          )}
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${isWhatsAppConnected ? 'bg-emerald-400' : 'bg-slate-500'}`} />
+            <span className={isWhatsAppConnected ? 'text-emerald-300 font-bold' : 'text-slate-400'}>
+              WhatsApp {isWhatsAppConnected ? '(Connected)' : '(Standby)'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${isLinkedInConnected ? 'bg-emerald-400' : 'bg-slate-500'}`} />
+            <span className={isLinkedInConnected ? 'text-emerald-300 font-bold' : 'text-slate-400'}>
+              LinkedIn {isLinkedInConnected ? '(Connected)' : '(Standby)'}
+            </span>
+          </div>
         </div>
-      )}
+
+        {onNavigateTab && (
+          <button
+            onClick={() => onNavigateTab('providers')}
+            className="text-[#D4AF37] hover:underline flex items-center gap-1 text-[10.5px] font-semibold"
+          >
+            Provider Management <ArrowRight className="w-3 h-3" />
+          </button>
+        )}
+      </div>
 
       <div className="py-4 px-6 lg:px-8 flex items-center justify-between gap-6">
         {/* Left Search Bar & Section Indicator */}
