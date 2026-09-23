@@ -863,6 +863,37 @@ async def dispatch_outbound_communication_endpoint(payload: Dict[str, Any], db: 
     return result
 
 
+@router.get("/webhooks/whatsapp")
+async def verify_closing_engine_whatsapp_webhook(
+    request: Request,
+    hub_mode: Optional[str] = None,
+    hub_verify_token: Optional[str] = None,
+    hub_challenge: Optional[str] = None
+):
+    from fastapi.responses import PlainTextResponse
+    from app.services.communication.whatsapp_cloud_service import whatsapp_cloud_service
+    params = dict(request.query_params)
+    mode = hub_mode or params.get("hub.mode")
+    token = hub_verify_token or params.get("hub.verify_token")
+    challenge = hub_challenge or params.get("hub.challenge")
+
+    valid, result = whatsapp_cloud_service.verify_webhook_subscription(mode, token, challenge)
+    if valid and result:
+        return PlainTextResponse(content=result, status_code=200)
+    raise HTTPException(status_code=403, detail=result or "Webhook verification failed")
+
+@router.post("/webhooks/whatsapp")
+async def receive_closing_engine_whatsapp_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    from app.services.communication.whatsapp_cloud_service import whatsapp_cloud_service
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    return await whatsapp_cloud_service.process_webhook_payload(db, payload)
+
 @router.post("/webhooks/{provider}")
 async def receive_provider_webhook_endpoint(
     provider: str,

@@ -34,55 +34,17 @@ class RealProviderDispatchService:
         template_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Transmits message through WhatsApp Business Cloud API.
+        Transmits message through official Meta WhatsApp Business Cloud API.
         Captures official Meta wamid and updates communication delivery status to SENT.
         """
-        comm = await session.get(Communication, comm_id)
-        if not comm:
-            return {"error": "Communication record not found"}
-
-        # Clean recipient phone number (E.164 format)
-        clean_phone = "".join(c for c in recipient_phone if c.isdigit() or c == "+")
-        if not clean_phone.startswith("+"):
-            clean_phone = "+" + clean_phone
-
-        now = datetime.datetime.utcnow()
-        # Deterministic production message ID token
-        wamid = f"wamid.HBgM{int(now.timestamp())}E{comm_id:04d}K{hashlib.md5(clean_phone.encode()).hexdigest()[:8].upper()}"
-
-        comm.channel = "WhatsApp"
-        comm.recipient = clean_phone
-        comm.provider_name = "WHATSAPP_BUSINESS_CLOUD"
-        comm.provider_message_id = wamid
-        comm.delivery_confirmation = f"DELV-WA-{wamid[-8:]}"
-        comm.delivery_status = "DELIVERED"
-        comm.approval_status = "APPROVED"
-        comm.source_type = "REAL"
-        comm.verification_status = "VERIFIED"
-        comm.sent_at = now
-        comm.delivered_at = now
-
-        # Advance Lead to CONTACTED stage
-        lead = await session.get(Lead, comm.lead_id)
-        if lead and lead.pipeline_stage in ["DISCOVERED", "VERIFIED", "CONTACT_READY"]:
-            lead.pipeline_stage = "CONTACTED"
-            lead.status = "CONTACTED"
-
-        await session.commit()
-        await session.refresh(comm)
-
-        return {
-            "status": "success",
-            "provider": "WHATSAPP_BUSINESS_CLOUD",
-            "comm_id": comm.id,
-            "lead_id": comm.lead_id,
-            "recipient": clean_phone,
-            "message_id": wamid,
-            "wamid": wamid,
-            "delivery_token": comm.delivery_confirmation,
-            "delivery_status": "DELIVERED",
-            "dispatched_at": now.strftime("%Y-%m-%d %H:%M:%S")
-        }
+        from app.services.communication.whatsapp_cloud_service import whatsapp_cloud_service
+        return await whatsapp_cloud_service.send_whatsapp_message(
+            session=session,
+            comm_id=comm_id,
+            recipient_phone=recipient_phone,
+            message_text=message_body,
+            template_name=template_name
+        )
 
     # -------------------------------------------------------------
     # 2. EMAIL PROVIDER DISPATCHER (Resend Official REST API)

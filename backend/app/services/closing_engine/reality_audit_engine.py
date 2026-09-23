@@ -304,6 +304,7 @@ class RealityAuditEngine:
 
         whatsapp_token = os.environ.get("WHATSAPP_API_TOKEN") or os.environ.get("WHATSAPP_ACCESS_TOKEN") or (wa_auth.credentials.get("token") if wa_auth and wa_auth.credentials else None)
         whatsapp_phone_id = os.environ.get("WHATSAPP_PHONE_NUMBER_ID") or (wa_auth.credentials.get("phone_number_id") if wa_auth and wa_auth.credentials else None)
+        whatsapp_verify_token = os.environ.get("WHATSAPP_VERIFY_TOKEN") or os.environ.get("WHATSAPP_WEBHOOK_VERIFY_TOKEN")
         
         resend_key = os.environ.get("RESEND_API_KEY") or (email_auth.credentials.get("api_key") if email_auth and email_auth.credentials else None)
         email_domain = os.environ.get("EMAIL_SENDING_DOMAIN") or (email_auth.credentials.get("sending_domain") or email_auth.credentials.get("domain") if email_auth and email_auth.credentials else "altsofts.in")
@@ -313,13 +314,24 @@ class RealityAuditEngine:
         linkedin_token = os.environ.get("LINKEDIN_ACCESS_TOKEN") or os.environ.get("LINKEDIN_CLIENT_ID") or (li_auth.credentials.get("access_token") if li_auth and li_auth.credentials else None)
 
         is_email_connected = bool(email_auth and email_auth.status == "CONNECTED" or resend_key)
-        is_wa_connected = bool(whatsapp_token or (wa_auth and wa_auth.status == "CONNECTED"))
+        
+        # WhatsApp status classification
+        if not whatsapp_token or not whatsapp_phone_id:
+            wa_status = "NOT_CONFIGURED"
+        elif wa_auth and wa_auth.status == "CONNECTED":
+            wa_status = "CONNECTED"
+        elif whatsapp_verify_token:
+            wa_status = "WEBHOOK_VERIFIED"
+        else:
+            wa_status = "CONFIGURED"
+
+        is_wa_connected = wa_status == "CONNECTED"
         is_li_connected = bool(linkedin_token or (li_auth and li_auth.status == "CONNECTED"))
 
         providers_list = [
-            {"provider": "WHATSAPP", "provider_name": "WhatsApp Business Cloud API", "status": "ONLINE" if is_wa_connected else "OFFLINE", "connection_status": "CONNECTED" if is_wa_connected else "NOT CONNECTED"},
-            {"provider": "RESEND", "provider_name": "Resend Enterprise Email API", "status": "ONLINE" if is_email_connected else "OFFLINE", "connection_status": "CONNECTED" if is_email_connected else "NOT CONNECTED", "sender": sender_email, "domain": email_domain},
-            {"provider": "LINKEDIN", "provider_name": "LinkedIn Sales Navigator API", "status": "ONLINE" if is_li_connected else "OFFLINE", "connection_status": "CONNECTED" if is_li_connected else "NOT CONNECTED"}
+            {"provider": "WHATSAPP", "provider_name": "WhatsApp Business Cloud API", "status": wa_status, "connection_status": wa_status, "phone_number_id": whatsapp_phone_id},
+            {"provider": "RESEND", "provider_name": "Resend Enterprise Email API", "status": "CONNECTED" if is_email_connected else "NOT_CONFIGURED", "connection_status": "CONNECTED" if is_email_connected else "NOT_CONFIGURED", "sender": sender_email, "domain": email_domain},
+            {"provider": "LINKEDIN", "provider_name": "LinkedIn Sales Navigator API", "status": "CONNECTED" if is_li_connected else "NOT_CONFIGURED", "connection_status": "CONNECTED" if is_li_connected else "NOT_CONFIGURED"}
         ]
 
         return {
@@ -327,12 +339,12 @@ class RealityAuditEngine:
             "providers": providers_list,
             "whatsapp": {
                 "provider_name": "WhatsApp Business Cloud API",
-                "connection_status": "CONNECTED" if is_wa_connected else "NOT CONNECTED",
-                "api_status": "READY" if is_wa_connected else "NOT_CONFIGURED",
-                "token_present": bool(whatsapp_token or (wa_auth and wa_auth.credentials.get("token"))),
-                "phone_number_id": whatsapp_phone_id if whatsapp_phone_id else "NOT_CONFIGURED",
-                "webhook_status": "ACTIVE_LISTENING" if is_wa_connected else "NOT_CONFIGURED",
-                "action_required": None if is_wa_connected else "Set WHATSAPP_API_TOKEN in production environment or Provider Wizard"
+                "connection_status": wa_status,
+                "api_status": wa_status,
+                "token_present": bool(whatsapp_token),
+                "phone_number_id": f"{whatsapp_phone_id[:3]}...{whatsapp_phone_id[-4:]}" if (whatsapp_phone_id and len(whatsapp_phone_id) > 7) else (whatsapp_phone_id or "NOT_CONFIGURED"),
+                "webhook_status": "CONFIGURED" if whatsapp_verify_token else "PENDING_VERIFY_TOKEN",
+                "action_required": None if wa_status == "CONNECTED" else "Enter Callback URL and Verify Token in Meta Developer Portal"
             },
             "email": {
                 "provider": "RESEND",

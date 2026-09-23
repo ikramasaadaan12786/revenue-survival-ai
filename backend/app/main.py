@@ -30,6 +30,7 @@ from app.api import (
     scaling_engine,
     enterprise_network,
     system,
+    webhooks,
 )
 import app.models.entities  # Ensures all models are registered in Base.metadata
 
@@ -151,6 +152,8 @@ app.include_router(scaling_engine.router, prefix=settings.API_V1_STR)
 app.include_router(enterprise_network.router, prefix=settings.API_V1_STR)
 app.include_router(system.router, prefix=settings.API_V1_STR)
 app.include_router(system.router)
+app.include_router(webhooks.router, prefix=settings.API_V1_STR)
+app.include_router(webhooks.router)
 
 @app.get("/")
 async def root():
