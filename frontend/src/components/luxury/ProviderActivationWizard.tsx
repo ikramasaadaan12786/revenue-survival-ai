@@ -497,48 +497,101 @@ export const ProviderActivationWizard: React.FC<ProviderActivationWizardProps> =
           )}
 
           {activeChannel === 'linkedin' && (
-            <form onSubmit={handleActivateLinkedIn} className="space-y-4 text-xs font-mono">
+            <div className="space-y-5 text-xs font-mono">
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <Key className="w-4 h-4 text-cyan-400" />
-                  <h3 className="text-base font-serif font-bold text-white">LinkedIn Sales Navigator OAuth</h3>
+                  <h3 className="text-base font-serif font-bold text-white">LinkedIn OAuth 2.0 Integration</h3>
                 </div>
-                <span className="text-slate-400 text-[11px]">OAuth 2.0 Webflow</span>
+                <span className="text-cyan-400 text-[11px] font-bold px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30">
+                  OFFICIAL OPENID + SHARE
+                </span>
               </div>
 
-              <div>
-                <label className="text-slate-300 block mb-1">LinkedIn App Client ID</label>
-                <input
-                  type="text"
-                  value={liClientId}
-                  onChange={(e) => setLiClientId(e.target.value)}
-                  placeholder="e.g. 78li_dubai_sales_app"
-                  className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37]/30 text-white focus:outline-none focus:border-[#D4AF37]"
-                />
-              </div>
+              {/* Status Banner */}
+              {isLiConnected ? (
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2">
+                  <div className="font-bold flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    LinkedIn OAuth 2.0 Connected
+                  </div>
+                  <div className="text-xs text-slate-300">
+                    Member: <strong className="text-white">{providerDetails?.linkedin?.member_name || 'Authenticated Member'}</strong>
+                    {providerDetails?.linkedin?.member_email && (
+                      <span> • Email: <strong className="text-white">{providerDetails.linkedin.member_email}</strong></span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    Scopes: <span className="text-cyan-300">openid profile email w_member_social</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
+                  <p className="text-slate-300 text-xs leading-relaxed">
+                    Connect your LinkedIn Developer Application using official OAuth 2.0 authorization with <strong className="text-white">Sign In with LinkedIn (OpenID)</strong> and <strong className="text-white">Share on LinkedIn</strong> products.
+                  </p>
+                  <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                    <span>Redirect URI:</span>
+                    <code className="text-cyan-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                      https://backend-growth-540e.vercel.app/api/v1/oauth/linkedin/callback
+                    </code>
+                  </div>
+                  <div className="pt-2">
+                    <a
+                      id="btn-linkedin-oauth-connect"
+                      href={getApiUrl('/api/v1/oauth/linkedin/connect')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 text-white font-mono font-bold shadow-[0_0_25px_rgba(6,182,212,0.35)] hover:brightness-110 transition-all text-xs"
+                    >
+                      <Key className="w-4 h-4" />
+                      CONNECT WITH LINKEDIN OAUTH 2.0
+                    </a>
+                  </div>
+                </div>
+              )}
 
-              <div>
-                <label className="text-slate-300 block mb-1">LinkedIn OAuth Access Token</label>
-                <input
-                  type="password"
-                  value={liAccessToken}
-                  onChange={(e) => setLiAccessToken(e.target.value)}
-                  placeholder="AQV..."
-                  className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37]/30 text-white focus:outline-none focus:border-[#D4AF37]"
-                  required
-                />
-              </div>
+              {/* Collapsible Manual Token Input */}
+              <details className="text-slate-400 border-t border-white/5 pt-3">
+                <summary className="cursor-pointer hover:text-white text-[11px] font-semibold">
+                  Advanced: Manual OAuth Access Token Fallback
+                </summary>
+                <form onSubmit={handleActivateLinkedIn} className="space-y-3 pt-3">
+                  <div>
+                    <label className="text-slate-300 block mb-1">LinkedIn App Client ID</label>
+                    <input
+                      type="text"
+                      value={liClientId}
+                      onChange={(e) => setLiClientId(e.target.value)}
+                      placeholder="e.g. 78li_dubai_sales_app"
+                      className="w-full p-2.5 rounded-lg bg-[#04060A] border border-slate-800 text-white focus:outline-none focus:border-[#D4AF37] text-xs"
+                    />
+                  </div>
 
-              <div className="pt-2 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={liSubmitting}
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-mono font-bold shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:brightness-110 transition-all flex items-center gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  {liSubmitting ? 'Authenticating...' : 'Validate & Connect LinkedIn'}
-                </button>
-              </div>
+                  <div>
+                    <label className="text-slate-300 block mb-1">LinkedIn OAuth Access Token</label>
+                    <input
+                      type="password"
+                      value={liAccessToken}
+                      onChange={(e) => setLiAccessToken(e.target.value)}
+                      placeholder="AQV..."
+                      className="w-full p-2.5 rounded-lg bg-[#04060A] border border-slate-800 text-white focus:outline-none focus:border-[#D4AF37] text-xs"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="submit"
+                      disabled={liSubmitting}
+                      className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs transition-all flex items-center gap-1.5"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {liSubmitting ? 'Authenticating...' : 'Save Manual Token'}
+                    </button>
+                  </div>
+                </form>
+              </details>
 
               {liResult && (
                 <div
@@ -555,7 +608,7 @@ export const ProviderActivationWizard: React.FC<ProviderActivationWizardProps> =
                   {liResult.permissions && <div>Permissions: {liResult.permissions.join(', ')}</div>}
                 </div>
               )}
-            </form>
+            </div>
           )}
         </div>
 

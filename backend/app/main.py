@@ -31,6 +31,7 @@ from app.api import (
     enterprise_network,
     system,
     webhooks,
+    oauth_linkedin,
 )
 import app.models.entities  # Ensures all models are registered in Base.metadata
 
@@ -155,6 +156,8 @@ app.include_router(system.router)
 app.include_router(webhooks.router, prefix=settings.API_V1_STR)
 app.include_router(webhooks.router)
 app.include_router(webhooks.root_router)
+app.include_router(oauth_linkedin.router, prefix=settings.API_V1_STR)
+app.include_router(oauth_linkedin.router)
 
 import os
 from fastapi.staticfiles import StaticFiles

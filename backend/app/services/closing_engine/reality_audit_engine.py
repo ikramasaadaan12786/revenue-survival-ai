@@ -290,7 +290,7 @@ class RealityAuditEngine:
                     email_auth = a
                 elif cname in ["WHATSAPP", "WHATSAPP_BUSINESS", "WHATSAPP_CLOUD"] and a.status == "CONNECTED":
                     wa_auth = a
-                elif cname in ["LINKEDIN_OUTREACH", "LINKEDIN_OAUTH"] and a.status == "CONNECTED":
+                elif cname in ["LINKEDIN", "LINKEDIN_OUTREACH", "LINKEDIN_OAUTH"] and a.status == "CONNECTED":
                     li_auth = a
 
         if session:
@@ -311,7 +311,9 @@ class RealityAuditEngine:
         sender_email = (email_auth.credentials.get("sender") or email_auth.credentials.get("from_email") if email_auth and email_auth.credentials else "sales@altsofts.in")
         reply_to_email = (email_auth.credentials.get("reply_to") if email_auth and email_auth.credentials else "sales@altsofts.in")
         
-        linkedin_token = os.environ.get("LINKEDIN_ACCESS_TOKEN") or os.environ.get("LINKEDIN_CLIENT_ID") or (li_auth.credentials.get("access_token") if li_auth and li_auth.credentials else None)
+        linkedin_token = os.environ.get("LINKEDIN_ACCESS_TOKEN") or (li_auth.credentials.get("access_token") or li_auth.credentials.get("token") if li_auth and isinstance(li_auth.credentials, dict) else None)
+        linkedin_profile_name = (li_auth.credentials.get("profile_name") if li_auth and isinstance(li_auth.credentials, dict) else None)
+        linkedin_profile_email = (li_auth.credentials.get("profile_email") if li_auth and isinstance(li_auth.credentials, dict) else None)
 
         is_email_connected = bool(email_auth and email_auth.status == "CONNECTED" or resend_key)
         
@@ -362,10 +364,13 @@ class RealityAuditEngine:
                 "action_required": None if is_email_connected else "Set RESEND_API_KEY in production environment or Provider Wizard"
             },
             "linkedin": {
-                "provider_name": "LinkedIn Sales Navigator API",
+                "provider_name": "LinkedIn Sales Navigator & OAuth API",
                 "connection_status": "CONNECTED" if is_li_connected else "NOT CONNECTED",
                 "api_status": "READY" if is_li_connected else "NOT_CONFIGURED",
-                "oauth_session_active": bool(linkedin_token or (li_auth and li_auth.credentials.get("access_token"))),
+                "oauth_session_active": bool(linkedin_token),
+                "member_name": linkedin_profile_name or "LinkedIn Member",
+                "member_email": linkedin_profile_email,
+                "permissions": ["openid", "profile", "email", "w_member_social"],
                 "action_required": None if is_li_connected else "Complete LinkedIn OAuth 2.0 Authorization"
             }
         }
