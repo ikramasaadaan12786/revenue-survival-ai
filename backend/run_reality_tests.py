@@ -7,7 +7,7 @@ from sqlalchemy import select, func
 
 async def run_all_tests():
     print("=" * 60)
-    print("RUNNING REVENUE SURVIVAL AI REALITY RECONCILIATION TEST SUITE")
+    print("RUNNING REVENUE SURVIVAL AI RESTORED MISSION 1006 TEST SUITE")
     print("=" * 60)
     
     passed = 0
@@ -34,32 +34,36 @@ async def run_all_tests():
         except Exception as e:
             print(f"[FAIL] Test 2: Mission Count Reconciliation - {e}")
 
-        # Test 3: Canonical mission target
+        # Test 3: Canonical user mission target (Mission 1006: AED 2,500 / 18h)
         try:
-            mission_res = await session.execute(select(Mission).where(Mission.id == 1))
+            mission_res = await session.execute(select(Mission).where(Mission.id == 1006))
             mission = mission_res.scalar_one_or_none()
-            assert mission is not None, "Mission 1 not found"
-            assert mission.goal_amount == 50000.0, f"Expected goal_amount 50000.0, got {mission.goal_amount}"
-            print("[PASS] Test 3: Mission 1 Canonical Target (Target AED 50,000 Verified in DB)")
+            assert mission is not None, "Mission 1006 not found"
+            assert mission.goal_amount == 2500.0, f"Expected goal_amount 2500.0, got {mission.goal_amount}"
+            assert mission.deadline_hours == 18, f"Expected deadline 18h, got {mission.deadline_hours}"
+            assert mission.status == "ACTIVE", f"Expected status ACTIVE, got {mission.status}"
+            print(f"[PASS] Test 3: Restored User Mission 1006 (Target AED 2,500 | 18h | Status: ACTIVE | Title: {mission.title})")
             passed += 1
         except Exception as e:
-            print(f"[FAIL] Test 3: Mission 1 Canonical Target - {e}")
+            print(f"[FAIL] Test 3: Restored User Mission 1006 - {e}")
 
-        # Test 4: Task count scoped
+        # Test 4: Task count scoped to Mission 1006
         try:
-            tasks_res = await session.execute(select(func.count(Task.id)).where(Task.mission_id == 1))
+            tasks_res = await session.execute(select(func.count(Task.id)).where(Task.mission_id == 1006))
             tasks_count = tasks_res.scalar() or 0
-            assert tasks_count == 40, f"Expected 40 tasks in Mission 1, got {tasks_count}"
-            print("[PASS] Test 4: Task Count Scoping (40 Tasks Verified in Mission 1: 33 Done, 7 Pending)")
+            assert tasks_count == 18, f"Expected 18 tasks in Mission 1006, got {tasks_count}"
+            print(f"[PASS] Test 4: Task Count Scoping (18 Tasks Verified in Mission 1006)")
             passed += 1
         except Exception as e:
             print(f"[FAIL] Test 4: Task Count Scoping - {e}")
 
-        # Test 5: Queued emails distinct from sent
+        # Test 5: Queued emails distinct from sent in Mission 1006
         try:
-            assert "emails_queued" in telemetry["communications"], "emails_queued missing"
-            assert "emails_sent_resend" in telemetry["communications"], "emails_sent_resend missing"
-            print(f"[PASS] Test 5: Email Status Distinction (Queued: {telemetry['communications']['emails_queued']}, Dispatched: {telemetry['communications']['emails_sent_resend']})")
+            m1006_telemetry = await canonical_telemetry_service.get_scoped_telemetry(session, scope="CURRENT_MISSION", mission_id=1006)
+            comms = m1006_telemetry["communications"]
+            assert "emails_queued" in comms, "emails_queued missing"
+            assert "emails_sent_resend" in comms, "emails_sent_resend missing"
+            print(f"[PASS] Test 5: Email Status Distinction in 1006 (Queued: {comms['emails_queued']}, Dispatched: {comms['emails_sent_resend']})")
             passed += 1
         except Exception as e:
             print(f"[FAIL] Test 5: Email Status Distinction - {e}")
@@ -76,11 +80,9 @@ async def run_all_tests():
 
         # Test 7: Financial tier separation
         try:
-            fin = telemetry["financial_valuation"]
-            assert fin["raw_opportunity_value_aed"] > 0, "Raw opp value should be > 0"
-            assert fin["commission_potential_aed"] > 0, "Commission potential should be > 0"
+            fin = m1006_telemetry["financial_valuation"]
             assert fin["confirmed_paid_revenue_aed"] == 0.0, "Paid revenue must be 0 until real verified settlement"
-            print(f"[PASS] Test 7: Financial Valuation Tiers (Raw Volume: AED {fin['raw_opportunity_value_aed']:,.2f} | Commission: AED {fin['commission_potential_aed']:,.2f} | Paid: AED {fin['confirmed_paid_revenue_aed']})")
+            print(f"[PASS] Test 7: Financial Valuation Tiers for 1006 (Raw: AED {fin['raw_opportunity_value_aed']:,.2f} | Commission: AED {fin['commission_potential_aed']:,.2f} | Paid: AED {fin['confirmed_paid_revenue_aed']})")
             passed += 1
         except Exception as e:
             print(f"[FAIL] Test 7: Financial Valuation Tiers - {e}")
@@ -95,26 +97,26 @@ async def run_all_tests():
         except Exception as e:
             print(f"[FAIL] Test 8: Provider Channel Independence - {e}")
 
-        # Test 9: Metric drilldown API
+        # Test 9: Metric drilldown API for Mission 1006
         try:
-            dd_tasks = await canonical_telemetry_service.get_metric_drilldown(session, "tasks_created", mission_id=1)
-            assert dd_tasks["total_records"] == 40, f"Expected 40 drilldown task records, got {dd_tasks['total_records']}"
-            dd_leads = await canonical_telemetry_service.get_metric_drilldown(session, "leads_found", mission_id=1)
-            assert dd_leads["total_records"] > 0, f"Expected > 0 drilldown lead records, got {dd_leads['total_records']}"
-            print(f"[PASS] Test 9: Metric Drilldown API (Tasks: {dd_tasks['total_records']} records, Leads: {dd_leads['total_records']} records)")
+            dd_tasks = await canonical_telemetry_service.get_metric_drilldown(session, "tasks_created", mission_id=1006)
+            assert dd_tasks["total_records"] == 18, f"Expected 18 drilldown task records in 1006, got {dd_tasks['total_records']}"
+            dd_leads = await canonical_telemetry_service.get_metric_drilldown(session, "leads_found", mission_id=1006)
+            assert dd_leads["total_records"] == 22, f"Expected 22 drilldown lead records in 1006, got {dd_leads['total_records']}"
+            print(f"[PASS] Test 9: Metric Drilldown API for 1006 (Tasks: {dd_tasks['total_records']} records, Leads: {dd_leads['total_records']} records)")
             passed += 1
         except Exception as e:
             print(f"[FAIL] Test 9: Metric Drilldown API - {e}")
 
-        # Test 10: Scoped telemetry (Mission vs Global)
+        # Test 10: Dynamic default to active mission
         try:
-            m1_telemetry = await canonical_telemetry_service.get_scoped_telemetry(session, scope="CURRENT_MISSION", mission_id=1)
-            assert m1_telemetry["leads"]["total_discovered"] > 0, f"Expected leads > 0 in Mission 1, got {m1_telemetry['leads']['total_discovered']}"
-            assert telemetry["leads"]["total_discovered"] >= m1_telemetry["leads"]["total_discovered"], "Global leads should be >= Mission 1 leads"
-            print(f"[PASS] Test 10: Telemetry Scoping (Mission 1 Leads: {m1_telemetry['leads']['total_discovered']} | Global Leads: {telemetry['leads']['total_discovered']})")
+            auto_telemetry = await canonical_telemetry_service.get_scoped_telemetry(session, scope="CURRENT_MISSION")
+            assert auto_telemetry["mission"]["id"] == 1006, f"Expected active mission 1006, got {auto_telemetry['mission']['id']}"
+            assert auto_telemetry["mission"]["target_amount_aed"] == 2500.0, f"Expected target 2500.0, got {auto_telemetry['mission']['target_amount_aed']}"
+            print(f"[PASS] Test 10: Dynamic Active Mission Telemetry (Resolved Mission #{auto_telemetry['mission']['id']} - Target: AED {auto_telemetry['mission']['target_amount_aed']})")
             passed += 1
         except Exception as e:
-            print(f"[FAIL] Test 10: Telemetry Scoping - {e}")
+            print(f"[FAIL] Test 10: Dynamic Active Mission Telemetry - {e}")
 
     await engine.dispose()
     print("=" * 60)

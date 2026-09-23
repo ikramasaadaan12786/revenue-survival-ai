@@ -27,9 +27,9 @@ const DEFAULT_REAL_KPIS = {
 };
 
 export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
-  missionId = 1,
-  missionTitle = 'Dubai Autonomous Distress Sprint',
-  targetRevenue = 50000,
+  missionId = 1006,
+  missionTitle = 'Dubai AI Revenue Sprint — 18 Hour Challenge',
+  targetRevenue = 2500,
   currentRevenue = 0,
   onNavigateTab,
 }) => {

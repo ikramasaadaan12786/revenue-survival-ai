@@ -60,7 +60,7 @@ interface AutonomousRevenueMissionEngineProps {
 }
 
 export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEngineProps> = ({
-  missionId = 1,
+  missionId = 1006,
   onNavigateTab
 }) => {
   const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
@@ -94,10 +94,10 @@ export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEn
   };
 
   // New Mission Form State
-  const [newTitle, setNewTitle] = useState('Dubai Autonomous Distress Sprint');
-  const [newGoal, setNewGoal] = useState(50000);
+  const [newTitle, setNewTitle] = useState('Dubai AI Revenue Sprint — 18 Hour Challenge');
+  const [newGoal, setNewGoal] = useState(2500);
   const [newBudget, setNewBudget] = useState(0);
-  const [newHours, setNewHours] = useState(72);
+  const [newHours, setNewHours] = useState(18);
 
   // Verify Payment Form State
   const [payAmount, setPayAmount] = useState(5000);

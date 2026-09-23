@@ -301,7 +301,7 @@ async def pulse_heartbeat_endpoint(payload: Dict[str, Any] = {}):
 
 @router.get("/telemetry")
 async def get_canonical_telemetry_endpoint(
-    mission_id: Optional[int] = 1,
+    mission_id: Optional[int] = None,
     scope: str = "CURRENT_MISSION",
     db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
@@ -320,7 +320,7 @@ async def get_canonical_telemetry_endpoint(
 @router.get("/drilldown/{metric_key}")
 async def get_metric_drilldown_endpoint(
     metric_key: str,
-    mission_id: Optional[int] = 1,
+    mission_id: Optional[int] = None,
     limit: int = 50,
     offset: int = 0,
     db: AsyncSession = Depends(get_db)

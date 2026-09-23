@@ -34,42 +34,87 @@ export const RecentMissionsPanel: React.FC<RecentMissionsPanelProps> = ({
   onViewAll,
   onSelectMission,
 }) => {
+  const [filter, setFilter] = React.useState<'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'ARCHIVED' | 'ALL'>('ACTIVE');
+
+  const filteredMissions = React.useMemo(() => {
+    if (filter === 'ALL') return missions;
+    if (filter === 'ACTIVE') return missions.filter((m) => m.status === 'ACTIVE');
+    if (filter === 'COMPLETED') return missions.filter((m) => m.status === 'COMPLETED' || m.status === 'SUCCESS');
+    if (filter === 'EXPIRED') return missions.filter((m) => m.status === 'EXPIRED' || (m.time_remaining_hours !== undefined && m.time_remaining_hours <= 0 && m.status !== 'COMPLETED'));
+    if (filter === 'ARCHIVED') return missions.filter((m) => m.status === 'ARCHIVED');
+    return missions;
+  }, [missions, filter]);
+
   return (
     <div className="rounded-3xl bg-gradient-to-b from-[#0B101D]/90 via-[#070A14]/95 to-[#04060A]/98 border border-[#D4AF37]/35 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.7)] backdrop-blur-2xl flex flex-col justify-between h-full">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#D4AF37]/20">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.2)]">
-            <Target className="w-5 h-5" />
+      <div className="flex flex-col gap-3 pb-4 border-b border-[#D4AF37]/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+              <Target className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-serif text-sm lg:text-base font-bold text-[#F9F6EE] tracking-wide">
+                Revenue Missions Matrix
+              </h3>
+              <p className="text-[10.5px] text-[#8C9BAE]">
+                {filteredMissions.length} Campaigns ({filter}) • Total DB: {missions.length}
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-serif text-sm lg:text-base font-bold text-[#F9F6EE] tracking-wide">
-              Active Revenue Missions
-            </h3>
-            <p className="text-[10.5px] text-[#8C9BAE]">
-              {missions.length > 0 ? `${missions.length} Campaigns Synchronized` : 'No Active Missions'}
-            </p>
-          </div>
+
+          <button
+            onClick={onViewAll}
+            className="text-xs font-bold text-[#D4AF37] hover:text-[#FFF6E5] flex items-center gap-1.5 transition-colors group px-3 py-1.5 rounded-lg hover:bg-[#D4AF37]/10 border border-transparent hover:border-[#D4AF37]/30"
+          >
+            <span>All Missions</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </button>
         </div>
 
-        <button
-          onClick={onViewAll}
-          className="text-xs font-bold text-[#D4AF37] hover:text-[#FFF6E5] flex items-center gap-1.5 transition-colors group px-3 py-1.5 rounded-lg hover:bg-[#D4AF37]/10 border border-transparent hover:border-[#D4AF37]/30"
-        >
-          <span>All Missions</span>
-          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-        </button>
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] font-mono">
+          {(['ACTIVE', 'COMPLETED', 'EXPIRED', 'ARCHIVED', 'ALL'] as const).map((tab) => {
+            const count = tab === 'ALL'
+              ? missions.length
+              : tab === 'ACTIVE'
+              ? missions.filter((m) => m.status === 'ACTIVE').length
+              : tab === 'ARCHIVED'
+              ? missions.filter((m) => m.status === 'ARCHIVED').length
+              : tab === 'COMPLETED'
+              ? missions.filter((m) => m.status === 'COMPLETED' || m.status === 'SUCCESS').length
+              : missions.filter((m) => m.status === 'EXPIRED').length;
+
+            return (
+              <button
+                key={tab}
+                onClick={() => setFilter(tab)}
+                className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
+                  filter === tab
+                    ? 'bg-[#D4AF37] text-black font-bold shadow-[0_0_12px_rgba(212,175,55,0.4)]'
+                    : 'bg-[#04060A]/60 text-slate-400 hover:text-white border border-white/5 hover:border-[#D4AF37]/30'
+                }`}
+              >
+                <span>{tab}</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[9px] ${filter === tab ? 'bg-black/20 text-black' : 'bg-white/10 text-slate-300'}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Mission Items List */}
       <div className="mt-4 space-y-3.5 flex-1 overflow-y-auto max-h-[380px] pr-1">
-        {missions.length === 0 ? (
+        {filteredMissions.length === 0 ? (
           <div className="text-center py-12 text-xs text-[#8C9BAE]">
             <ShieldAlert className="w-8 h-8 mx-auto text-[#D4AF37]/40 mb-2" />
-            No active missions in database.
+            No {filter.toLowerCase()} missions in database.
           </div>
         ) : (
-          missions.map((mission) => {
+          filteredMissions.map((mission) => {
             const isCurrent = mission.id === activeMissionId;
             const target = mission.goal_amount || 0;
             const currentRev = mission.revenue_generated || 0;

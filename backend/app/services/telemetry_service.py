@@ -22,7 +22,7 @@ class CanonicalTelemetryService:
     async def get_scoped_telemetry(
         self,
         session: AsyncSession,
-        mission_id: Optional[int] = 1,
+        mission_id: Optional[int] = None,
         scope: str = "CURRENT_MISSION"
     ) -> Dict[str, Any]:
         scope = scope.upper()
@@ -37,11 +37,11 @@ class CanonicalTelemetryService:
         
         if not active_mission:
             mission_res = await session.execute(
-                select(Mission).where(Mission.status == "ACTIVE").order_by(Mission.id.asc()).limit(1)
+                select(Mission).where(Mission.status == "ACTIVE").order_by(Mission.id.desc()).limit(1)
             )
             active_mission = mission_res.scalar_one_or_none()
 
-        effective_mission_id = active_mission.id if active_mission else 1
+        effective_mission_id = active_mission.id if active_mission else (mission_id or 1006)
 
         # Count active missions across empire
         active_missions_count_res = await session.execute(
@@ -289,7 +289,7 @@ class CanonicalTelemetryService:
         self,
         session: AsyncSession,
         metric_key: str,
-        mission_id: Optional[int] = 1,
+        mission_id: Optional[int] = None,
         limit: int = 50,
         offset: int = 0
     ) -> Dict[str, Any]:
@@ -300,6 +300,13 @@ class CanonicalTelemetryService:
         records: List[Dict[str, Any]] = []
         total_count = 0
         title = metric_key.replace("_", " ").title()
+
+        if not mission_id:
+            mission_res = await session.execute(
+                select(Mission).where(Mission.status == "ACTIVE").order_by(Mission.id.desc()).limit(1)
+            )
+            active_m = mission_res.scalar_one_or_none()
+            mission_id = active_m.id if active_m else 1006
 
         if metric_key in ["tasks", "tasks_created", "tasks_completed", "tasks_pending"]:
             stmt = select(Task).where(Task.mission_id == mission_id).order_by(Task.id.asc())
