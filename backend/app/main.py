@@ -154,6 +154,7 @@ app.include_router(system.router, prefix=settings.API_V1_STR)
 app.include_router(system.router)
 app.include_router(webhooks.router, prefix=settings.API_V1_STR)
 app.include_router(webhooks.router)
+app.include_router(webhooks.root_router)
 
 import os
 from fastapi.staticfiles import StaticFiles

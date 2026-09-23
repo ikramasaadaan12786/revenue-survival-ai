@@ -1,12 +1,118 @@
 import os
 from fastapi import APIRouter, Request, Response, HTTPException, Depends, Query, Header, status
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, Dict, Any
 from app.core.database import get_db
 from app.services.communication.whatsapp_cloud_service import whatsapp_cloud_service
 
+WHATSAPP_COEXISTENCE_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhatsApp Coexistence Onboarding — Growthpilot AI</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 20px; color: #1c1e21; }
+  h2 { font-size: 22px; }
+  .warn { background: #fff4e5; border: 1px solid #e6a23c; border-radius: 8px; padding: 12px 14px; margin: 16px 0; font-size: 14px; }
+  button { background: #1877f2; border: 0; border-radius: 6px; color: #fff; cursor: pointer;
+           font-size: 16px; font-weight: bold; padding: 12px 28px; margin-top: 8px; }
+  button:disabled { background: #9bb8e8; cursor: default; }
+  #out { background: #f5f6f7; border-radius: 8px; padding: 12px 14px; margin-top: 16px;
+         white-space: pre-wrap; word-break: break-all; font-size: 13px; min-height: 60px; }
+  #codeBox { display: none; background: #e7f6e7; border: 1px solid #42b72a; border-radius: 8px;
+             padding: 12px 14px; margin-top: 12px; font-size: 13px; }
+  #codeBox code { word-break: break-all; user-select: all; }
+  ol { font-size: 14px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<h2>WhatsApp Business App + Cloud API — Coexistence Onboarding</h2>
+
+<ol>
+  <li>Neeche <b>"Connect WhatsApp Business App"</b> dabao — Meta ka popup khulega.</li>
+  <li>Apne Facebook (business) account se login karo.</li>
+  <li>Popup me <b>"existing WhatsApp Business App account connect karo"</b> wala option chunna.</li>
+  <li>QR code apne phone ke WhatsApp Business app se scan karo.</li>
+  <li>Flow complete hote hi neeche <b>CODE</b> nazar aayega — wo copy karke bhej dena.</li>
+</ol>
+
+<div class="warn">
+  ⚠️ <b>Zaroori:</b> Popup me <b>naya number add</b> karne ya <b>new WhatsApp Business Account</b> banane wala option <b>mat</b> chunna —
+  sirf <b>existing WhatsApp Business App</b> connect karne wala option.
+</div>
+
+<button id="launchBtn" disabled>Connect WhatsApp Business App</button>
+
+<div id="out">Facebook SDK load ho raha hai…</div>
+<div id="codeBox">✅ <b>CODE MIL GAYA</b> — ise copy karke bhejo:<br><br><code id="codeVal"></code></div>
+
+<script>
+const APP_ID   = '1379013277028626';
+const CONFIG_ID = '2187376872199110';
+
+const out = document.getElementById('out');
+const btn = document.getElementById('launchBtn');
+function log(msg) { out.textContent += '\\n' + msg; }
+
+window.fbAsyncInit = function () {
+  FB.init({ appId: APP_ID, cookie: true, xfbml: false, version: 'v25.0' });
+  out.textContent = 'SDK ready. Button dabao.';
+  btn.disabled = false;
+};
+
+// Meta popup se waba_id / phone_number_id pakdo
+window.addEventListener('message', function (event) {
+  if (!event.data || event.data.type !== 'WA_EMBEDDED_SIGNUP') return;
+  const d = event.data.data || event.data;
+  log('📩 Meta event — waba_id: ' + (d.waba_id || '-') + ', phone_number_id: ' + (d.phone_number_id || '-'));
+});
+
+btn.addEventListener('click', function () {
+  log('Popup khul raha hai…');
+  FB.login(function (response) {
+    console.log('FB.login response:', response);
+    if (response && response.authResponse && response.authResponse.code) {
+      const code = response.authResponse.code;
+      log('✅ Flow complete! Code neeche box me hai.');
+      document.getElementById('codeVal').textContent = code;
+      document.getElementById('codeBox').style.display = 'block';
+    } else {
+      log('❌ Flow complete nahi hua (cancel ya error). Dobara try karo.');
+    }
+  }, {
+    config_id: CONFIG_ID,
+    response_type: 'code',
+    override_default_response_type: true,
+    extras: {
+      setup: {},
+      featureType: 'whatsapp_business_app_onboarding',
+      sessionInfoVersion: '3'
+    }
+  });
+});
+</script>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+
+</body>
+</html>
+"""
+
+root_router = APIRouter(tags=["Static Launchers"])
+
+@root_router.get("/whatsapp-coexistence.html", response_class=HTMLResponse)
+@root_router.get("/whatsapp-coexistence", response_class=HTMLResponse)
+async def serve_root_coexistence_html():
+    return HTMLResponse(content=WHATSAPP_COEXISTENCE_HTML, status_code=200, media_type="text/html")
+
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
+
+@router.get("/whatsapp-coexistence.html", response_class=HTMLResponse)
+@router.get("/whatsapp-coexistence", response_class=HTMLResponse)
+async def serve_webhook_coexistence_html():
+    return HTMLResponse(content=WHATSAPP_COEXISTENCE_HTML, status_code=200, media_type="text/html")
 
 @router.get("/whatsapp")
 async def verify_whatsapp_webhook(
