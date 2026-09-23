@@ -99,7 +99,7 @@ export const WhatsAppCoexistenceLauncher: React.FC<WhatsAppCoexistenceLauncherPr
       try {
         const payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         if (payload.type === 'WA_EMBEDDED_SIGNUP') {
-          if (payload.event === 'FINISH' && payload.data) {
+          if ((payload.event === 'FINISH' || payload.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING') && payload.data) {
             sessionCaptured = true;
             capturedWabaId = payload.data.waba_id || payload.data.whatsapp_business_account_id;
             capturedPhoneId = payload.data.phone_number_id;
@@ -121,8 +121,8 @@ export const WhatsAppCoexistenceLauncher: React.FC<WhatsAppCoexistenceLauncherPr
         response_type: 'code',
         override_default_response_type: true,
         extras: {
-          feature: 'whatsapp_embedded_signup',
           setup: {},
+          featureType: 'whatsapp_business_app_onboarding',
           sessionInfoVersion: '3'
         }
       };
