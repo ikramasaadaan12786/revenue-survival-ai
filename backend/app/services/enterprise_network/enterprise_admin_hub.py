@@ -23,20 +23,20 @@ class EnterpriseAdminHub:
         """
         companies = await workspace_manager.get_all_companies(session)
 
-        # In case zero in fresh database, seed/provide default network telemetry
-        total_companies = max(len(companies), 1)
+        # Truth mode: Count real companies and deployed workers from DB
+        total_companies = len(companies)
 
         # Count total active AI employees across all companies
         emp_query = select(func.count(CompanyAIEmployeeAssignment.id))
         emp_res = await session.execute(emp_query)
         total_ai_workers = emp_res.scalar() or 0
 
-        # Calculate network monthly recurring revenue (MRR)
-        sub_query = select(EnterpriseSubscriptionBilling)
+        # Calculate network monthly recurring revenue (MRR) strictly from verified paying customer billings
+        sub_query = select(EnterpriseSubscriptionBilling).where(EnterpriseSubscriptionBilling.billing_status == "ACTIVE", EnterpriseSubscriptionBilling.is_paying_customer == True)
         sub_res = await session.execute(sub_query)
         subs = sub_res.scalars().all()
 
-        total_mrr_aed = sum(s.monthly_price_aed for s in subs) if subs else 24995.0
+        total_mrr_aed = sum(s.monthly_price_aed for s in subs) if subs else 0.0
         total_arr_aed = total_mrr_aed * 12.0
 
         # Assistant sessions total
@@ -45,11 +45,18 @@ class EnterpriseAdminHub:
         total_client_interactions = sess_res.scalar() or 0
 
         plan_distribution = {
-            "STARTER": len([c for c in companies if c["tier_plan"] == "STARTER"]),
-            "PROFESSIONAL": len([c for c in companies if c["tier_plan"] == "PROFESSIONAL"]),
-            "BUSINESS": len([c for c in companies if c["tier_plan"] == "BUSINESS"]),
-            "ENTERPRISE": len([c for c in companies if c["tier_plan"] == "ENTERPRISE"])
+            "STARTER": len([c for c in companies if c.get("tier_plan") == "STARTER"]),
+            "PROFESSIONAL": len([c for c in companies if c.get("tier_plan") == "PROFESSIONAL"]),
+            "BUSINESS": len([c for c in companies if c.get("tier_plan") == "BUSINESS"]),
+            "ENTERPRISE": len([c for c in companies if c.get("tier_plan") == "ENTERPRISE"])
         }
+
+        # Enrich marketplace catalog with explicit catalog pricing labels
+        catalog = employee_marketplace.get_marketplace_catalog()
+        for item in catalog:
+            item["pricing_type"] = "CUSTOMER_CATALOG_PRICE"
+            item["pricing_label"] = "CUSTOMER CATALOG PRICE"
+            item["pricing_tooltip"] = "Suggested customer subscription price. This is not an infrastructure cost ($0 infrastructure)."
 
         return {
             "network_status": "OPERATIONAL & MULTI-TENANT",
@@ -59,7 +66,7 @@ class EnterpriseAdminHub:
             "total_arr_aed": round(total_arr_aed, 2),
             "total_client_interactions_processed": total_client_interactions,
             "companies": companies,
-            "marketplace_catalog": employee_marketplace.get_marketplace_catalog(),
+            "marketplace_catalog": catalog,
             "available_plans": subscription_billing.get_available_plans(),
             "plan_distribution": plan_distribution,
             "admin_system_health": {

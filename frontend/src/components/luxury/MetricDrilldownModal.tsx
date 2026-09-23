@@ -197,7 +197,7 @@ export const MetricDrilldownModal: React.FC<MetricDrilldownModalProps> = ({
         <div className="px-6 py-4 border-t border-[#D4AF37]/20 bg-[#06080F]/90 flex items-center justify-between text-xs text-[#8C9BAE]">
           <div className="flex items-center gap-2 font-mono text-[11px]">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>PostgreSQL Canonical Source • Zero Synthetic Data</span>
+            <span>PostgreSQL Canonical Source • Verified Production Records</span>
           </div>
           <button
             onClick={onClose}
