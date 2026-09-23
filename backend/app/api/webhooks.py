@@ -36,6 +36,48 @@ async def verify_whatsapp_webhook(
         detail=result or "Webhook verification failed: token mismatch or invalid mode"
     )
 
+@router.get("/whatsapp/verify-status")
+async def verify_whatsapp_status():
+    """
+    Internal diagnostic to verify environment token availability and challenge logic.
+    Never exposes token value.
+    """
+    token = whatsapp_cloud_service.verify_token
+    if not token:
+        return {
+            "token_configured": False,
+            "status": "MISSING_TOKEN",
+            "message": "WHATSAPP_VERIFY_TOKEN is not configured in server environment"
+        }
+    
+    valid, challenge = whatsapp_cloud_service.verify_webhook_subscription("subscribe", token, "12345")
+    
+    import httpx
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                "https://backend-growth-540e.vercel.app/api/v1/webhooks/whatsapp",
+                params={"hub.mode": "subscribe", "hub.verify_token": token, "hub.challenge": "12345"},
+                timeout=10.0
+            )
+            http_status = resp.status_code
+            content_type = resp.headers.get("content-type", "")
+            body = resp.text
+    except Exception as e:
+        http_status = 500
+        content_type = "error"
+        body = str(e)
+
+    return {
+        "token_configured": True,
+        "token_length": len(token),
+        "service_challenge_test": "PASSED" if valid and challenge == "12345" else "FAILED",
+        "live_http_status": http_status,
+        "live_content_type": content_type,
+        "live_body_exact": body,
+        "status": "READY"
+    }
+
 @router.post("/whatsapp")
 async def receive_whatsapp_webhook(
     request: Request,
