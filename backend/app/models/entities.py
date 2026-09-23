@@ -722,6 +722,26 @@ class OvernightExecutionLog(Base):
     mission = relationship("Mission")
 
 
+class WorkerHeartbeat(Base):
+    __tablename__ = "worker_heartbeats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    worker_id = Column(String(100), unique=True, index=True, nullable=False)
+    hostname = Column(String(255), default="cloud-worker")
+    deployment_platform = Column(String(100), default="RENDER_CLOUD")
+    started_at = Column(DateTime, default=datetime.datetime.utcnow)
+    last_heartbeat = Column(DateTime, default=datetime.datetime.utcnow)
+    last_job = Column(String(100), nullable=True)
+    last_job_status = Column(String(50), default="SUCCESS")
+    jobs_completed = Column(Integer, default=0)
+    jobs_failed = Column(Integer, default=0)
+    version = Column(String(50), default="1.0.0")
+    status = Column(String(50), default="ONLINE")
+    jobs_metadata = Column(JSON, default=dict)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+
+
 
 
 

@@ -26,19 +26,25 @@ class RevenueGapAnalyzer:
         if not mission:
             return {"error": "Mission not found"}
 
-        leads_res = await session.execute(select(Lead).where(Lead.mission_id == mission_id))
+        leads_res = await session.execute(
+            select(Lead).where(
+                Lead.mission_id == mission_id,
+                Lead.source_type == "REAL",
+                Lead.verification_status == "VERIFIED"
+            )
+        )
         leads = leads_res.scalars().all()
 
-        target_amount = float(mission.goal_amount or 5000.0)
+        target_amount = float(mission.goal_amount or 2500.0)
         confirmed_revenue = float(mission.revenue_generated or 0.0)
         
-        # Calculate active weighted pipeline
+        # Calculate active weighted pipeline strictly from real leads
         active_leads = [l for l in leads if (l.pipeline_stage or "").upper() not in ["WON", "LOST"]]
         weighted_pipeline = sum(
-            (l.expected_value or 5000.0) * (l.revenue_probability or 0.60) 
+            (float(l.expected_value or l.estimated_budget or 0.0)) * (float(l.revenue_probability or 0.60)) 
             for l in active_leads
         )
-        total_raw_pipeline = sum(l.expected_value or 5000.0 for l in active_leads)
+        total_raw_pipeline = sum(float(l.expected_value or l.estimated_budget or 0.0) for l in active_leads)
 
         nominal_gap = max(0.0, target_amount - confirmed_revenue)
         # Net gap factoring in weighted active pipeline conversion expectancy

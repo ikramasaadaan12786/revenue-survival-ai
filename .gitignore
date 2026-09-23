@@ -22,12 +22,16 @@ env/
 *.sqlite
 *.sqlite3
 
-# Logs
+# Logs & Backups
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
+backups/
+*.tmp
 
 # OS
 .DS_Store
 Thumbs.db
+

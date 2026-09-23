@@ -24,23 +24,19 @@ export const KPICardsGrid: React.FC<KPICardsGridProps> = ({ metrics }) => {
 
   const cards = [
     {
-      title: 'Verified Revenue',
+      title: 'Collected Revenue',
       value: formatAED(metrics?.totalRevenue),
-      trend: metrics?.revenueGrowthRate !== undefined && metrics.revenueGrowthRate !== null
-        ? `${metrics.revenueGrowthRate >= 0 ? '↑ +' : '↓ '}${metrics.revenueGrowthRate.toFixed(1)}% pace`
-        : 'Live Verified (DB)',
-      trendPositive: (metrics?.revenueGrowthRate ?? 0) >= 0,
+      trend: 'Payment Verified Transactions Only',
+      trendPositive: (metrics?.totalRevenue ?? 0) > 0,
       icon: Coins,
       iconColor: 'text-[#F5D77F]',
       glowColor: 'rgba(212,175,55,0.25)',
       gradientFrom: 'from-[#D4AF37]/15',
     },
     {
-      title: 'Active Pipeline',
+      title: 'REAL PIPELINE',
       value: formatAED(metrics?.pipelineValue),
-      trend: metrics?.pipelineGrowthRate !== undefined && metrics.pipelineGrowthRate !== null
-        ? `${metrics.pipelineGrowthRate >= 0 ? '↑ +' : '↓ '}${metrics.pipelineGrowthRate.toFixed(1)}% pipeline`
-        : 'Active Deals (CRM)',
+      trend: 'Verified Buyer Requirements',
       trendPositive: true,
       icon: BarChart3,
       iconColor: 'text-amber-400',

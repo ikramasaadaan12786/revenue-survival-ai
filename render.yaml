@@ -1,0 +1,43 @@
+services:
+  # 1. 24/7 Background Autonomous Worker
+  - type: worker
+    name: revenue-survival-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile.worker
+    dockerContext: ./backend
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: revenue-survival-db
+          property: connectionString
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_SENDING_DOMAIN
+        value: altsofts.in
+      - key: EMAIL_FROM
+        value: sales@altsofts.in
+      - key: EMAIL_REPLY_TO
+        value: sales@altsofts.in
+      - key: RESEND_FROM_EMAIL
+        value: Revenue Survival AI <sales@altsofts.in>
+      - key: RESEND_REPLY_TO
+        value: sales@altsofts.in
+      - key: RESEND_WEBHOOK_SECRET
+        sync: false
+
+      - key: ACTIVE_MISSION_ID
+        value: "1"
+      - key: WORKER_INSTANCE_ID
+        value: REVENUE-DAEMON-CLOUD-PROD-01
+
+databases:
+  # 2. Dedicated Persistent Cloud PostgreSQL Database
+  - name: revenue-survival-db
+    databaseName: revenue_survival
+    user: revenue_user
+    plan: free
+    region: oregon

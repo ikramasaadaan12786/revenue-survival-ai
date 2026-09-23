@@ -39,16 +39,30 @@ class OperatorOrchestrator:
         if not target_mission and active_missions:
             target_mission = active_missions[0]
 
-        # 2. Leads & pipeline
-        leads_res = await session.execute(select(Lead))
-        all_leads = leads_res.scalars().all()
-        total_pipeline = sum(l.expected_value or 5000.0 for l in all_leads if (l.pipeline_stage or "").upper() not in ["WON", "LOST"])
+        # 2. Leads & pipeline (Strictly REAL + VERIFIED for active mission)
+        target_mission_id = target_mission.id if target_mission else 1
+        leads_res = await session.execute(
+            select(Lead).where(
+                Lead.mission_id == target_mission_id,
+                Lead.source_type == "REAL",
+                Lead.verification_status == "VERIFIED"
+            )
+        )
+        real_leads = leads_res.scalars().all()
+        total_pipeline = sum(float(l.expected_value or l.estimated_budget or 0.0) for l in real_leads if (l.pipeline_stage or "").upper() not in ["WON", "LOST"])
 
-        # 3. Revenue
-        rev_res = await session.execute(select(RevenueTracking))
+        # 3. Revenue (Strictly REAL + VERIFIED + SETTLED payments for active mission)
+        rev_res = await session.execute(
+            select(RevenueTracking).where(
+                RevenueTracking.mission_id == target_mission_id,
+                RevenueTracking.source_type == "REAL",
+                RevenueTracking.verification_status == "VERIFIED",
+                RevenueTracking.payment_status == "SETTLED"
+            )
+        )
         rev_records = rev_res.scalars().all()
         total_revenue_achieved = sum(float(r.amount or 0.0) for r in rev_records)
-        total_target_revenue = sum(float(m.goal_amount or 0.0) for m in active_missions)
+        total_target_revenue = float(target_mission.goal_amount or 2500.0) if target_mission else 2500.0
 
         # 4. Approvals
         approvals = await ceo_approval_execution_layer.get_pending_approvals(session)
@@ -60,7 +74,7 @@ class OperatorOrchestrator:
 
         best_ind = ind_metrics[0].get("industry", "AI Agents & Automation") if ind_metrics else "AI Agents & Automation"
         best_src = src_metrics[0]["display_name"] if src_metrics else "Telegram"
-        best_off = (off_metrics[0].get("product_name") or off_metrics[0].get("offer_title")) if off_metrics else "AI Agent Development Package"
+        best_off = (off_metrics[0].get("product_name") or off_metrics[0].get("offer_title")) if off_metrics else "24/7 AI Autonomous Lead Qualifier & Appointment Dispatcher"
 
         # 6. Fleet status
         fleet = await lead_hunter_manager.get_hunter_fleet_status(session)
@@ -69,17 +83,17 @@ class OperatorOrchestrator:
             "total_active_missions": len(active_missions),
             "total_missions_count": len(missions),
             "current_mission": {
-                "id": target_mission.id if target_mission else None,
-                "title": target_mission.title if target_mission else "No Active Mission",
-                "goal_amount": float(target_mission.goal_amount or 0.0) if target_mission else 0.0,
-                "revenue_generated": float(target_mission.revenue_generated or 0.0) if target_mission else 0.0,
+                "id": target_mission.id if target_mission else 1,
+                "title": target_mission.title if target_mission else "Autonomous Revenue Sprint - 18 Hour Challenge",
+                "goal_amount": float(target_mission.goal_amount or 2500.0) if target_mission else 2500.0,
+                "revenue_generated": float(total_revenue_achieved),
                 "currency": target_mission.currency if target_mission else "AED",
-                "status": target_mission.status if target_mission else "IDLE"
+                "status": target_mission.status if target_mission else "ACTIVE"
             } if target_mission else None,
             "total_revenue_target_aed": total_target_revenue,
             "total_revenue_achieved_aed": total_revenue_achieved,
             "total_active_pipeline_aed": total_pipeline,
-            "total_leads_in_pipeline": len(all_leads),
+            "total_leads_in_pipeline": len(real_leads),
             "pending_approvals_count": approvals["total_pending_count"],
             "best_performing_industry": best_ind,
             "best_performing_source": best_src,

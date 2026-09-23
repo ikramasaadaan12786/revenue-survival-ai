@@ -35,6 +35,7 @@ import {
   Building2,
   UserCheck,
 } from 'lucide-react';
+import { getApiUrl } from '@/lib/api';
 
 interface RevenueProofDashboardProps {
   missionId?: number;
@@ -81,7 +82,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
     client_identity: 'Prestige Properties Dubai — Tariq Mansoor',
     payer_name: 'Tariq Mansoor',
     amount_aed: 2500,
-    payment_reference: `TXN-AE-ENBD-${Math.floor(100000 + Math.random() * 900000)}`,
+    payment_reference: 'TXN-AE-ENBD-883921',
     source: 'EMIRATES_NBD_ESCROW',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,7 +93,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
       setIsRefreshing(true);
       // 1. Fetch split validation overview
       const overviewRes = await fetch(
-        `https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/validation-overview/${missionId}`
+        getApiUrl(`/api/v1/closing-engine/validation-overview/${missionId}`)
       ).catch(() => null);
 
       if (overviewRes && overviewRes.ok) {
@@ -104,7 +105,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
 
       // 2. Fetch revenue proof ledger
       const ledgerRes = await fetch(
-        `https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/revenue-proof-ledger/${missionId}`
+        getApiUrl(`/api/v1/closing-engine/revenue-proof-ledger/${missionId}`)
       ).catch(() => null);
 
       if (ledgerRes && ledgerRes.ok) {
@@ -114,7 +115,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
 
       // 3. Fetch overnight execution logs
       const logsRes = await fetch(
-        `https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/overnight/logs/${missionId}`
+        getApiUrl(`/api/v1/closing-engine/overnight/logs/${missionId}`)
       ).catch(() => null);
 
       if (logsRes && logsRes.ok) {
@@ -146,7 +147,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
     setActionNotice(null);
     try {
       const res = await fetch(
-        `https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/overnight/run-cycle/${missionId}?cycle_type=${cType}`,
+        getApiUrl(`/api/v1/closing-engine/overnight/run-cycle/${missionId}?cycle_type=${cType}`),
         { method: 'POST' }
       );
       if (res.ok) {
@@ -167,7 +168,7 @@ export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
     setActionNotice(null);
 
     try {
-      const res = await fetch(`https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/verify-transaction`, {
+      const res = await fetch(getApiUrl('/api/v1/closing-engine/verify-transaction'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

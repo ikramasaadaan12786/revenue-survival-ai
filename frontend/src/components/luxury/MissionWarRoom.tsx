@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Target, Zap, Clock, ShieldCheck, ArrowUpRight, Flame, Send, CheckCircle2, TrendingUp, Sparkles, AlertCircle } from 'lucide-react';
+import { getApiUrl } from '@/lib/api';
 
 interface PriorityLead {
   lead_id: number;
@@ -188,9 +189,9 @@ export const MissionWarRoom: React.FC<MissionWarRoomProps> = ({
     const fetchWarRoomData = async () => {
       try {
         const [queueRes, sprintRes, planRes] = await Promise.allSettled([
-          fetch(`https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/priority-queue/${missionId}`),
-          fetch(`https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/revenue-sprint/${missionId}`),
-          fetch(`https://backend-sigma-six-79.vercel.app/api/v1/ceo-brain/target-achievement-plan/${missionId}`),
+          fetch(getApiUrl(`/api/v1/closing-engine/priority-queue/${missionId}`)),
+          fetch(getApiUrl(`/api/v1/closing-engine/revenue-sprint/${missionId}`)),
+          fetch(getApiUrl(`/api/v1/ceo-brain/target-achievement-plan/${missionId}`)),
         ]);
 
         if (queueRes.status === 'fulfilled' && queueRes.value.ok) {

@@ -1,13 +1,15 @@
 'use client';
 
-import React from 'react';
-import { Search, Bell, Sparkles, ChevronDown, ShieldCheck, Crown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Bell, Sparkles, ChevronDown, ShieldCheck, Crown, AlertTriangle, ArrowRight } from 'lucide-react';
+import { getApiBase } from '@/lib/api';
 
 interface LuxuryHeaderProps {
   onSearch?: (query: string) => void;
   unreadNotificationsCount?: number;
   onOpenNotifications?: () => void;
   onProfileClick?: () => void;
+  onNavigateTab?: (tabId: string) => void;
   activeSectionTitle?: string;
 }
 
@@ -16,11 +18,46 @@ export const LuxuryHeader: React.FC<LuxuryHeaderProps> = ({
   unreadNotificationsCount = 0,
   onOpenNotifications,
   onProfileClick,
+  onNavigateTab,
   activeSectionTitle = 'Sovereign AI Command Center',
 }) => {
+  const [providerAudit, setProviderAudit] = useState<any | null>(null);
+
+  useEffect(() => {
+    fetch(`${getApiBase()}/closing-engine/provider-connection-details`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setProviderAudit(data))
+      .catch(() => null);
+  }, []);
+
+  const anyProviderConnected =
+    providerAudit &&
+    (providerAudit.whatsapp?.connection_status === 'CONNECTED' ||
+      providerAudit.email?.connection_status === 'CONNECTED' ||
+      providerAudit.linkedin?.connection_status === 'CONNECTED');
+
   return (
-    <header className="w-full py-4 px-6 lg:px-8 border-b border-[#D4AF37]/20 bg-gradient-to-b from-[#06080F]/95 via-[#04060A]/80 to-transparent backdrop-blur-xl relative z-20">
-      <div className="flex items-center justify-between gap-6">
+    <header className="w-full border-b border-[#D4AF37]/20 bg-gradient-to-b from-[#06080F]/95 via-[#04060A]/90 to-transparent backdrop-blur-xl relative z-20">
+      {/* CEO Alert Banner if providers are not connected */}
+      {!anyProviderConnected && (
+        <div className="w-full bg-gradient-to-r from-amber-600/30 via-red-900/30 to-amber-600/30 border-b border-amber-500/40 px-6 py-2 flex items-center justify-between text-xs font-mono">
+          <div className="flex items-center gap-2 text-amber-300">
+            <AlertTriangle className="w-4 h-4 text-amber-400 animate-pulse" />
+            <span className="font-bold tracking-wide">CEO ALERT:</span>
+            <span>Waiting for provider activation (WhatsApp / Email / LinkedIn) to enable live dispatches.</span>
+          </div>
+          {onNavigateTab && (
+            <button
+              onClick={() => onNavigateTab('providers')}
+              className="text-amber-200 font-bold hover:underline flex items-center gap-1 text-[11px]"
+            >
+              Open Activation Wizard <ArrowRight className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="py-4 px-6 lg:px-8 flex items-center justify-between gap-6">
         {/* Left Search Bar & Section Indicator */}
         <div className="flex items-center gap-4 flex-1 max-w-xl">
           <div className="relative flex-1">

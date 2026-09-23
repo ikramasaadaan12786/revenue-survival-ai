@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # 1. Permanent 24/7 Cloud Background Autonomous Worker
+  revenue-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    container_name: revenue-survival-cloud-worker
+    restart: always
+    environment:
+      - ENVIRONMENT=production
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:////app/revenue_survival.db}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - EMAIL_SENDING_DOMAIN=${EMAIL_SENDING_DOMAIN:-altsofts.in}
+      - EMAIL_FROM=${EMAIL_FROM:-sales@altsofts.in}
+      - EMAIL_REPLY_TO=${EMAIL_REPLY_TO:-sales@altsofts.in}
+      - RESEND_WEBHOOK_SECRET=${RESEND_WEBHOOK_SECRET}
+      - ACTIVE_MISSION_ID=1
+      - WORKER_INSTANCE_ID=REVENUE-DAEMON-CLOUD-PROD-01
+    volumes:
+      - worker-data:/app/data
+      - worker-logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import json; data=json.load(open('worker_status.json')); assert data.get('status') == 'ONLINE'\""]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # 2. Production FastAPI Backend Application
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: revenue-survival-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:////app/revenue_survival.db}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - EMAIL_SENDING_DOMAIN=${EMAIL_SENDING_DOMAIN:-altsofts.in}
+      - EMAIL_FROM=${EMAIL_FROM:-sales@altsofts.in}
+      - EMAIL_REPLY_TO=${EMAIL_REPLY_TO:-sales@altsofts.in}
+    depends_on:
+      - revenue-worker
+
+volumes:
+  worker-data:
+  worker-logs:

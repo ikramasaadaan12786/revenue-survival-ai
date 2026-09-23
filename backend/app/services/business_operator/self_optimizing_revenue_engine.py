@@ -29,7 +29,13 @@ class SelfOptimizingRevenueEngine:
         if not mission:
             return {"error": "Mission not found"}
 
-        leads_res = await session.execute(select(Lead).where(Lead.mission_id == mission_id))
+        leads_res = await session.execute(
+            select(Lead).where(
+                Lead.mission_id == mission_id,
+                Lead.source_type == "REAL",
+                Lead.verification_status == "VERIFIED"
+            )
+        )
         leads = leads_res.scalars().all()
 
         gap_data = await revenue_gap_analyzer.analyze_mission_gap(session, mission_id)

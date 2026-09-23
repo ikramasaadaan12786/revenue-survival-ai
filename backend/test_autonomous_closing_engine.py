@@ -58,7 +58,7 @@ async def test_autonomous_revenue_closing_engine():
         
         # Test Case A: High Intent Hot Buyer
         qual_a = deal_qualification_engine.qualify_opportunity(
-            name="Zaid Al-Husseini",
+            name="Zaid Al-Husseini (Founder)",
             company="Apex Health Group DIFC",
             requirement="Need urgent deployment of 24/7 bilingual WhatsApp AI triage agent for 4 clinics. Budget approved 18,000 AED.",
             industry="AI Agents & Automation",

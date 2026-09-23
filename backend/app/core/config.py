@@ -1,17 +1,46 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
 import os
+from pathlib import Path
+
+_project_root = Path(__file__).resolve().parent.parent.parent.parent
+_default_db_file = (_project_root / "revenue_survival.db").resolve().as_posix()
+
+def _resolve_database_url() -> str:
+    raw_url = os.getenv("DATABASE_URL", "").strip()
+    env = os.getenv("ENVIRONMENT", "development").lower()
+    is_cloud_prod = bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME") or os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT") or env == "production")
+
+    if raw_url:
+        # Standardize postgres dialect for SQLAlchemy async
+        if raw_url.startswith("postgres://"):
+            raw_url = "postgresql+asyncpg://" + raw_url[len("postgres://"):]
+        elif raw_url.startswith("postgresql://") and not raw_url.startswith("postgresql+asyncpg://"):
+            raw_url = "postgresql+asyncpg://" + raw_url[len("postgresql://"):]
+        
+        # Normalize sslmode for asyncpg
+        if "sslmode=require" in raw_url:
+            raw_url = raw_url.replace("sslmode=require", "ssl=require")
+        return raw_url
+
+    if is_cloud_prod and (os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT")):
+        # Strict fail loudly in production cloud deployments
+        raise RuntimeError(
+            "CRITICAL CONFIGURATION ERROR: DATABASE_URL is missing in production cloud environment. "
+            "Revenue Survival AI requires a persistent cloud PostgreSQL database (Render / Railway / Neon / Supabase). "
+            "Ephemeral SQLite in /tmp is strictly forbidden in production."
+        )
+
+    # Local development fallback
+    return f"sqlite+aiosqlite:///{_default_db_file}"
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Revenue Survival AI Agent"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     
-    # Database
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "sqlite+aiosqlite:////tmp/revenue_survival.db" if (os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")) else "sqlite+aiosqlite:///./revenue_survival.db"
-    )
+    # Database (Single Source of Truth: Always absolute path to root revenue_survival.db or Postgres URL)
+    DATABASE_URL: str = _resolve_database_url()
     
     # LLM Settings (optional API keys, with built-in high-fidelity autonomous simulation fallback)
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY", None)
@@ -26,3 +55,4 @@ class Settings(BaseSettings):
         case_sensitive = True
 
 settings = Settings()
+

@@ -1,7 +1,8 @@
+import os
 import urllib.request
 import json
 
-BASE = "https://backend-sigma-six-79.vercel.app/api/v1"
+BASE = os.getenv("API_URL", "https://backend-sigma-six-79.vercel.app/api/v1")
 
 def post(endpoint, data=None):
     payload = json.dumps(data).encode() if data else b""

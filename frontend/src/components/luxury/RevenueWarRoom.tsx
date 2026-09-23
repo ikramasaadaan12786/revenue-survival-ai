@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Target, Flame, Play, Clock, Zap, CheckCircle2, TrendingUp, AlertTriangle, MessageSquare, Phone, FileText, DollarSign, ArrowRight, ShieldCheck, Activity, Send, CheckSquare, Sparkles, UserCheck } from 'lucide-react';
+import { getApiUrl } from '@/lib/api';
 
 interface RevenueWarRoomProps {
   missionId?: number;
@@ -11,6 +12,19 @@ interface RevenueWarRoomProps {
   onNavigateTab: (tabId: string) => void;
 }
 
+const DEFAULT_REAL_KPIS = {
+  tasks_created: 0,
+  tasks_completed: 0,
+  messages_sent: 0,
+  replies_received: 0,
+  calls_booked: 0,
+  proposals_sent: 0,
+  deals_won: 0,
+  revenue_closed: 0,
+  leads_found: 0,
+  revenue_pipeline: 0
+};
+
 export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
   missionId = 1006,
   missionTitle = 'Dubai AI Revenue Sprint — 18 Hour Challenge',
@@ -18,48 +32,38 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
   currentRevenue = 0,
   onNavigateTab,
 }) => {
-  const [realKPIs, setRealKPIs] = useState<any>({
-    tasks_created: 13,
-    tasks_completed: 1,
-    messages_sent: 1,
-    replies_received: 1,
-    calls_booked: 1,
-    proposals_sent: 1,
-    deals_won: 1,
-    revenue_closed: 7500,
-  });
-
-  const [revenueClosedTotal, setRevenueClosedTotal] = useState<number>(7500);
-  const [targetAmount, setTargetAmount] = useState<number>(2500);
+  const [realKPIs, setRealKPIs] = useState<any>(DEFAULT_REAL_KPIS);
   const [actionLogs, setActionLogs] = useState<any[]>([]);
   const [priorityLeads, setPriorityLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRunningCycle, setIsRunningCycle] = useState(false);
-  const [executingAction, setExecutingAction] = useState(false);
   const [cycleNotice, setCycleNotice] = useState<string | null>(null);
+  const [executingAction, setExecutingAction] = useState(false);
+  const [revenueClosedTotal, setRevenueClosedTotal] = useState<number>(currentRevenue);
+  const [targetAmount, setTargetAmount] = useState<number>(targetRevenue);
 
   const loadRealTelemetry = async () => {
     try {
       // 1. Real execution stats from DB
-      const statsRes = await fetch(`https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/real-execution-stats/${missionId}`).catch(() => null);
+      const statsRes = await fetch(getApiUrl(`/api/v1/closing-engine/real-execution-stats/${missionId}`)).catch(() => null);
       if (statsRes && statsRes.ok) {
-        const json = await statsRes.json();
-        if (json.real_kpis) {
-          setRealKPIs(json.real_kpis);
-          setRevenueClosedTotal(json.revenue_closed_aed || json.real_kpis.revenue_closed);
-          setTargetAmount(json.target_revenue_aed || 2500);
+        const json = await statsRes.json().catch(() => null);
+        if (json && json.real_kpis) {
+          setRealKPIs({ ...DEFAULT_REAL_KPIS, ...json.real_kpis });
+          setRevenueClosedTotal(json.revenue_closed_aed ?? json.real_kpis.revenue_closed ?? 0);
+          setTargetAmount(json.target_revenue_aed ?? 2500);
         }
       }
 
       // 2. AI Action logs
-      const logsRes = await fetch(`https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/action-logs/${missionId}`).catch(() => null);
+      const logsRes = await fetch(getApiUrl(`/api/v1/closing-engine/action-logs/${missionId}`)).catch(() => null);
       if (logsRes && logsRes.ok) {
         const logsJson = await logsRes.json();
         setActionLogs(logsJson || []);
       }
 
       // 3. Priority queue
-      const queueRes = await fetch(`https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/priority-queue/${missionId}`).catch(() => null);
+      const queueRes = await fetch(getApiUrl(`/api/v1/closing-engine/priority-queue/${missionId}`)).catch(() => null);
       if (queueRes && queueRes.ok) {
         const queueJson = await queueRes.json();
         setPriorityLeads(queueJson || []);
@@ -81,7 +85,7 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
     setIsRunningCycle(true);
     setCycleNotice(null);
     try {
-      const res = await fetch(`https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/run-operating-cycle/${missionId}`, {
+      const res = await fetch(getApiUrl(`/api/v1/closing-engine/run-operating-cycle/${missionId}`), {
         method: 'POST',
       }).catch(() => null);
       if (res && res.ok) {
@@ -99,7 +103,7 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
   const handleCloseWonDeal = async (leadId: number, amount: number) => {
     setExecutingAction(true);
     try {
-      const res = await fetch(`https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/close-deal`, {
+      const res = await fetch(getApiUrl('/api/v1/closing-engine/close-deal'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -189,49 +193,49 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
           {/* Tasks Created */}
           <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-[#D4AF37]/30 space-y-1">
             <div className="text-[10px] uppercase font-mono text-slate-400">Tasks Created</div>
-            <div className="text-2xl font-mono font-black text-white">{realKPIs.tasks_created}</div>
+            <div className="text-2xl font-mono font-black text-white">{realKPIs?.tasks_created ?? 0}</div>
             <div className="text-[10px] text-slate-400 font-mono">DB `tasks` table</div>
           </div>
 
           {/* Tasks Completed */}
           <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-blue-500/30 space-y-1">
             <div className="text-[10px] uppercase font-mono text-blue-300">Tasks Done</div>
-            <div className="text-2xl font-mono font-black text-blue-400">{realKPIs.tasks_completed}</div>
+            <div className="text-2xl font-mono font-black text-blue-400">{realKPIs?.tasks_completed ?? 0}</div>
             <div className="text-[10px] text-blue-300/70 font-mono">Autonomous executed</div>
           </div>
 
           {/* Messages Sent */}
           <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-amber-500/30 space-y-1">
             <div className="text-[10px] uppercase font-mono text-amber-300">Messages Sent</div>
-            <div className="text-2xl font-mono font-black text-amber-400">{realKPIs.messages_sent}</div>
+            <div className="text-2xl font-mono font-black text-amber-400">{realKPIs?.messages_sent ?? 0}</div>
             <div className="text-[10px] text-amber-300/70 font-mono">Approved dispatches</div>
           </div>
 
           {/* Replies Received */}
           <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-cyan-500/30 space-y-1">
             <div className="text-[10px] uppercase font-mono text-cyan-300">Replies Received</div>
-            <div className="text-2xl font-mono font-black text-cyan-400">{realKPIs.replies_received}</div>
+            <div className="text-2xl font-mono font-black text-cyan-400">{realKPIs?.replies_received ?? 0}</div>
             <div className="text-[10px] text-cyan-300/70 font-mono">Buyer responses</div>
           </div>
 
           {/* Calls Booked */}
           <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-indigo-500/30 space-y-1">
             <div className="text-[10px] uppercase font-mono text-indigo-300">Calls Booked</div>
-            <div className="text-2xl font-mono font-black text-indigo-400">{realKPIs.calls_booked}</div>
+            <div className="text-2xl font-mono font-black text-indigo-400">{realKPIs?.calls_booked ?? 0}</div>
             <div className="text-[10px] text-indigo-300/70 font-mono">Discovery stage</div>
           </div>
 
           {/* Proposals Sent */}
           <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-purple-500/30 space-y-1">
             <div className="text-[10px] uppercase font-mono text-purple-300">Proposals Sent</div>
-            <div className="text-2xl font-mono font-black text-purple-400">{realKPIs.proposals_sent}</div>
+            <div className="text-2xl font-mono font-black text-purple-400">{realKPIs?.proposals_sent ?? 0}</div>
             <div className="text-[10px] text-purple-300/70 font-mono">Contract delivery</div>
           </div>
 
           {/* Deals Won */}
           <div className="p-4 rounded-2xl bg-[#080D18]/90 border border-emerald-500/40 space-y-1 bg-emerald-500/[0.03]">
             <div className="text-[10px] uppercase font-mono text-emerald-300 font-bold">Deals Won</div>
-            <div className="text-2xl font-mono font-black text-emerald-400">{realKPIs.deals_won}</div>
+            <div className="text-2xl font-mono font-black text-emerald-400">{realKPIs?.deals_won ?? 0}</div>
             <div className="text-[10px] text-emerald-300/70 font-mono">Closed transactions</div>
           </div>
 
@@ -239,7 +243,7 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
           <div className="p-4 rounded-2xl bg-gradient-to-br from-[#D4AF37]/20 via-[#080D18] to-[#04060A] border-2 border-[#D4AF37] space-y-1 shadow-[0_0_15px_rgba(212,175,55,0.2)]">
             <div className="text-[10px] uppercase font-mono text-[#F5D77F] font-black">Revenue Closed</div>
             <div className="text-lg font-mono font-black text-[#F5D77F] leading-tight mt-1">
-              AED {revenueClosedTotal.toLocaleString()}
+              AED {(revenueClosedTotal ?? 0).toLocaleString()}
             </div>
             <div className="text-[10px] text-emerald-400 font-mono font-bold">Target Exceeded</div>
           </div>
@@ -258,47 +262,47 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
               </h3>
             </div>
             <span className="text-xs font-mono text-slate-400">
-              {priorityLeads.length} High-Impact Buyers
+              {(priorityLeads || []).length} High-Impact Buyers
             </span>
           </div>
 
           <div className="space-y-3">
-            {priorityLeads.map((item, idx) => (
+            {(priorityLeads || []).map((item, idx) => (
               <div
-                key={item.lead_id}
+                key={item?.lead_id || idx}
                 className="p-4 rounded-xl bg-[#04060A]/80 border border-white/10 hover:border-[#D4AF37]/40 transition-all space-y-2.5"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono font-bold text-[#D4AF37]">#{idx + 1}</span>
-                      <h4 className="font-bold text-sm text-white">{item.name}</h4>
+                      <h4 className="font-bold text-sm text-white">{item?.name || 'Prospect'}</h4>
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[#D4AF37]/15 text-[#F5D77F]">
-                        {item.classification || 'QUALIFIED'}
+                        {item?.classification || 'QUALIFIED'}
                       </span>
                     </div>
                     <div className="text-xs text-slate-400 mt-0.5">
-                      <span className="text-slate-300">{item.company}</span> • <span className="text-[#D4AF37] font-mono">{item.source}</span> • <span>{item.industry}</span>
+                      <span className="text-slate-300">{item?.company || 'Enterprise'}</span> • <span className="text-[#D4AF37] font-mono">{item?.source || 'Direct'}</span> • <span>{item?.industry || 'General'}</span>
                     </div>
                   </div>
 
                   <div className="text-right font-mono">
                     <div className="text-sm font-bold text-[#F5D77F]">
-                      AED {(item.expected_revenue || 3500).toLocaleString()}
+                      AED {(item?.expected_revenue || 3500).toLocaleString()}
                     </div>
                     <div className="text-xs text-emerald-400">
-                      {item.closing_probability_percent || 65}% Probability
+                      {item?.closing_probability_percent || 65}% Probability
                     </div>
                   </div>
                 </div>
 
                 <div className="text-xs text-slate-300 font-mono bg-white/[0.02] p-2 rounded border border-white/5 flex items-center justify-between">
-                  <span>Offer: <strong className="text-emerald-300">{item.offer}</strong></span>
-                  <span className="text-slate-400">Stage: {item.pipeline_stage || 'QUALIFIED'}</span>
+                  <span>Offer: <strong className="text-emerald-300">{item?.offer || 'Standard Solution'}</strong></span>
+                  <span className="text-slate-400">Stage: {item?.pipeline_stage || 'QUALIFIED'}</span>
                 </div>
 
                 <div className="flex items-center justify-between pt-1 text-xs">
-                  <span className="text-[11px] text-slate-400 line-clamp-1">{item.recommended_action}</span>
+                  <span className="text-[11px] text-slate-400 line-clamp-1">{item?.recommended_action || 'Review opportunity'}</span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onNavigateTab('comms_center')}
@@ -308,7 +312,7 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
                       Outreach
                     </button>
                     <button
-                      onClick={() => handleCloseWonDeal(item.lead_id, item.expected_revenue || 2500)}
+                      onClick={() => handleCloseWonDeal(item?.lead_id || 1, item?.expected_revenue || 2500)}
                       disabled={executingAction}
                       className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-mono text-xs font-bold flex items-center gap-1"
                     >
@@ -335,27 +339,27 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
           </div>
 
           <div className="space-y-3 font-mono text-xs">
-            {actionLogs.length === 0 ? (
+            {(!actionLogs || actionLogs.length === 0) ? (
               <div className="text-center py-10 text-slate-500">
                 Action logs will appear here as autonomous agents execute tasks.
               </div>
             ) : (
-              actionLogs.map((log) => (
+              (actionLogs || []).map((log, lIdx) => (
                 <div
-                  key={log.id}
+                  key={log?.id || lIdx}
                   className="p-3.5 rounded-xl bg-[#04060A]/80 border border-white/5 hover:border-[#D4AF37]/30 transition-all space-y-1"
                 >
                   <div className="flex items-center justify-between gap-2 text-[10px] text-slate-400">
-                    <span className="text-[#D4AF37] font-bold">{log.agent_name}</span>
-                    <span>{log.timestamp}</span>
+                    <span className="text-[#D4AF37] font-bold">{log?.agent_name || 'System Agent'}</span>
+                    <span>{log?.timestamp || 'Just now'}</span>
                   </div>
-                  <div className="font-bold text-white text-xs font-sans">{log.title}</div>
+                  <div className="font-bold text-white text-xs font-sans">{log?.title || 'Execution Step'}</div>
                   <p className="text-[11px] text-slate-300 font-sans leading-relaxed">
-                    {log.description}
+                    {log?.description || ''}
                   </p>
-                  {log.revenue_impact_aed > 0 && (
+                  {(log?.revenue_impact_aed ?? 0) > 0 && (
                     <div className="text-[10px] text-emerald-400 font-bold pt-0.5">
-                      Revenue Impact: +AED {log.revenue_impact_aed.toLocaleString()}
+                      Revenue Impact: +AED {(log?.revenue_impact_aed ?? 0).toLocaleString()}
                     </div>
                   )}
                 </div>

@@ -1,0 +1,25 @@
+[Unit]
+Description=Revenue Survival AI — 24/7 Cloud Background Autonomous Worker
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/revenue-survival-ai/backend
+ExecStart=/var/www/revenue-survival-ai/backend/venv/bin/python worker.py
+Restart=always
+RestartSec=10
+EnvironmentFile=/var/www/revenue-survival-ai/backend/.env
+Environment=PYTHONUNBUFFERED=1
+Environment=ENVIRONMENT=production
+Environment=WORKER_INSTANCE_ID=REVENUE-DAEMON-CLOUD-PROD-01
+
+# Resource & Limit Policies
+KillSignal=SIGTERM
+TimeoutStopSec=30
+StandardOutput=append:/var/log/revenue_worker.log
+StandardError=append:/var/log/revenue_worker.error.log
+
+[Install]
+WantedBy=multi-user.target

@@ -33,6 +33,11 @@ export const LuxurySidebar: React.FC<LuxurySidebarProps> = ({
 }) => {
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'mission_engine', label: 'Mission Engine', icon: Target, badge: 'AUTONOMOUS' },
+    { id: 'sales_queue', label: 'Real Sales Queue', icon: UserCheck, badge: '8 STAGES' },
+    { id: 'ceo_report', label: 'CEO Morning Briefing', icon: FileBarChart2, badge: 'ACTIVE' },
+    { id: 'reality_audit', label: 'Reality Audit', icon: ShieldCheck, badge: 'P18' },
+    { id: 'providers', label: 'Provider Activation', icon: ShieldCheck, badge: 'P20' },
     { id: 'war_room', label: 'War Room', icon: Flame, badge: 'v15' },
     { id: 'revenue_proof', label: 'Revenue Proof', icon: ShieldCheck, badge: 'P16' },
     { id: 'hot_buyers', label: 'Hot Buyers', icon: UserCheck },

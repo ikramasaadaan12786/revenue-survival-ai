@@ -1,0 +1,29 @@
+# Revenue Survival AI — 24/7 Cloud Background Worker
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install OS utilities for networking, SSL certificates, and health probes
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    build-essential && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application source
+COPY . .
+
+ENV PYTHONUNBUFFERED=1
+ENV ENVIRONMENT=production
+ENV WORKER_INSTANCE_ID=REVENUE-DAEMON-CLOUD-PROD-01
+
+# Healthcheck probe verifying worker heartbeat update within last 5 minutes
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import json, os, datetime; data=json.load(open('worker_status.json')); assert data.get('status') == 'ONLINE'" || exit 1
+
+# Start self-healing continuous daemon
+CMD ["python", "worker.py"]

@@ -1,19 +1,32 @@
 import { RevenueEmpireData, EmployeeScorecard, MorningCEOReport, ScalingEngineData, EnterpriseNetworkData } from "@/types";
 
-const getApiBase = (): string => {
+export const getApiBase = (): string => {
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "http://localhost:8000/api/v1";
+    }
+  }
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   if (envUrl && envUrl.trim() !== "") {
     return envUrl.trim().replace(/\/+$/, "");
   }
-  // Default fallback for development or same-host deployment
-  if (typeof window !== "undefined" && window.location.origin) {
-    // If running in browser and no explicit env var is set, check if deployed behind reverse proxy or fallback
-    return "http://127.0.0.1:8000/api/v1";
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/api/v1`;
   }
-  return "http://127.0.0.1:8000/api/v1";
+  return "http://localhost:8000/api/v1";
 };
 
-const API_BASE = getApiBase();
+export const getApiUrl = (endpoint: string): string => {
+  const cleanBase = getApiBase();
+  let cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  if (cleanBase.endsWith("/api/v1") && cleanEndpoint.startsWith("/api/v1")) {
+    cleanEndpoint = cleanEndpoint.replace("/api/v1", "");
+  }
+  return `${cleanBase}${cleanEndpoint}`;
+};
+
+export const API_BASE = getApiBase();
 
 export async function fetcher<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
@@ -482,6 +495,8 @@ export const api = {
     fetcher<any>(`/enterprise-network/companies/${companyId}/billing`),
   upgradeCompanyPlan: (companyId: number, newPlanName: string) =>
     fetcher<any>(`/enterprise-network/companies/${companyId}/upgrade-plan`, { method: "POST", body: JSON.stringify({ new_plan_name: newPlanName }) }),
+  getSystemHealth: () =>
+    fetcher<any>("/system/health"),
 };
 
 

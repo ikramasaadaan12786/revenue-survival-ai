@@ -25,17 +25,68 @@ import { AIScalingCommandCenter } from "@/components/AIScalingCommandCenter";
 import { AIEnterpriseNetworkCenter } from "@/components/AIEnterpriseNetworkCenter";
 import { RevenueWarRoom } from "@/components/luxury/RevenueWarRoom";
 import { RevenueProofDashboard } from "@/components/luxury/RevenueProofDashboard";
+import { RealityAuditDashboard } from "@/components/luxury/RealityAuditDashboard";
+import { ProviderConnectionHub } from "@/components/luxury/ProviderConnectionHub";
+import { ProviderActivationWizard } from "@/components/luxury/ProviderActivationWizard";
+import { RealSalesQueue } from "@/components/luxury/RealSalesQueue";
 import { HotBuyerTerminal } from "@/components/luxury/HotBuyerTerminal";
 import { CommunicationCenter } from "@/components/luxury/CommunicationCenter";
 import { ProposalDesk } from "@/components/luxury/ProposalDesk";
 import { DealClosingBoard } from "@/components/luxury/DealClosingBoard";
+import { CEOMorningReport } from "@/components/luxury/CEOMorningReport";
+import { AutonomousRevenueMissionEngine } from "@/components/luxury/AutonomousRevenueMissionEngine";
 import NewMissionModal from "@/components/NewMissionModal";
 import { DashboardSummary, DepartmentSummary, EmployeeScorecard } from "@/types";
 import { api } from "@/lib/api";
 import { Loader2, Settings, ShieldCheck, Sparkles, Sliders, CheckCircle } from "lucide-react";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [mounted, setMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("dashboard");
+
+  // Restore saved tab from localStorage or URL query on client mount (avoids SSR hydration mismatch)
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== "undefined") {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryTab = urlParams.get("tab");
+        const hashTab = window.location.hash.replace("#", "");
+        const storedTab = localStorage.getItem("revenue_survival_active_tab");
+        const initialTab = queryTab || (hashTab && hashTab.length > 1 ? hashTab : null) || storedTab;
+        if (initialTab && initialTab.trim() !== "") {
+          setActiveTab(initialTab.trim());
+        }
+      } catch (_) {}
+    }
+  }, []);
+
+  // Keep localStorage and URL query search in sync on state changes
+  useEffect(() => {
+    if (mounted && typeof window !== "undefined" && activeTab) {
+      try {
+        localStorage.setItem("revenue_survival_active_tab", activeTab);
+        const url = new URL(window.location.href);
+        if (url.searchParams.get("tab") !== activeTab) {
+          url.searchParams.set("tab", activeTab);
+          window.history.replaceState({}, "", url.toString());
+        }
+      } catch (_) {}
+    }
+  }, [activeTab, mounted]);
+
+  const handleNavigateTab = (tab: string) => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("revenue_survival_active_tab", tab);
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", tab);
+        window.history.replaceState({}, "", url.toString());
+      } catch (_) {}
+    }
+  };
+
   const [missionId, setMissionId] = useState<number>(1);
   const [missionsList, setMissionsList] = useState<any[]>([]);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -53,9 +104,28 @@ export default function Home() {
   const [clientAccounts, setClientAccounts] = useState<any[]>([]);
   const [historicalRevenues, setHistoricalRevenues] = useState<any[]>([]);
   const [globalOverview, setGlobalOverview] = useState<any>(null);
+  const [isOffline, setIsOffline] = useState(false);
+  const [systemHealth, setSystemHealth] = useState<any>(null);
+
+  const checkHealth = useCallback(async () => {
+    try {
+      const health = await api.getSystemHealth().catch(() => null);
+      if (health && (health.status === "HEALTHY" || health.backend === "ONLINE")) {
+        setSystemHealth(health);
+        setIsOffline(false);
+      } else {
+        setIsOffline(true);
+      }
+    } catch (_) {
+      setIsOffline(true);
+    }
+  }, []);
 
   const fetchSummary = useCallback(async (targetId?: number) => {
     try {
+      // Check system health
+      checkHealth();
+
       // 1. Fetch list of all missions
       const allMissions = await api.getMissions().catch(() => []);
       setMissionsList(allMissions || []);
@@ -94,12 +164,16 @@ export default function Home() {
         api.getRevenues(currentId),
       ]);
 
+      let anySuccess = false;
+
       if (dashRes.status === "fulfilled" && dashRes.value) {
         setSummary(dashRes.value);
+        anySuccess = true;
       }
 
       if (globalRes.status === "fulfilled" && globalRes.value) {
         setGlobalOverview(globalRes.value);
+        anySuccess = true;
       }
 
       if (entRes.status === "fulfilled" && entRes.value) {
@@ -147,17 +221,22 @@ export default function Home() {
       if (revsRes.status === "fulfilled" && revsRes.value) {
         setHistoricalRevenues(revsRes.value || []);
       }
+
+      if (anySuccess) {
+        setIsOffline(false);
+      }
     } catch (err) {
       console.error("Failed fetching live command center telemetry", err);
+      setIsOffline(true);
     } finally {
       setLoading(false);
     }
-  }, [missionId]);
+  }, [missionId, checkHealth]);
 
   // Initial load
   useEffect(() => {
     fetchSummary();
-  }, []);
+  }, [fetchSummary]);
 
   // Real-time 30-second Auto-refresh Polling Interval
   useEffect(() => {
@@ -267,7 +346,7 @@ export default function Home() {
       {/* Luxury Left Sidebar */}
       <LuxurySidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleNavigateTab}
         pendingApprovalsCount={summary?.pending_approvals || 0}
       />
 
@@ -276,12 +355,29 @@ export default function Home() {
         {/* Luxury Top Header */}
         <LuxuryHeader
           unreadNotificationsCount={summary?.pending_approvals || 0}
-          onOpenNotifications={() => setActiveTab("approvals")}
-          onProfileClick={() => setActiveTab("settings")}
+          onOpenNotifications={() => handleNavigateTab("approvals")}
+          onProfileClick={() => handleNavigateTab("settings")}
+          onNavigateTab={handleNavigateTab}
         />
 
         {/* Dynamic Page Content */}
         <main className="flex-1 p-6 lg:p-8 space-y-8">
+          {/* Non-intrusive Offline / Reconnecting State */}
+          {isOffline && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#080D18] to-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-mono flex items-center justify-between shadow-[0_0_20px_rgba(245,158,11,0.15)] animate-pulse">
+              <div className="flex items-center gap-2.5">
+                <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                <span>Backend Reconnecting... Telemetry will refresh automatically as services resume.</span>
+              </div>
+              <button
+                onClick={() => fetchSummary(missionId)}
+                className="px-3 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 font-bold transition-all text-xs"
+              >
+                Retry Now
+              </button>
+            </div>
+          )}
+
           {loading && !summary ? (
             <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
               <Loader2 className="w-9 h-9 text-[#D4AF37] animate-spin" />
@@ -294,7 +390,7 @@ export default function Home() {
               {/* 1. Dubai Luxury Sovereign Dashboard (Default) */}
               {(activeTab === "dashboard" || activeTab === "command") && (
                 <MainLuxuryDashboard
-                  onNavigateTab={(tab) => setActiveTab(tab)}
+                  onNavigateTab={handleNavigateTab}
                   onRunOperatingCycle={handleRunNextStep}
                   activeMissionId={missionId}
                   metrics={dashboardMetrics}
@@ -382,14 +478,49 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Phase 14-16 Execution Engine Tabs */}
+              {/* Autonomous Revenue Mission Engine Tab */}
+              {(activeTab === "mission_engine" || activeTab === "revenue_engine") && (
+                <AutonomousRevenueMissionEngine
+                  missionId={missionId}
+                  onNavigateTab={handleNavigateTab}
+                />
+              )}
+
+              {/* Phase 14-20 Execution & Reality Engine Tabs */}
+              {activeTab === "ceo_report" && (
+                <CEOMorningReport
+                  missionId={missionId}
+                  onNavigateTab={handleNavigateTab}
+                />
+              )}
+
+              {(activeTab === "sales_queue" || activeTab === "queue") && (
+                <RealSalesQueue
+                  missionId={missionId}
+                  onNavigateTab={handleNavigateTab}
+                />
+              )}
+
+              {activeTab === "reality_audit" && (
+                <RealityAuditDashboard
+                  missionId={missionId}
+                  onNavigateTab={handleNavigateTab}
+                />
+              )}
+
+              {(activeTab === "providers" || activeTab === "wizard" || activeTab === "provider_activation") && (
+                <ProviderActivationWizard
+                  onNavigateTab={handleNavigateTab}
+                />
+              )}
+
               {activeTab === "war_room" && (
                 <RevenueWarRoom
                   missionId={missionId}
                   missionTitle={summary?.mission?.title || "Dubai AI Revenue Sprint — 18 Hour Challenge"}
                   targetRevenue={summary?.target_amount || 2500}
                   currentRevenue={summary?.revenue_achieved || 0}
-                  onNavigateTab={setActiveTab}
+                  onNavigateTab={handleNavigateTab}
                 />
               )}
 
@@ -397,35 +528,35 @@ export default function Home() {
                 <RevenueProofDashboard
                   missionId={missionId}
                   missionTitle={summary?.mission?.title || "Dubai AI Revenue Sprint — 18 Hour Challenge"}
-                  onNavigateTab={setActiveTab}
+                  onNavigateTab={handleNavigateTab}
                 />
               )}
 
               {activeTab === "hot_buyers" && (
                 <HotBuyerTerminal
                   missionId={missionId}
-                  onNavigateTab={setActiveTab}
+                  onNavigateTab={handleNavigateTab}
                 />
               )}
 
               {(activeTab === "comms_center" || activeTab === "communication_center") && (
                 <CommunicationCenter
                   missionId={missionId}
-                  onNavigateTab={setActiveTab}
+                  onNavigateTab={handleNavigateTab}
                 />
               )}
 
               {activeTab === "proposal_desk" && (
                 <ProposalDesk
                   missionId={missionId}
-                  onNavigateTab={setActiveTab}
+                  onNavigateTab={handleNavigateTab}
                 />
               )}
 
               {(activeTab === "deal_room" || activeTab === "deal_closing_board") && (
                 <DealClosingBoard
                   missionId={missionId}
-                  onNavigateTab={setActiveTab}
+                  onNavigateTab={handleNavigateTab}
                 />
               )}
 

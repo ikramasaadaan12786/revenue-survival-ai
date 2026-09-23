@@ -32,44 +32,136 @@ DEFAULT_CONNECTORS = [
         "connector_name": "YOUTUBE",
         "auth_type": "API_KEY",
         "credentials": {
-            "api_key": "AIzaSy_SAMPLE_YOUTUBE_DATA_API_V3_KEY"
+            "api_key": "AIzaSy_SECURE_YOUTUBE_DATA_API_V3_KEY",
+            "monitored_categories": [
+                "Dubai Real Estate Videos",
+                "UAE Business & Setup Videos",
+                "AI Automation & Business Solutions",
+                "Investment & Private Wealth Videos"
+            ]
         },
         "status": "CONNECTED",
-        "latency_ms": 52,
-        "capabilities": ["Video Comment Intent Extraction", "Market Trends Scanner"]
+        "latency_ms": 28,
+        "capabilities": [
+            "Video Comment Intent Extraction",
+            "Dubai Real Estate Radar",
+            "AI Automation Inquiries Intercept",
+            "UAE Business Setup Sourcing",
+            "Syndicate Investment Extraction"
+        ]
     },
     {
         "connector_name": "LINKEDIN",
         "auth_type": "SESSION_COOKIE",
         "credentials": {
             "li_at": "AQED_sample_linkedin_voyager_session_cookie",
-            "tracking_keywords": ["hiring software", "need website", "looking for automation"]
+            "protocol": "Voyager B2B REST & Webhook Listener",
+            "monitored_topics": [
+                "Executive Relocations & DIFC Expansion",
+                "UAE/Dubai Investment & Family Office Discussions",
+                "AI Automation & Conversational Agents Requirements",
+                "Real Estate Institutional Allocations",
+                "B2B Enterprise Custom Software & CRM"
+            ],
+            "tracking_keywords": [
+                "expanding to Dubai",
+                "seeking software partner",
+                "looking for AI agency",
+                "allocating capital",
+                "DIFC office launch",
+                "in market for website"
+            ]
         },
         "status": "CONNECTED",
-        "latency_ms": 64,
-        "capabilities": ["Public Signals Parser", "Decision Maker B2B Radar", "Executive Lead Sourcing"]
+        "latency_ms": 36,
+        "capabilities": [
+            "Voyager B2B Signals Parser",
+            "Decision Maker Professional Radar",
+            "C-Suite Mandates Intercept",
+            "Institutional Buyer Verification",
+            "Direct B2B Communication Bridge"
+        ]
     },
     {
         "connector_name": "WEB_SEARCH",
         "auth_type": "API_KEY",
         "credentials": {
             "api_key": "tvly-sample-tavily-live-search-engine-key",
-            "provider": "Tavily AI Search"
+            "provider": "Google Intent Engine & Tavily AI Autonomous Search",
+            "monitored_queries": [
+                "Dubai property buyer searches (bulk off-plan, commercial floors)",
+                "UAE business service requirements (growth marketing, company setup)",
+                "AI automation requirements (WhatsApp triage, clinic booking bot)",
+                "B2B software/service buying intent (freight dispatch CRM, custom ERP)",
+                "Investment opportunities (GCC venture capital, syndicate allocations)"
+            ]
         },
         "status": "CONNECTED",
-        "latency_ms": 41,
-        "capabilities": ["Public Forum Scraper", "Google Search Intent", "Real-Time News Parsing"]
+        "latency_ms": 31,
+        "capabilities": [
+            "Google Intent Search Radar",
+            "Tavily AI Autonomous Search",
+            "Dubai Chamber Procurement Scanner",
+            "B2B Commercial RFP Extractor",
+            "Real-Time Dealflow Listener"
+        ]
+    },
+    {
+        "connector_name": "FACEBOOK",
+        "auth_type": "GRAPH_API",
+        "credentials": {
+            "access_token": "EAAQ_sample_meta_graph_api_token_dubai_live",
+            "api_version": "v19.0",
+            "monitored_groups": [
+                "Dubai Real Estate Investors & Buyers Network",
+                "UAE Angel & Private Equity Circle",
+                "Dubai Business Owners & SME Community",
+                "UAE AI Automation & Business Modernization",
+                "Dubai Startups & Venture Founders Hub"
+            ],
+            "permissions": [
+                "groups_access_member_info",
+                "pages_read_user_content",
+                "pages_show_list"
+            ]
+        },
+        "status": "CONNECTED",
+        "latency_ms": 29,
+        "capabilities": [
+            "Meta Graph API v19.0",
+            "Public Group Intent Discovery",
+            "Dubai Investor Group Intercept",
+            "Business Owners Pain Point Miner",
+            "Startup Founder Needs Radar"
+        ]
     },
     {
         "connector_name": "INSTAGRAM",
         "auth_type": "GRAPH_API",
         "credentials": {
             "access_token": "IGQVJ_sample_instagram_graph_api_token_dubai",
-            "monitored_accounts": ["@dubai_luxury_estates", "@dxb_tech_founders", "@dubai_startups_hub"]
+            "api_version": "v19.0",
+            "monitored_accounts": [
+                "@dubai_luxury_estates",
+                "@dxb_tech_founders",
+                "@uae_business_network",
+                "@gulf_investor_magazine"
+            ],
+            "permissions": [
+                "instagram_basic",
+                "instagram_manage_comments",
+                "pages_show_list"
+            ]
         },
         "status": "CONNECTED",
-        "latency_ms": 45,
-        "capabilities": ["DM Intent Sourcing", "Luxury Real Estate Bio Parsing", "Story Comment Intercept"]
+        "latency_ms": 35,
+        "capabilities": [
+            "Instagram Business Discovery",
+            "Public Media Comment Miner",
+            "Luxury Property Intent Sourcing",
+            "Tech & AI Community Intercept",
+            "Direct Channel Routing"
+        ]
     },
     {
         "connector_name": "BUSINESS_DIRECTORIES",

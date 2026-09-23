@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Flame, ShieldCheck, UserCheck, DollarSign, Send, ArrowUpRight, Search, Filter, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, getApiUrl } from '@/lib/api';
 
 interface HotBuyerTerminalProps {
   missionId?: number;
@@ -44,7 +44,7 @@ export const HotBuyerTerminal: React.FC<HotBuyerTerminalProps> = ({
     setConverting(true);
     setSuccessMsg(null);
     try {
-      const res = await fetch(`https://backend-sigma-six-79.vercel.app/api/v1/closing-engine/convert-signal`, {
+      const res = await fetch(getApiUrl('/api/v1/closing-engine/convert-signal'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

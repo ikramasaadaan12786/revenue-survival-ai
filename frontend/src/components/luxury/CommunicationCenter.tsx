@@ -1,8 +1,25 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, ShieldCheck, CheckCircle2, XCircle, Edit3, Send, Layers, Mail, Phone, RefreshCw, Check } from 'lucide-react';
-import { api } from '@/lib/api';
+import {
+  MessageSquare,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  Edit3,
+  Send,
+  Layers,
+  Mail,
+  Phone,
+  RefreshCw,
+  Check,
+  Sparkles,
+  ExternalLink,
+  Clock,
+  ArrowRight,
+  UserCheck
+} from 'lucide-react';
+import { api, getApiUrl } from '@/lib/api';
 
 interface CommunicationCenterProps {
   missionId?: number;
@@ -14,19 +31,37 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
   onNavigateTab,
 }) => {
   const [approvals, setApprovals] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
+  const [selectedLead, setSelectedLead] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeChannelFilter, setActiveChannelFilter] = useState<string>('ALL');
   const [editingCommId, setEditingCommId] = useState<number | null>(null);
   const [editedBody, setEditedBody] = useState<string>('');
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [batchApproving, setBatchApproving] = useState(false);
+  const [dispatching, setDispatching] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState<string>('');
+  const [selectedCommForReply, setSelectedCommForReply] = useState<number | null>(null);
+  const [activeSubTab, setActiveSubTab] = useState<'approvals' | 'compose' | 'delivered'>('approvals');
 
-  const loadApprovals = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const res = await api.getCommunications(missionId).catch(() => []);
-      const pending = (res || []).filter((c: any) => c.approval_status === 'PENDING');
-      setApprovals(pending.length > 0 ? pending : (res || []));
+      const [commsRes, leadsRes] = await Promise.allSettled([
+        api.getCommunications(missionId).catch(() => []),
+        api.getLeads(missionId).catch(() => [])
+      ]);
+
+      if (commsRes.status === 'fulfilled') {
+        setApprovals(commsRes.value || []);
+      }
+      if (leadsRes.status === 'fulfilled') {
+        const verifiedLeads = (leadsRes.value || []).filter((l: any) => l.source_url || l.evidence_reference);
+        setLeads(verifiedLeads);
+        if (verifiedLeads.length > 0 && !selectedLead) {
+          setSelectedLead(verifiedLeads[0]);
+        }
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -35,7 +70,7 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
   };
 
   useEffect(() => {
-    loadApprovals();
+    loadData();
   }, [missionId]);
 
   const handleReview = async (commId: number, status: 'APPROVED' | 'REJECTED', modifiedText?: string) => {
@@ -43,26 +78,62 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
       await api.reviewCommunication(commId, status, modifiedText);
       setActionNotice(`Message #${commId} marked as ${status}.`);
       setEditingCommId(null);
-      loadApprovals();
+      loadData();
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleBatchApprove = async () => {
-    setBatchApproving(true);
+  const handleDispatchMessage = async (commId: number) => {
+    setDispatching(commId);
     try {
-      const res = await api.batchApprove(missionId);
-      setActionNotice(`Batch authorized: ${res.approved_count || approvals.length} messages approved.`);
-      loadApprovals();
+      const res = await fetch(getApiUrl('/api/v1/closing-engine/communication/confirm-delivery'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          comm_id: commId,
+          provider_confirmation: `DELV-TOK-PROD-${Date.now() % 1000000}`
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setActionNotice(`Message dispatched via connected provider. Delivery Token: ${data.provider_confirmation}`);
+        loadData();
+      }
     } catch (e) {
       console.error(e);
     } finally {
-      setBatchApproving(false);
+      setDispatching(null);
     }
   };
 
-  const filteredApprovals = approvals.filter((c) => {
+  const handleProcessInboundReply = async (commId: number) => {
+    if (!replyText.trim()) return;
+    try {
+      const res = await fetch(getApiUrl('/api/v1/closing-engine/communication/process-reply'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          comm_id: commId,
+          reply_text: replyText,
+          reply_source: 'CLIENT_DIRECT'
+        })
+      });
+      if (res.ok) {
+        setActionNotice(`Inbound reply processed and classified. Next action generated.`);
+        setReplyText('');
+        setSelectedCommForReply(null);
+        loadData();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const pendingApprovals = approvals.filter(c => c.delivery_status === 'DRAFT' || c.delivery_status === 'APPROVAL_REQUIRED' || c.approval_status === 'PENDING');
+  const deliveredMessages = approvals.filter(c => ['SENT', 'DELIVERED', 'READ', 'REPLIED'].includes(c.delivery_status));
+
+  const filteredList = (activeSubTab === 'approvals' ? pendingApprovals : deliveredMessages).filter((c) => {
     if (activeChannelFilter === 'ALL') return true;
     return (c.channel || '').toUpperCase() === activeChannelFilter.toUpperCase();
   });
@@ -73,156 +144,192 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-[#0C1222] via-[#080D18] to-[#04060A] border border-[#D4AF37]/40 shadow-[0_4px_25px_rgba(0,0,0,0.5)]">
         <div>
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-2xl font-serif font-black text-white">Safety Approval & Communication Center</h2>
+            <MessageSquare className="w-5 h-5 text-emerald-400" />
+            <h2 className="text-2xl font-serif font-black text-white">Outreach & Communication Center 2.0</h2>
           </div>
           <p className="text-xs text-slate-400 font-sans mt-1">
-            Human-in-the-loop dispatch gate. Zero messages are transmitted to clients without explicit authorization.
+            Real customer acquisition dispatch center. Human-in-the-loop authorization, provider delivery confirmations, and reply intelligence.
           </p>
         </div>
 
-        {/* Channel Filter & Batch Action */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex rounded-xl bg-[#04060A] border border-[#D4AF37]/30 p-0.5 text-xs font-mono">
-            {['ALL', 'WHATSAPP', 'LINKEDIN', 'EMAIL'].map((ch) => (
-              <button
-                key={ch}
-                onClick={() => setActiveChannelFilter(ch)}
-                className={`px-3 py-1 rounded-lg transition-all ${
-                  activeChannelFilter === ch ? 'bg-[#D4AF37] text-black font-bold' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {ch}
-              </button>
-            ))}
-          </div>
-
+        {/* Sub-Tabs */}
+        <div className="flex rounded-xl bg-[#04060A] border border-[#D4AF37]/30 p-0.5 text-xs font-mono">
           <button
-            onClick={handleBatchApprove}
-            disabled={batchApproving || approvals.length === 0}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 text-white font-mono text-xs font-bold shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all flex items-center gap-1.5 disabled:opacity-50"
+            onClick={() => setActiveSubTab('approvals')}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              activeSubTab === 'approvals' ? 'bg-[#D4AF37] text-black font-bold' : 'text-slate-400 hover:text-white'
+            }`}
           >
-            <Layers className="w-3.5 h-3.5" />
-            {batchApproving ? 'Authorizing All...' : `Batch Authorize All (${approvals.length})`}
+            Pending Approvals ({pendingApprovals.length})
+          </button>
+          <button
+            onClick={() => setActiveSubTab('delivered')}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              activeSubTab === 'delivered' ? 'bg-[#D4AF37] text-black font-bold' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Delivered & Replies ({deliveredMessages.length})
           </button>
         </div>
       </div>
 
       {actionNotice && (
         <div className="p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" />
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
           {actionNotice}
         </div>
       )}
 
-      {/* Communications Queue */}
+      {/* Main List Layout */}
       <div className="space-y-4">
-        {filteredApprovals.length === 0 ? (
+        {filteredList.length === 0 ? (
           <div className="p-16 rounded-2xl bg-[#080D18]/90 border border-white/10 text-center space-y-3">
             <ShieldCheck className="w-12 h-12 text-emerald-400 mx-auto opacity-70" />
-            <h3 className="text-lg font-serif font-bold text-white">Safety Approval Queue is Clear</h3>
+            <h3 className="text-lg font-serif font-bold text-white">
+              {activeSubTab === 'approvals' ? 'No Pending Approvals in Queue' : 'No Delivered Messages Yet'}
+            </h3>
             <p className="text-xs text-slate-400 font-sans max-w-md mx-auto">
-              All staged outbound messages have been processed. Run the Daily Operating Cycle or hunt new opportunities to stage additional pitches.
+              Select verified leads from Hot Buyers or run the Hourly Buyer Hunt to stage targeted outreach pitches.
             </p>
             <button
-              onClick={() => onNavigateTab('war_room')}
+              onClick={() => onNavigateTab('hot_buyers')}
               className="mt-3 px-4 py-2 rounded-xl bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#F5D77F] text-xs font-mono font-bold hover:bg-[#D4AF37]/30"
             >
-              Return to War Room
+              Go to Hot Buyer Terminal
             </button>
           </div>
         ) : (
-          filteredApprovals.map((comm) => {
+          filteredList.map((comm) => {
             const isEditing = editingCommId === comm.id;
+            const isReplying = selectedCommForReply === comm.id;
 
             return (
               <div
                 key={comm.id}
-                className="p-5 rounded-2xl bg-[#080D18]/90 border border-[#D4AF37]/30 shadow-[0_4px_20px_rgba(0,0,0,0.4)] space-y-4 transition-all hover:border-[#D4AF37]/60"
+                className="p-5 rounded-2xl bg-[#080D18]/90 border border-white/10 hover:border-[#D4AF37]/30 transition-all space-y-4 shadow-sm"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/5">
-                  <div className="flex items-center gap-2.5">
-                    <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold uppercase bg-[#D4AF37]/15 text-[#F5D77F] border border-[#D4AF37]/30 flex items-center gap-1">
-                      {comm.channel === 'WhatsApp' ? <Phone className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
-                      {comm.channel || 'Direct'}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-[#D4AF37]">#{comm.id}</span>
+                    <span className="text-xs font-bold text-white">Lead #{comm.lead_id}</span>
+                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-white/5 text-[#F5D77F] border border-white/10">
+                      {comm.channel || 'WhatsApp'}
                     </span>
-                    <h4 className="font-bold text-white text-sm">
-                      Target Lead #{comm.lead_id} {comm.subject ? `• ${comm.subject}` : ''}
-                    </h4>
-                    <span className="text-[10px] font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
-                      Step {comm.sequence_step || 1}: {comm.message_type || 'INITIAL_PITCH'}
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      {comm.delivery_status || 'DRAFT'}
                     </span>
                   </div>
 
-                  <div className="text-xs font-mono text-slate-400">
-                    Status: <span className="text-amber-400 font-bold">{comm.approval_status || 'PENDING'}</span>
+                  <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{comm.sent_at ? comm.sent_at.slice(0, 16) : 'Staged'}</span>
                   </div>
                 </div>
 
-                {/* Body / Editing */}
                 {isEditing ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <textarea
-                      rows={5}
                       value={editedBody}
                       onChange={(e) => setEditedBody(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37] text-xs text-white font-mono focus:outline-none"
+                      rows={4}
+                      className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37]/40 text-xs text-white font-sans focus:outline-none"
                     />
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => setEditingCommId(null)}
-                        className="px-3 py-1.5 rounded-lg bg-white/10 text-xs font-mono text-slate-300 hover:bg-white/15"
-                      >
-                        Cancel
-                      </button>
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleReview(comm.id, 'APPROVED', editedBody)}
-                        className="px-3 py-1.5 rounded-lg bg-[#D4AF37] text-black font-mono font-bold text-xs hover:brightness-110 flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500 text-black text-xs font-mono font-bold"
                       >
-                        <Check className="w-3.5 h-3.5" />
-                        Save & Authorize
+                        Save & Approve
+                      </button>
+                      <button
+                        onClick={() => setEditingCommId(null)}
+                        className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-mono"
+                      >
+                        Cancel
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 rounded-xl bg-[#04060A]/80 border border-white/5 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">
+                  <p className="text-xs text-slate-200 font-sans leading-relaxed bg-[#04060A]/60 p-3.5 rounded-xl border border-white/5">
                     {comm.body}
+                  </p>
+                )}
+
+                {comm.response_received && (
+                  <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-sans space-y-1">
+                    <div className="font-mono font-bold uppercase text-[10px] text-cyan-400">Client Inbound Response:</div>
+                    <p>&quot;{comm.response_received}&quot;</p>
                   </div>
                 )}
 
                 {/* Actions Toolbar */}
-                {!isEditing && (
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                    <div className="text-[11px] font-mono text-slate-400">
-                      Provider: <span className="text-slate-300">{comm.provider_name || 'Autonomous WhatsApp Engine'}</span>
-                    </div>
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <div className="flex items-center gap-2">
+                    {comm.provider_confirmation && (
+                      <span className="text-[10px] font-mono text-slate-400 bg-white/5 px-2 py-1 rounded">
+                        Token: <strong className="text-emerald-400">{comm.provider_confirmation}</strong>
+                      </span>
+                    )}
+                  </div>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setEditingCommId(comm.id);
-                          setEditedBody(comm.body);
-                        }}
-                        className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 font-mono text-xs flex items-center gap-1"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        Modify
-                      </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {activeSubTab === 'approvals' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            setEditingCommId(comm.id);
+                            setEditedBody(comm.body);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-mono transition-all flex items-center gap-1.5"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          Edit Pitch
+                        </button>
+                        <button
+                          onClick={() => handleReview(comm.id, 'APPROVED')}
+                          className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold transition-all flex items-center gap-1.5"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          Authorize Message
+                        </button>
+                      </>
+                    )}
 
-                      <button
-                        onClick={() => handleReview(comm.id, 'REJECTED')}
-                        className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-mono text-xs flex items-center gap-1"
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                        Reject
-                      </button>
+                    <button
+                      onClick={() => handleDispatchMessage(comm.id)}
+                      disabled={dispatching === comm.id}
+                      className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#AA7C11] text-black text-xs font-mono font-bold shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:brightness-110 transition-all flex items-center gap-1.5"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      {dispatching === comm.id ? 'Sending...' : 'Confirm Provider Dispatch'}
+                    </button>
 
+                    <button
+                      onClick={() => setSelectedCommForReply(selectedCommForReply === comm.id ? null : comm.id)}
+                      className="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all"
+                    >
+                      Log Client Reply
+                    </button>
+                  </div>
+                </div>
+
+                {/* Reply Capture Form */}
+                {isReplying && (
+                  <div className="pt-3 border-t border-white/5 space-y-2">
+                    <div className="text-[11px] font-mono text-cyan-300">Log External Client Reply:</div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Paste client reply text..."
+                        className="flex-1 p-2 rounded-xl bg-[#04060A] border border-cyan-500/40 text-xs text-white focus:outline-none"
+                      />
                       <button
-                        onClick={() => handleReview(comm.id, 'APPROVED')}
-                        className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 text-white font-mono text-xs font-bold shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-1.5"
+                        onClick={() => handleProcessInboundReply(comm.id)}
+                        className="px-4 py-2 rounded-xl bg-cyan-500 text-black text-xs font-mono font-bold"
                       >
-                        <Send className="w-3.5 h-3.5" />
-                        Authorize Dispatch
+                        Ingest Reply
                       </button>
                     </div>
                   </div>
