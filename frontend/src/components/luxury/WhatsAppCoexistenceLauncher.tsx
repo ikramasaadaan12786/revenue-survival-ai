@@ -115,9 +115,9 @@ export const WhatsAppCoexistenceLauncher: React.FC<WhatsAppCoexistenceLauncherPr
     window.addEventListener('message', sessionInfoListener);
 
     try {
-      const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID || undefined;
+      const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID || '2187376872199110';
       const loginOptions: any = {
-        scope: 'whatsapp_business_management,whatsapp_business_messaging',
+        config_id: configId,
         response_type: 'code',
         override_default_response_type: true,
         extras: {
@@ -126,10 +126,6 @@ export const WhatsAppCoexistenceLauncher: React.FC<WhatsAppCoexistenceLauncherPr
           sessionInfoVersion: '3'
         }
       };
-
-      if (configId) {
-        loginOptions.config_id = configId;
-      }
 
       window.FB.login(
         async (response: any) => {
