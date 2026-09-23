@@ -231,16 +231,16 @@ class Communication(Base):
     channel = Column(String(50), default="WhatsApp")
     message_type = Column(String(50), default="INITIAL_PITCH")  # INITIAL_PITCH, FOLLOW_UP_1, FOLLOW_UP_2, OBJECTION_RESPONSE
     sequence_step = Column(Integer, default=1)
-    subject = Column(String(255), nullable=True)
+    subject = Column(Text, nullable=True)
     body = Column(Text, nullable=False)
     recipient = Column(String(255), nullable=True)
     provider_name = Column(String(50), default="WHATSAPP_BUSINESS")  # WHATSAPP_BUSINESS, TWILIO, SENDGRID_EMAIL
-    provider_message_id = Column(String(255), nullable=True)
-    provider_confirmation = Column(String(255), nullable=True)
-    delivery_confirmation = Column(String(255), nullable=True)
+    provider_message_id = Column(Text, nullable=True)
+    provider_confirmation = Column(Text, nullable=True)
+    delivery_confirmation = Column(Text, nullable=True)
     reply_source = Column(String(50), default="CLIENT_DIRECT")  # CLIENT_DIRECT, INBOUND_WEBHOOK, SIMULATED
     reply_status = Column(String(50), default="NONE")  # NONE, REPLIED_INTERESTED, REPLIED_NEED_INFO, REPLIED_PRICE_CONCERN, REPLIED_TIMING_ISSUE, REPLIED_NOT_INTERESTED, REPLIED_MEETING_REQUEST
-    reply_classification = Column(String(100), nullable=True)
+    reply_classification = Column(Text, nullable=True)
     followup_sequence_step = Column(Integer, default=0)  # 0=Initial, 1=4h Value, 2=24h ROI, 3=48h Final
     source_type = Column(String(50), default="REAL")  # REAL, SYSTEM, TEST
     verification_status = Column(String(50), default="VERIFIED")  # VERIFIED, PENDING, UNVERIFIED
@@ -253,6 +253,7 @@ class Communication(Base):
     read_at = Column(DateTime, nullable=True)
     response_received = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
 
     mission = relationship("Mission", back_populates="communications")
     lead = relationship("Lead", back_populates="communications")
