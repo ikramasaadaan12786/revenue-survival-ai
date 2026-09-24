@@ -388,7 +388,7 @@ class RealityAuditEngine:
         - Calls booked
         - Proposals sent
         - Revenue collected (Strictly AED 0.00 until payment confirmed)
-        - Mission #1006 status integrity
+        - Active Mission status integrity
         - Exact provider connectivity
         - Standalone worker health
         """

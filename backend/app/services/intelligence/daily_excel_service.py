@@ -232,22 +232,27 @@ class DailyExcelIntelligenceService:
             mission_stmt = mission_stmt.where(Mission.status == "ACTIVE").order_by(Mission.id.desc())
         
         active_mission = (await session.execute(mission_stmt)).scalars().first()
-        target_m_id = active_mission.id if active_mission else 1012
+        target_m_id = active_mission.id if active_mission else mission_id
 
-        # Query all leads for active mission with relationships loaded
-        leads_stmt = select(Lead).where(
-            Lead.mission_id == target_m_id
-        ).options(
-            selectinload(Lead.communications)
-        ).order_by(Lead.id.desc())
-        
-        leads_res = await session.execute(leads_stmt)
-        all_leads = leads_res.scalars().all()
+        # Query all leads for target mission (or all clean leads if none specified) with relationships loaded
+        if target_m_id:
+            leads_stmt = select(Lead).where(
+                Lead.mission_id == target_m_id
+            ).options(
+                selectinload(Lead.communications)
+            ).order_by(Lead.id.desc())
 
-        # Query all communications for the mission
-        comms_stmt = select(Communication).where(
-            Communication.mission_id == target_m_id
-        ).order_by(Communication.id.desc())
+            # Query all communications for the mission
+            comms_stmt = select(Communication).where(
+                Communication.mission_id == target_m_id
+            ).order_by(Communication.id.desc())
+        else:
+            leads_stmt = select(Lead).options(
+                selectinload(Lead.communications)
+            ).order_by(Lead.id.desc())
+
+            comms_stmt = select(Communication).order_by(Communication.id.desc())
+        all_leads = (await session.execute(leads_stmt)).scalars().all()
         all_comms = (await session.execute(comms_stmt)).scalars().all()
 
         # Build Workbook

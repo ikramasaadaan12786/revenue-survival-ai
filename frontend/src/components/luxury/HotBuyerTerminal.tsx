@@ -10,7 +10,7 @@ interface HotBuyerTerminalProps {
 }
 
 export const HotBuyerTerminal: React.FC<HotBuyerTerminalProps> = ({
-  missionId = 1006,
+  missionId,
   onNavigateTab,
 }) => {
   const [leads, setLeads] = useState<any[]>([]);
@@ -22,6 +22,11 @@ export const HotBuyerTerminal: React.FC<HotBuyerTerminalProps> = ({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const loadLeads = async () => {
+    if (!missionId) {
+      setLeads([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await api.getLeads(missionId).catch(() => []);
@@ -51,11 +56,11 @@ export const HotBuyerTerminal: React.FC<HotBuyerTerminalProps> = ({
           mission_id: missionId,
           name: signalData.name || 'Verified Decision Maker',
           company: signalData.company_name || 'UAE Business',
-          interest: signalData.interest || 'AI Automation and Pipeline Scaling',
+          interest: signalData.interest || 'Business Requirement',
           source: signalData.source || 'BUYER RADAR',
           country: signalData.country || 'United Arab Emirates',
-          budget: signalData.estimated_budget || 25000,
-          channel: signalData.channel || 'WhatsApp',
+          budget: signalData.estimated_budget || null,
+          channel: signalData.channel || 'Email',
         }),
       }).catch(() => null);
 
@@ -169,7 +174,7 @@ export const HotBuyerTerminal: React.FC<HotBuyerTerminalProps> = ({
                     )}
                   </div>
                   <span className="text-xs font-mono font-bold text-[#F5D77F]">
-                    AED {(lead.expected_value || lead.estimated_budget || 3500).toLocaleString()}
+                    {lead.expected_value || lead.estimated_budget ? `AED ${Number(lead.expected_value || lead.estimated_budget).toLocaleString()}` : 'Unscoped'}
                   </span>
                 </div>
 
@@ -217,7 +222,7 @@ export const HotBuyerTerminal: React.FC<HotBuyerTerminalProps> = ({
                 <div className="text-right">
                   <div className="text-[10px] uppercase font-mono text-slate-400">Deal Value / Prob</div>
                   <div className="text-lg font-mono font-black text-[#F5D77F]">
-                    AED {(selectedLead.expected_value || selectedLead.estimated_budget || 3500).toLocaleString()}
+                    {selectedLead.expected_value || selectedLead.estimated_budget ? `AED ${Number(selectedLead.expected_value || selectedLead.estimated_budget).toLocaleString()}` : 'Unscoped'}
                   </div>
                   <div className="text-xs font-mono text-emerald-400">
                     {Math.round((selectedLead.revenue_probability || 0.7) * 100)}% Closing Probability

@@ -45,7 +45,7 @@ const STAGES = [
 ];
 
 export const RealSalesQueue: React.FC<RealSalesQueueProps> = ({
-  missionId = 1006,
+  missionId,
   onNavigateTab
 }) => {
   const [queueData, setQueueData] = useState<any | null>(null);

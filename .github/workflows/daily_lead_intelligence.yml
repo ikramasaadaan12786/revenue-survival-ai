@@ -9,7 +9,7 @@ on:
       mission_id:
         description: 'Target Mission ID'
         required: false
-        default: '1012'
+        default: ''
 
 concurrency:
   group: revenue-daily-excel-intelligence
@@ -42,7 +42,7 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
           ENVIRONMENT: production
-          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '1012' }}
+          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '' }}
           WORKER_INSTANCE_ID: GITHUB-ACTIONS-DAILY-EXCEL-RUNNER
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_WORKFLOW: ${{ github.workflow }}

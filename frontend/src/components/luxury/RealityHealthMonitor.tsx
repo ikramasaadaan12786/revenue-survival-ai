@@ -22,7 +22,7 @@ interface RealityHealthMonitorProps {
 }
 
 export const RealityHealthMonitor: React.FC<RealityHealthMonitorProps> = ({
-  missionId = 1006
+  missionId
 }) => {
   const [healthData, setHealthData] = useState<any>(null);
   const [loading, setLoading] = useState(true);

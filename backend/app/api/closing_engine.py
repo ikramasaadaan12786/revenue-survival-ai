@@ -21,6 +21,20 @@ from app.services.proposal_generator import proposal_generator_service
 
 router = APIRouter(prefix="/closing-engine", tags=["closing-engine"])
 
+
+async def resolve_request_mission_id(payload: Dict[str, Any], session: AsyncSession) -> int:
+    m_id = payload.get("mission_id")
+    if m_id is not None:
+        try:
+            return int(m_id)
+        except (ValueError, TypeError):
+            pass
+    res = await session.execute(select(Mission).where(Mission.status == "ACTIVE").order_by(Mission.id.desc()).limit(1))
+    active_m = res.scalar_one_or_none()
+    if active_m:
+        return active_m.id
+    raise HTTPException(status_code=400, detail="NO_ACTIVE_MISSION: An active mission is required for this operation.")
+
 # 1. Lead Qualification Endpoint
 @router.post("/qualify-lead", response_model=LeadQualificationResponse)
 async def qualify_lead_endpoint(payload: LeadQualificationRequest, db: AsyncSession = Depends(get_db)):
@@ -430,15 +444,18 @@ async def convert_radar_signal_endpoint(payload: Dict[str, Any], db: AsyncSessio
     Converts a Buyer Radar signal directly into an active Lead with tailored offer and staged sequence.
     """
     from app.services.closing_engine.sales_manager_execution_service import sales_manager_execution_service
+    resolved_m_id = await resolve_request_mission_id(payload, db)
+    raw_budget = payload.get("budget")
+    budget_val = float(raw_budget) if raw_budget is not None else None
     result = await sales_manager_execution_service.convert_radar_signal_to_lead(
         session=db,
-        mission_id=payload.get("mission_id", 1006),
+        mission_id=resolved_m_id,
         name=payload.get("name", "Verified Buyer"),
         company=payload.get("company", "UAE Enterprise"),
         interest=payload.get("interest", "AI Automation"),
         source=payload.get("source", "BUYER RADAR"),
         country=payload.get("country", "United Arab Emirates"),
-        budget=float(payload.get("budget", 25000.0)),
+        budget=budget_val,
         channel=payload.get("channel", "WhatsApp")
     )
     return result
@@ -555,11 +572,12 @@ async def close_deal_endpoint(payload: Dict[str, Any], db: AsyncSession = Depend
     Closes a won deal, records confirmed revenue in RevenueTracking, and updates Mission revenue.
     """
     from app.services.closing_engine.real_execution_engine import real_revenue_execution_engine
+    resolved_m_id = await resolve_request_mission_id(payload, db)
     result = await real_revenue_execution_engine.close_won_deal(
         session=db,
-        mission_id=payload.get("mission_id", 1006),
+        mission_id=resolved_m_id,
         lead_id=payload["lead_id"],
-        actual_revenue_aed=float(payload.get("actual_revenue_aed", 2500.0)),
+        actual_revenue_aed=float(payload["actual_revenue_aed"]),
         source=payload.get("source", "CLOSING_ENGINE")
     )
     return result
@@ -615,11 +633,12 @@ async def verify_transaction_endpoint(payload: Dict[str, Any], db: AsyncSession 
     Phase 16 & 18: Verifies an external payment settlement with proof reference and cryptographic audit signature.
     """
     from app.services.closing_engine.revenue_validation_service import revenue_validation_service
+    resolved_m_id = await resolve_request_mission_id(payload, db)
     result = await revenue_validation_service.verify_and_settle_deal(
         session=db,
-        mission_id=payload.get("mission_id", 1006),
+        mission_id=resolved_m_id,
         lead_id=payload["lead_id"],
-        actual_revenue_aed=float(payload.get("actual_revenue_aed", 2500.0)),
+        actual_revenue_aed=float(payload["actual_revenue_aed"]),
         payment_reference=payload.get("payment_reference", "TXN-AE-ENBD-771928"),
         proposal_id=payload.get("proposal_id"),
         client_identity=payload.get("client_identity"),
@@ -665,9 +684,12 @@ async def discover_lead_evidence_endpoint(payload: Dict[str, Any], db: AsyncSess
     Phase 17: Discovers and verifies a real buyer lead with external evidence references.
     """
     from app.services.closing_engine.autonomous_revenue_operator import autonomous_revenue_operator
+    resolved_m_id = await resolve_request_mission_id(payload, db)
+    raw_budget = payload.get("budget_estimate")
+    budget_val = float(raw_budget) if raw_budget is not None else None
     result = await autonomous_revenue_operator.discover_and_verify_lead(
         session=db,
-        mission_id=payload.get("mission_id", 1006),
+        mission_id=resolved_m_id,
         name=payload["name"],
         company=payload["company"],
         country=payload.get("country", "United Arab Emirates"),
@@ -676,7 +698,7 @@ async def discover_lead_evidence_endpoint(payload: Dict[str, Any], db: AsyncSess
         profile_url=payload.get("profile_url"),
         contact_info=payload.get("contact_info"),
         requirement=payload.get("requirement", "AI Enterprise Automation"),
-        budget_estimate=float(payload.get("budget_estimate", 3500.0)),
+        budget_estimate=budget_val,
         intent_score=payload.get("intent_score", "Warm"),
         channel=payload.get("channel", "WhatsApp")
     )
@@ -754,9 +776,10 @@ async def ingest_verified_lead_endpoint(payload: Dict[str, Any], db: AsyncSessio
     Rejects any lead lacking proof URLs, platform metadata, or contact channels.
     """
     from app.services.closing_engine.real_acquisition_engine import real_customer_acquisition_engine
+    resolved_m_id = await resolve_request_mission_id(payload, db)
     result = await real_customer_acquisition_engine.ingest_verified_lead(
         session=db,
-        mission_id=payload.get("mission_id", 1006),
+        mission_id=resolved_m_id,
         lead_data=payload
     )
     return result
@@ -1108,10 +1131,10 @@ async def run_sales_manager_cycle_endpoint(payload: Dict[str, Any], db: AsyncSes
     10. Follow-up automatically
     """
     from app.services.closing_engine.autonomous_sales_manager import autonomous_sales_manager
-    mission_id = int(payload.get("mission_id", 1006))
+    resolved_m_id = await resolve_request_mission_id(payload, db)
     result = await autonomous_sales_manager.execute_autonomous_sales_cycle(
         session=db,
-        mission_id=mission_id
+        mission_id=resolved_m_id
     )
     return result
 
@@ -1123,11 +1146,11 @@ async def ingest_buyer_master_endpoint(payload: Dict[str, Any], db: AsyncSession
     Rejects incomplete leads immediately.
     """
     from app.services.closing_engine.autonomous_sales_manager import autonomous_sales_manager
-    mission_id = int(payload.get("mission_id", 1006))
+    resolved_m_id = await resolve_request_mission_id(payload, db)
     lead_data = payload.get("lead_data") or payload
     result = await autonomous_sales_manager.ingest_and_validate_buyer(
         session=db,
-        mission_id=mission_id,
+        mission_id=resolved_m_id,
         lead_dict=lead_data
     )
     return result
@@ -1195,7 +1218,7 @@ async def get_ceo_morning_report_endpoint(mission_id: int, db: AsyncSession = De
     - Calls booked
     - Proposals sent
     - Revenue collected (Strictly AED 0.00 until verified payment)
-    - Mission #1006 status integrity
+    - Active Mission status integrity
     """
     from app.services.closing_engine.reality_audit_engine import reality_audit_engine
     report = await reality_audit_engine.generate_ceo_morning_report(

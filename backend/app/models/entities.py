@@ -179,7 +179,7 @@ class Lead(Base):
     status = Column(String(50), default="NEW")  # Standard / CRM Funnel
     pipeline_stage = Column(String(50), default="DISCOVERED")  # Upgraded stages: DISCOVERED, QUALIFIED, OFFER_CREATED, CONTACT_PENDING, CONTACTED, DISCOVERY_CALL, PROPOSAL_SENT, FOLLOW_UP, OBJECTION, NEGOTIATION, CLOSING, PAYMENT_PENDING, WON, LOST
     stage_duration_hours = Column(Float, default=1.0)
-    expected_value = Column(Float, default=0.0)
+    expected_value = Column(Float, nullable=True, default=None)
     commission_potential = Column(Float, default=0.0)
     revenue_probability = Column(Float, default=0.80)
     
@@ -187,7 +187,7 @@ class Lead(Base):
     qualification_score = Column(Float, default=75.0)  # 0 to 100
     classification = Column(String(50), default="QUALIFIED")  # HOT, QUALIFIED, WARM, COLD
     buying_intent = Column(String(50), default="HIGH")  # HIGH, MEDIUM, LOW
-    estimated_budget = Column(Float, default=3500.0)
+    estimated_budget = Column(Float, nullable=True, default=None)
     decision_stage = Column(String(50), default="EVALUATION")  # PROBLEM_AWARE, EVALUATION, DECISION, READY_TO_BUY
     decision_maker_probability = Column(Float, default=0.85)
     qualification_notes = Column(Text, nullable=True)

@@ -58,10 +58,10 @@ GITHUB_WORKFLOW = os.getenv("GITHUB_WORKFLOW", "Direct-Execution")
 DEPLOYMENT_PLATFORM = "GITHUB_ACTIONS" if os.getenv("GITHUB_ACTIONS") else ("VERCEL_CRON" if os.getenv("VERCEL") else "STANDALONE_CLOUD")
 
 
-async def resolve_active_mission_id(session) -> int:
+async def resolve_active_mission_id(session) -> Optional[int]:
     """
-    Dynamically resolves current active mission in PostgreSQL.
-    Guarantees user-created sprints receive automated cloud execution.
+    Dynamically resolves current ACTIVE mission in PostgreSQL.
+    Returns None if no active mission exists. Never falls back to hardcoded IDs.
     """
     env_mission = os.getenv("ACTIVE_MISSION_ID")
     if env_mission and env_mission.strip() not in ["", "0"]:
@@ -79,13 +79,7 @@ async def resolve_active_mission_id(session) -> int:
     if active:
         return active.id
     
-    # Fallback to latest mission
-    stmt_latest = select(Mission).order_by(Mission.id.desc()).limit(1)
-    res_latest = await session.execute(stmt_latest)
-    latest = res_latest.scalar_one_or_none()
-    if latest:
-        return latest.id
-    return 1012
+    return None
 
 
 async def record_cloud_heartbeat(
@@ -541,7 +535,7 @@ async def run_ceo_brain(session, mission_id: Optional[int] = None) -> Dict[str, 
     if not mission:
         return {"status": "ERROR", "message": f"Mission {mission_id} not found"}
 
-    target = float(mission.goal_amount or 50000.0)
+    target = float(mission.goal_amount or 0.0)
     achieved = float(mission.revenue_generated or 0.0)
     gap = max(0.0, target - achieved)
     
@@ -711,6 +705,17 @@ async def main():
 
     async with AsyncSessionLocal() as session:
         target_mission_id = await resolve_active_mission_id(session)
+        if not target_mission_id:
+            print("[*] No ACTIVE mission found in production database.")
+            print("[*] Autonomous runner idling safely with NO_ACTIVE_MISSION. Zero synthetic activity fabricated.\n")
+            await record_cloud_heartbeat(
+                session=session,
+                task_name=task_name,
+                status="NO_ACTIVE_MISSION",
+                details={"message": "No active mission in database. Workflow completed safely."}
+            )
+            sys.exit(0)
+
         print(f"[*] Target Active Mission Resolved: #{target_mission_id}\n")
 
         try:

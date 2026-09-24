@@ -42,7 +42,7 @@ class RealRevenueExecutionEngine:
         financials = telemetry.get("financial_valuation") or {}
         leads = telemetry.get("leads") or {}
 
-        target_amount = float(mission_info.get("target_amount_aed", 50000.0))
+        target_amount = float(mission_info.get("target_amount_aed") or 0.0)
         revenue_closed = float(financials.get("confirmed_paid_revenue_aed", 0.0))
         gap = max(0.0, target_amount - revenue_closed)
 

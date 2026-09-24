@@ -27,7 +27,7 @@ interface CommunicationCenterProps {
 }
 
 export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
-  missionId = 1006,
+  missionId,
   onNavigateTab,
 }) => {
   const [approvals, setApprovals] = useState<any[]>([]);

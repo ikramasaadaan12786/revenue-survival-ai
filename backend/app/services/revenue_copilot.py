@@ -57,7 +57,7 @@ class RevenueCopilotService:
                 "Expedited 7-day closing facilitation"
             ]
             sla_hours = 48
-            price = max(20000.0, est_val if est_val > 5000 else 25000.0)
+            price = est_val if est_val and est_val > 0 else 25000.0
             roi_mult = "12.8x ROI upon title resale / 9.4% annual net yield"
             bottleneck = "Inability to find audited below-market inventory without broker markup."
             problem_diag = (

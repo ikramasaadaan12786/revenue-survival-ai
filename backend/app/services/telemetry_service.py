@@ -41,7 +41,7 @@ class CanonicalTelemetryService:
             )
             active_mission = mission_res.scalar_one_or_none()
 
-        effective_mission_id = active_mission.id if active_mission else (mission_id or 1006)
+        effective_mission_id = active_mission.id if active_mission else mission_id
 
         # Count active missions across empire
         active_missions_count_res = await session.execute(
@@ -207,7 +207,7 @@ class CanonicalTelemetryService:
         confirmed_paid_revenue = float(confirmed_rev_res.scalar() or 0.0)
 
         # 7. Target Velocity & Planning Math
-        target_amount = float(active_mission.goal_amount if active_mission else 50000.0)
+        target_amount = float(active_mission.goal_amount) if active_mission and active_mission.goal_amount is not None else 0.0
         revenue_gap = max(0.0, target_amount - confirmed_paid_revenue)
         avg_deal_value = 25000.0  # AED benchmark commission per closed distress deal
         deals_needed = max(1, int(revenue_gap / avg_deal_value)) if revenue_gap > 0 else 0
@@ -323,7 +323,16 @@ class CanonicalTelemetryService:
                 select(Mission).where(Mission.status == "ACTIVE").order_by(Mission.id.desc()).limit(1)
             )
             active_m = mission_res.scalar_one_or_none()
-            mission_id = active_m.id if active_m else 1006
+            mission_id = active_m.id if active_m else None
+
+        if not mission_id:
+            return {
+                "metric": metric_key,
+                "scope": scope,
+                "mission_id": None,
+                "total_count": 0,
+                "records": []
+            }
 
         if metric_key in ["tasks", "tasks_created", "tasks_completed", "tasks_pending"]:
             stmt = select(Task).where(Task.mission_id == mission_id).order_by(Task.id.asc())

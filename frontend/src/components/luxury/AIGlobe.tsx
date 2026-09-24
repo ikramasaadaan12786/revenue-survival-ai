@@ -340,7 +340,7 @@ export const AIGlobe: React.FC<AIGlobeProps> = ({
                 const leadName = opp.lead_name || opp.company || 'Verified Buyer Inquiry';
                 const source = opp.source || 'Web Search';
                 const intent = opp.intent_score ?? opp.urgency_score ?? 85;
-                const budget = opp.price_estimate || 3500;
+                const budget = opp.price_estimate;
                 const ind = opp.industry || 'AI Agents & Automation';
                 const status = opp.status || opp.priority || 'HOT';
 
@@ -363,7 +363,7 @@ export const AIGlobe: React.FC<AIGlobeProps> = ({
 
                     <div className="text-right">
                       <div className="font-serif font-bold text-[#D4AF37]">
-                        AED {budget.toLocaleString()}
+                        {budget ? `AED ${budget.toLocaleString()}` : 'Unscoped'}
                       </div>
                       <span className="inline-block text-[9.5px] font-semibold text-emerald-400">
                         {status}

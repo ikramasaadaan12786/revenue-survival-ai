@@ -10,18 +10,18 @@ interface ProposalDeskProps {
 }
 
 export const ProposalDesk: React.FC<ProposalDeskProps> = ({
-  missionId = 1006,
+  missionId,
   onNavigateTab,
 }) => {
   const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
-  const [clientName, setClientName] = useState('Prime Capital Dubai');
+  const [clientName, setClientName] = useState('');
   const [clientIndustry, setClientIndustry] = useState('AI Agents & Automation');
   const [proposalType, setProposalType] = useState('AI_AGENTS');
-  const [budgetAED, setBudgetAED] = useState('3000');
-  const [timelineDays, setTimelineDays] = useState('2');
-  const [problemDesc, setProblemDesc] = useState('Seeking an autonomous high-ticket lead generation system and customer support copilot in Dubai.');
+  const [budgetAED, setBudgetAED] = useState('');
+  const [timelineDays, setTimelineDays] = useState('3');
+  const [problemDesc, setProblemDesc] = useState('');
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 

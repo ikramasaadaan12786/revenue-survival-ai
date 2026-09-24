@@ -44,8 +44,8 @@ interface RevenueProofDashboardProps {
 }
 
 export const RevenueProofDashboard: React.FC<RevenueProofDashboardProps> = ({
-  missionId = 1006,
-  missionTitle = 'Dubai AI Revenue Sprint — 18 Hour Challenge',
+  missionId,
+  missionTitle = 'Autonomous Revenue Mission',
   onNavigateTab,
 }) => {
   const [validationData, setValidationData] = useState<any>({

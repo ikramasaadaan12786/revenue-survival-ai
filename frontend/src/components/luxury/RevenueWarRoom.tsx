@@ -27,9 +27,9 @@ const DEFAULT_REAL_KPIS = {
 };
 
 export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
-  missionId = 1006,
-  missionTitle = 'Dubai AI Revenue Sprint — 18 Hour Challenge',
-  targetRevenue = 2500,
+  missionId,
+  missionTitle = 'Active Autonomous Revenue Mission',
+  targetRevenue = 0,
   currentRevenue = 0,
   onNavigateTab,
 }) => {
@@ -373,7 +373,7 @@ export const RevenueWarRoom: React.FC<RevenueWarRoomProps> = ({
 
                   <div className="text-right font-mono">
                     <div className="text-sm font-bold text-[#F5D77F]">
-                      AED {(item?.expected_revenue || 3500).toLocaleString()}
+                      {item?.expected_revenue ? `AED ${Number(item.expected_revenue).toLocaleString()}` : 'Unscoped'}
                     </div>
                     <div className="text-xs text-emerald-400">
                       {item?.closing_probability_percent || 65}% Probability

@@ -60,7 +60,7 @@ interface AutonomousRevenueMissionEngineProps {
 }
 
 export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEngineProps> = ({
-  missionId = 1006,
+  missionId,
   onNavigateTab
 }) => {
   const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
@@ -313,7 +313,7 @@ export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEn
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
           {/* 1. Mission Target */}
           <button
-            onClick={() => openDrilldown('mission_target', 'Mission Revenue Target', formatAED(telemetry?.mission_target || 50000), 'Primary revenue goal established for this autonomous mission.')}
+            onClick={() => openDrilldown('mission_target', 'Mission Revenue Target', telemetry?.mission_target ? formatAED(telemetry.mission_target) : 'No Active Mission', 'Primary revenue goal established for this autonomous mission.')}
             className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-[#D4AF37]/30 hover:border-[#D4AF37] hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left group cursor-pointer"
           >
             <div className="flex items-center justify-between text-[#8C9BAE] text-[11px] font-mono font-semibold uppercase mb-1">
@@ -321,7 +321,7 @@ export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEn
               <Target className="w-3.5 h-3.5 text-[#F5D77F]" />
             </div>
             <div className="text-lg md:text-xl font-serif font-bold text-white group-hover:text-[#F5D77F]">
-              {formatAED(telemetry?.mission_target || 50000)}
+              {telemetry?.mission_target ? formatAED(telemetry.mission_target) : 'No Active Mission'}
             </div>
             <div className="text-[10px] font-mono text-[#8C9BAE] mt-1">Minimum Revenue Goal</div>
           </button>
@@ -343,7 +343,7 @@ export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEn
 
           {/* 3. Revenue Remaining */}
           <button
-            onClick={() => openDrilldown('revenue_remaining', 'Revenue Gap to Target', formatAED(telemetry?.revenue_remaining || (telemetry?.mission_target || 50000)), 'Target Amount minus Confirmed Paid Revenue.')}
+            onClick={() => openDrilldown('revenue_remaining', 'Revenue Gap to Target', formatAED(telemetry?.revenue_remaining || 0), 'Target Amount minus Confirmed Paid Revenue.')}
             className="p-4 rounded-2xl bg-gradient-to-b from-[#0B101D] to-[#04060A] border border-amber-500/30 hover:border-amber-400 hover:bg-[#0B1020] hover:scale-[1.02] transition-all text-left group cursor-pointer"
           >
             <div className="flex items-center justify-between text-amber-300 text-[11px] font-mono font-semibold uppercase mb-1">
@@ -351,7 +351,7 @@ export const AutonomousRevenueMissionEngine: React.FC<AutonomousRevenueMissionEn
               <DollarSign className="w-3.5 h-3.5 text-amber-400" />
             </div>
             <div className="text-lg md:text-xl font-serif font-bold text-amber-300">
-              {formatAED(telemetry?.revenue_remaining || (telemetry?.mission_target || 50000))}
+              {formatAED(telemetry?.revenue_remaining || 0)}
             </div>
             <div className="text-[10px] font-mono text-[#8C9BAE] mt-1">Required to Complete</div>
           </button>

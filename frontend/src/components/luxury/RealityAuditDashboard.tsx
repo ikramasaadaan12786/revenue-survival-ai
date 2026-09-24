@@ -87,7 +87,7 @@ interface BuyerEvidence {
 }
 
 export const RealityAuditDashboard: React.FC<RealityAuditDashboardProps> = ({
-  missionId = 1006,
+  missionId,
   onNavigateTab
 }) => {
   const [auditData, setAuditData] = useState<any>(null);
@@ -95,11 +95,11 @@ export const RealityAuditDashboard: React.FC<RealityAuditDashboardProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<'rules' | 'revenue' | 'buyers' | 'demo_history'>('rules');
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyForm, setVerifyForm] = useState({
-    lead_id: 228,
-    client_identity: 'Al-Rumaithi Capital Partners',
-    payer_name: 'Hamad Al-Rumaithi',
-    amount: 2500,
-    payment_reference: 'TXN-AE-ENBD-889102'
+    lead_id: 0,
+    client_identity: '',
+    payer_name: '',
+    amount: 0,
+    payment_reference: ''
   });
   const [verifying, setVerifying] = useState(false);
   const [verifyNotice, setVerifyNotice] = useState<string | null>(null);
@@ -231,7 +231,7 @@ export const RealityAuditDashboard: React.FC<RealityAuditDashboardProps> = ({
             <div className="text-2xl md:text-3xl font-mono font-black text-white">
               AED {(auditData?.target_revenue_aed || 2500).toLocaleString()}
             </div>
-            <div className="text-[10px] text-slate-400 font-mono">Mission #1006 Goal</div>
+            <div className="text-[10px] text-slate-400 font-mono">Mission #{missionId || auditData?.mission_id || 'Active'} Goal</div>
           </div>
 
           <div className="p-4 rounded-2xl bg-[#04060A]/80 border border-blue-500/30 space-y-1">

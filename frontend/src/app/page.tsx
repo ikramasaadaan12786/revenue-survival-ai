@@ -88,7 +88,7 @@ export default function Home() {
     }
   };
 
-  const [missionId, setMissionId] = useState<number>(1006);
+  const [missionId, setMissionId] = useState<number | undefined>(undefined);
   const [missionsList, setMissionsList] = useState<any[]>([]);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,9 +135,12 @@ export default function Home() {
       if (allMissions && allMissions.length > 0) {
         const found = targetId
           ? allMissions.find((m: any) => m.id === targetId)
-          : allMissions.find((m: any) => m.status === "ACTIVE") || allMissions.find((m: any) => m.id === currentId);
+          : allMissions.find((m: any) => m.status === "ACTIVE") || (currentId ? allMissions.find((m: any) => m.id === currentId) : null);
         currentId = found ? found.id : allMissions[0].id;
         setMissionId(currentId);
+      } else {
+        currentId = undefined;
+        setMissionId(undefined);
       }
 
       // 2. Parallel fetch of all real backend modules

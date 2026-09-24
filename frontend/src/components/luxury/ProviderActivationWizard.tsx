@@ -630,7 +630,7 @@ export const ProviderActivationWizard: React.FC<ProviderActivationWizardProps> =
             </div>
             <div className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <span>Mission #1006 status will remain ACTIVE until actual customer payment is verified.</span>
+              <span>Active mission status will remain ACTIVE until actual customer payment is verified.</span>
             </div>
           </div>
 

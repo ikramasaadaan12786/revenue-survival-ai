@@ -27,7 +27,7 @@ interface CEOMorningReportProps {
 }
 
 export const CEOMorningReport: React.FC<CEOMorningReportProps> = ({
-  missionId = 1006,
+  missionId,
   onNavigateTab
 }) => {
   const [report, setReport] = useState<any | null>(null);
@@ -173,7 +173,7 @@ export const CEOMorningReport: React.FC<CEOMorningReportProps> = ({
         </div>
       )}
 
-      {/* 2. Provider Connections Audit & Mission #1006 Status */}
+      {/* 2. Provider Connections Audit & Mission Status */}
       {report && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           {/* Left: Provider Exact Status (7 Cols) */}

@@ -208,7 +208,7 @@ class OfferMatchingEngine:
         await session.refresh(offer)
 
         lead.offer_id = offer.id
-        lead.expected_value = matched["pricing"] if matched["pricing"] > 0 else 50000.0
+        lead.expected_value = matched["pricing"] if matched.get("pricing") and matched["pricing"] > 0 else None
         lead.pipeline_stage = "OFFER_CREATED"
         await session.commit()
 

@@ -25,7 +25,7 @@ interface DealClosingBoardProps {
 }
 
 export const DealClosingBoard: React.FC<DealClosingBoardProps> = ({
-  missionId = 1006,
+  missionId,
   onNavigateTab,
 }) => {
   const [leads, setLeads] = useState<any[]>([]);
@@ -181,7 +181,7 @@ export const DealClosingBoard: React.FC<DealClosingBoardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-9 gap-3 items-start overflow-x-auto pb-6">
         {Object.entries(PIPELINE_STAGES).map(([stageKey, cfg]) => {
           const stageLeads = leads.filter(l => (l.pipeline_stage || 'VERIFIED') === stageKey);
-          const stageValue = stageLeads.reduce((acc, curr) => acc + (curr.expected_value || curr.estimated_budget || 3500), 0);
+          const stageValue = stageLeads.reduce((acc, curr) => acc + (curr.expected_value || curr.estimated_budget || 0), 0);
 
           return (
             <div
@@ -221,7 +221,7 @@ export const DealClosingBoard: React.FC<DealClosingBoardProps> = ({
                           {lead.name}
                         </h5>
                         <span className="text-[10px] font-mono font-bold text-[#F5D77F]">
-                          AED {(lead.expected_value || lead.estimated_budget || 3500).toLocaleString()}
+                          {lead.expected_value || lead.estimated_budget ? `AED ${(lead.expected_value || lead.estimated_budget).toLocaleString()}` : 'Unscoped'}
                         </span>
                       </div>
 
