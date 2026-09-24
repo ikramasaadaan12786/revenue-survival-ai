@@ -261,9 +261,23 @@ class DailyExcelIntelligenceService:
         wb.remove(wb.active)
 
         # ---------------------------------------------------------------------
-        # SHEET 1: DAILY LEADS
+        # SEPARATE REAL BUYER SALES LEADS VS RESEARCH / JOB SIGNALS
         # ---------------------------------------------------------------------
-        ws_daily = wb.create_sheet(title="DAILY LEADS")
+        real_buyer_leads = [
+            l for l in all_leads 
+            if (l.pipeline_stage or "").upper() in ["VERIFIED_SALES_LEAD", "QUALIFIED", "CONTACTED", "REPLIED", "CALL_BOOKED", "PROPOSAL_SENT", "WON"]
+            and (l.verification_status or "").upper() != "RESEARCH_ONLY"
+        ]
+
+        research_job_leads = [
+            l for l in all_leads 
+            if l not in real_buyer_leads
+        ]
+
+        # ---------------------------------------------------------------------
+        # SHEET 1: REAL BUYER LEADS (EVIDENCE-BACKED COMMERCIAL OPPORTUNITIES)
+        # ---------------------------------------------------------------------
+        ws_daily = wb.create_sheet(title="REAL BUYER LEADS")
         headers_daily = [
             "Lead ID", "Mission ID", "Discovered At", "Name", "Company", "Job Title", 
             "Industry", "Country", "City", "Email", "Phone", "WhatsApp", "LinkedIn URL", 
@@ -280,13 +294,7 @@ class DailyExcelIntelligenceService:
             cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             cell.border = THIN_BORDER
 
-        # Filter today's leads vs active mission leads
-        # If no leads were created today, include all verified mission leads
-        today_leads = [
-            l for l in all_leads 
-            if l.discovery_timestamp and l.discovery_timestamp.date() == target_date
-        ]
-        display_leads = today_leads if len(today_leads) > 0 else all_leads
+        display_leads = real_buyer_leads
 
         row_num = 2
         for lead in display_leads:
@@ -368,6 +376,46 @@ class DailyExcelIntelligenceService:
             row_num += 1
 
         _apply_sheet_formatting(ws_daily, header_row=1)
+
+        # ---------------------------------------------------------------------
+        # SHEET: RESEARCH & JOB SIGNALS (SEGREGATED FROM SALES FUNNEL)
+        # ---------------------------------------------------------------------
+        ws_research = wb.create_sheet(title="RESEARCH SIGNALS")
+        headers_res = [
+            "ID", "Source Platform", "Company", "Title / Requirement", "Contact", 
+            "Classification", "Source URL", "Discovered At", "Notes"
+        ]
+        ws_research.append(headers_res)
+        for col_idx in range(1, len(headers_res) + 1):
+            cell = ws_research.cell(row=1, column=col_idx)
+            cell.font = HEADER_FONT
+            cell.fill = HEADER_FILL
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            cell.border = THIN_BORDER
+
+        r_num = 2
+        for lead in research_job_leads:
+            ws_research.append([
+                lead.id,
+                lead.source_platform or lead.source,
+                lead.company_name,
+                lead.interest[:120] if lead.interest else "",
+                lead.contact_info,
+                lead.verification_status or "RESEARCH_ONLY",
+                lead.source_url,
+                lead.discovery_timestamp.strftime("%Y-%m-%d %H:%M:%S") if lead.discovery_timestamp else "",
+                lead.notes or ""
+            ])
+            for col_idx in range(1, len(headers_res) + 1):
+                c = ws_research.cell(row=r_num, column=col_idx)
+                c.border = THIN_BORDER
+                c.font = DATA_FONT
+                c.alignment = Alignment(vertical="center")
+                if col_idx == 7 and lead.source_url:
+                    _set_cell_link(c, lead.source_url, "Open URL")
+            r_num += 1
+
+        _apply_sheet_formatting(ws_research, header_row=1)
 
         # ---------------------------------------------------------------------
         # SHEET 2: CONTACT READY
@@ -723,7 +771,7 @@ class DailyExcelIntelligenceService:
         subtitle_cell.font = SUBTITLE_FONT
 
         # Calculate KPIs strictly from truth
-        new_leads_discovered = len(today_leads)
+        new_leads_discovered = len(real_buyer_leads)
         verified_leads = sum(1 for l in all_leads if l.verification_status == "VERIFIED")
         contact_ready_count = len(contact_ready_leads)
         partial_leads = sum(1 for l in all_leads if self.determine_contactability(l)[0] == "VERIFIED_PARTIAL")
