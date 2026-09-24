@@ -45,7 +45,7 @@ jobs:
           EMAIL_FROM: ${{ secrets.EMAIL_FROM || 'sales@altsofts.in' }}
           EMAIL_REPLY_TO: ${{ secrets.EMAIL_REPLY_TO || 'sales@altsofts.in' }}
           ENVIRONMENT: production
-          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '1' }}
+          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '' }}
           WORKER_INSTANCE_ID: GITHUB-ACTIONS-FAST-DISPATCHER
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_WORKFLOW: ${{ github.workflow }}
@@ -58,7 +58,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ENVIRONMENT: production
-          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '1' }}
+          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '' }}
           WORKER_INSTANCE_ID: GITHUB-ACTIONS-FAST-DISPATCHER
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_WORKFLOW: ${{ github.workflow }}

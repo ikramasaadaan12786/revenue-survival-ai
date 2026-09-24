@@ -302,12 +302,15 @@ async def run_followups(session, mission_id: int = ACTIVE_MISSION_ID) -> Dict[st
 async def resolve_active_mission_id(session) -> int:
     """
     Dynamically resolves current active mission in PostgreSQL.
-    Guarantees user-created sprints (e.g. Mission 1006) receive automated cloud execution.
+    Guarantees user-created sprints receive automated cloud execution.
     """
     env_mission = os.getenv("ACTIVE_MISSION_ID")
-    if env_mission and env_mission not in ["1", ""]:
+    if env_mission and env_mission.strip() not in ["", "0", "1"]:
         try:
-            return int(env_mission)
+            m_id = int(env_mission.strip())
+            m = await session.get(Mission, m_id)
+            if m and m.status == "ACTIVE":
+                return m.id
         except ValueError:
             pass
 
