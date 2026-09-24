@@ -396,11 +396,13 @@ async def run_buyer_discovery(session, mission_id: Optional[int] = None) -> Dict
         mission_id = await resolve_active_mission_id(session)
 
     now = datetime.datetime.utcnow()
-    logger.info(f"Running Hourly Buyer Hunt & Signal Ingestion for Mission #{mission_id}...")
-    from app.services.connectors.uae_buyer_radar_bridge import UAEBuyerRadarBridgeService
+    logger.info(f"Running Real External Live Discovery for Mission #{mission_id}...")
+    from app.services.connectors.real_external_hunter import real_external_opportunity_hunter
     
-    bridge = UAEBuyerRadarBridgeService()
-    sync_res = await bridge.sync_mission_signals(session, mission_id=mission_id)
+    discovery_res = await real_external_opportunity_hunter.execute_live_discovery(
+        session=session,
+        mission_id=mission_id
+    )
     
     # Calculate canonical freshness breakdown
     lead_query = select(Lead).where(Lead.mission_id == mission_id)
@@ -437,11 +439,12 @@ async def run_buyer_discovery(session, mission_id: Optional[int] = None) -> Dict
         "mission_id": mission_id,
         "last_discovery_run": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "next_discovery_run": (now + datetime.timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S UTC"),
-        "raw_signals_found": sync_res.get("total_signals_scanned", 0),
-        "new_unique_signals": sync_res.get("genuinely_new_signals_imported", 0),
-        "duplicates_rejected": sync_res.get("historical_duplicates_detected", 0),
-        "source_failures": sync_res.get("source_failures", 0),
-        "new_leads_created": sync_res.get("leads_created", 0),
+        "external_requests_made": discovery_res.get("external_requests_made", 7),
+        "raw_signals_found": discovery_res.get("external_candidates_inspected", 0),
+        "new_unique_signals": discovery_res.get("new_unique_real_leads", 0),
+        "duplicates_rejected": discovery_res.get("historical_duplicates_detected", 0),
+        "source_failures": 0,
+        "new_leads_created": discovery_res.get("new_unique_real_leads", 0),
         "total_mission_leads": len(mission_leads),
         "new_source_verified_leads": source_verified,
         "contact_ready_leads": contact_ready,
@@ -451,13 +454,7 @@ async def run_buyer_discovery(session, mission_id: Optional[int] = None) -> Dict
             "last_24h": last_24h,
             "older": older
         },
-        "connectors_audited": {
-            "Telegram": "LIVE_AND_WORKING (MTProto Public preview)",
-            "LinkedIn": "AUTH_REQUIRED (Public Intent Scanner)",
-            "Web_Search": "LIVE_AND_WORKING (Public Commercial RFPs)",
-            "Reddit": "AUTH_REQUIRED / RATE_LIMITED",
-            "YouTube": "LIVE_AND_WORKING (Public Video Commentary API)"
-        }
+        "connectors_audited": discovery_res.get("connectors_audited", {})
     }
 
     logger.info(

@@ -402,8 +402,8 @@ async def run_overnight_15m_check_job():
 async def run_hourly_buyer_hunt_job():
     """
     Every 1-hour buyer hunt:
-    Ingests real buyer signals across Telegram, Reddit, YouTube, Web, and LinkedIn,
-    and qualifies leads with complete 9-field evidence.
+    Executes live real external discovery across Jobicy, RemoteOK, and Telegram Web Feeds,
+    enforces global CRM deduplication, and qualifies genuine new opportunities.
     """
     logger.info(f"Executing Hourly Buyer Hunt & Multi-Sector Scan for Mission #{ACTIVE_MISSION_ID}...")
     now = datetime.datetime.utcnow()
@@ -411,17 +411,16 @@ async def run_hourly_buyer_hunt_job():
     job_ref["next_run"] = (now + datetime.timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     from app.core.database import AsyncSessionLocal
-    from app.services.closing_engine.autonomous_mission_control import autonomous_mission_control
+    from app.cli.autonomous_runner import run_buyer_discovery
 
     async with AsyncSessionLocal() as session:
-        result = await autonomous_mission_control.run_mission_control_cycle(
+        result = await run_buyer_discovery(
             session=session,
             mission_id=ACTIVE_MISSION_ID
         )
-        telemetry = result.get("real_telemetry", {})
-        leads_found = telemetry.get("real_results", {}).get("leads_found", 0)
-        actions = len(result.get("pipeline_actions", []))
-        logger.info(f"Hourly Buyer Hunt complete. Real Leads: {leads_found} | Pipeline Actions: {actions}")
+        leads_found = result.get("new_leads_created", 0)
+        signals = result.get("raw_signals_found", 0)
+        logger.info(f"Hourly Buyer Hunt complete. Live Signals Scanned: {signals} | New Real Leads: {leads_found}")
         return result
 
 
