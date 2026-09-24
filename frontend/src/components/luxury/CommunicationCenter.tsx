@@ -273,7 +273,7 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
                     </div>
                     <div>
                       <span className="text-slate-400 font-mono block text-[10px] uppercase tracking-wider">CTA Channel</span>
-                      <span className="text-cyan-300 font-mono">WhatsApp: +971 56 428 8630</span>
+                      <span className="text-cyan-300 font-mono">WhatsApp: +971 58 878 8675</span>
                     </div>
                   </div>
                 )}

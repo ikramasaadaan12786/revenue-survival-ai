@@ -7,7 +7,7 @@ Strict Quality Standards:
 - Zero robotic language ("autonomous revenue engine", "AI detected", "video overview", etc.)
 - Truthful provenance attribution
 - Dynamic relevant service mapping based on lead domain
-- Clear, unpressured WhatsApp (+971 56 428 8630) and Email CTA
+- Clear, unpressured WhatsApp (+971 58 878 8675) and Email CTA
 - Full compliance with owner approval and idempotency rules
 """
 
@@ -15,7 +15,8 @@ import re
 from typing import Dict, Any, List, Optional
 from app.models.entities import Lead
 
-OFFICIAL_WHATSAPP_NUMBER = "+971 56 428 8630"
+OFFICIAL_WHATSAPP_NUMBER = "+971 58 878 8675"
+OLD_WHATSAPP_NUMBER = "+971 56 428 8630"
 
 BANNED_PHRASES = [
     "autonomous revenue engine",
@@ -34,7 +35,9 @@ BANNED_PHRASES = [
     "24-48h deployment",
     "limited offer",
     "guaranteed results",
-    "act now"
+    "act now",
+    "+971 56 428 8630",
+    "+971564288630"
 ]
 
 def sanitize_clean_text(text: str) -> str:
@@ -231,15 +234,16 @@ class ProfessionalPitchGenerator:
         else:
             subject = f"Regarding Your {lead.company_name or 'Business'} Requirement"
 
+        # Standard Email CTA across templates
+        email_cta = f"Please reply to this email with your contact number and a convenient time to speak, or connect with us directly on WhatsApp at {OFFICIAL_WHATSAPP_NUMBER}."
+
         # Body Construction
         if domain == "REAL_ESTATE":
             body = (
                 f"Hi {greeting_name},\n\n"
                 f"{opener}\n\n"
                 f"We can assist with property sourcing and advisory, including {serv_info['services_phrase']}.\n\n"
-                f"If you are currently considering a purchase or investment, please reply with your preferred location, "
-                f"property type, approximate budget and contact number so we can discuss suitable options.\n\n"
-                f"Alternatively, you can connect with us directly on WhatsApp at {OFFICIAL_WHATSAPP_NUMBER}.\n\n"
+                f"{email_cta}\n\n"
                 f"Best regards,\n"
                 f"{serv_info['team_signoff']}"
             )
@@ -249,7 +253,7 @@ class ProfessionalPitchGenerator:
                 f"{opener}\n\n"
                 f"We may be able to assist with {serv_info['services_phrase']}.\n\n"
                 f"If this requirement is still active, I’d be happy to understand the scope and discuss how we may be able to assist.\n\n"
-                f"Please reply to this email with your contact number and a convenient time to speak, or connect with us directly on WhatsApp at {OFFICIAL_WHATSAPP_NUMBER}.\n\n"
+                f"{email_cta}\n\n"
                 f"Best regards,\n"
                 f"{serv_info['team_signoff']}"
             )
@@ -259,9 +263,7 @@ class ProfessionalPitchGenerator:
                 f"{opener}\n\n"
                 f"We may be able to assist with solutions tailored to your specific requirements, including {serv_info['services_phrase']}.\n\n"
                 f"Rather than suggesting a generic package, we would first like to understand your objectives, current requirements, expected scope and priorities so we can determine how we can assist.\n\n"
-                f"If this is still an active requirement, please reply to this email with your contact number and a convenient time to speak.\n\n"
-                f"Alternatively, you can connect with us directly on WhatsApp:\n"
-                f"{OFFICIAL_WHATSAPP_NUMBER}\n\n"
+                f"{email_cta}\n\n"
                 f"Best regards,\n"
                 f"{serv_info['team_signoff']}"
             )
@@ -298,12 +300,16 @@ class ProfessionalPitchGenerator:
         combined = f"{subject}\n{body}".lower()
         violations = []
         for banned in BANNED_PHRASES:
-            # Match with whole word boundaries
-            pattern = rf"\b{re.escape(banned)}\b"
-            if re.search(pattern, combined, re.IGNORECASE):
-                violations.append(banned)
+            # Match with whole word boundaries or substring for phone numbers
+            if "+" in banned:
+                if banned in combined:
+                    violations.append(banned)
+            else:
+                pattern = rf"\b{re.escape(banned)}\b"
+                if re.search(pattern, combined, re.IGNORECASE):
+                    violations.append(banned)
 
-        has_whatsapp_cta = OFFICIAL_WHATSAPP_NUMBER in body or "+971 56 428 8630" in body
+        has_whatsapp_cta = OFFICIAL_WHATSAPP_NUMBER in body
 
         return {
             "passed": len(violations) == 0 and has_whatsapp_cta,
@@ -318,6 +324,7 @@ class ProfessionalPitchGenerator:
         for banned in BANNED_PHRASES:
             pattern = rf"\b{re.escape(banned)}\b"
             clean = re.sub(pattern, "", clean, flags=re.IGNORECASE)
+        clean = clean.replace(OLD_WHATSAPP_NUMBER, OFFICIAL_WHATSAPP_NUMBER)
         if OFFICIAL_WHATSAPP_NUMBER not in clean:
             clean += f"\n\nWhatsApp: {OFFICIAL_WHATSAPP_NUMBER}"
         return sanitize_clean_text(clean)

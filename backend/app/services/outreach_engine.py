@@ -50,7 +50,7 @@ class OutreachAutomationEngine:
             f"Hi {lead.name},\n\n"
             f"Following up on our previous note regarding {lead.interest or 'your requirement'}.\n\n"
             f"If you are still reviewing options, I’d be happy to coordinate a brief conversation or share relevant scope details.\n\n"
-            f"Please feel free to reply with a convenient time to speak, or connect with us on WhatsApp at {OFFICIAL_WHATSAPP_NUMBER}.\n\n"
+            f"Please reply to this email with your contact number and a convenient time to speak, or connect with us directly on WhatsApp at {OFFICIAL_WHATSAPP_NUMBER}.\n\n"
             f"Best regards,\n"
             f"Business Development Team"
         )
@@ -75,7 +75,7 @@ class OutreachAutomationEngine:
             f"Hi {lead.name},\n\n"
             f"Just checking in to ensure you have what you need regarding {lead.interest or 'your requirement'}.\n\n"
             f"If your timing has shifted, no problem at all. We are available whenever you are ready to explore next steps.\n\n"
-            f"WhatsApp: {OFFICIAL_WHATSAPP_NUMBER}\n\n"
+            f"Please reply to this email with your contact number and a convenient time to speak, or connect with us directly on WhatsApp at {OFFICIAL_WHATSAPP_NUMBER}.\n\n"
             f"Best regards,\n"
             f"Business Development Team"
         )
