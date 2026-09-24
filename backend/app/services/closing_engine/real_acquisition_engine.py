@@ -475,7 +475,7 @@ class RealCustomerAcquisitionEngine:
                     lead_id=lead.id,
                     channel=lead.channel or "Email",
                     message_type="INITIAL_PITCH",
-                    recipient=lead.contact_info or "+971 56 428 8630",
+                    recipient=lead.contact_info or "",
                     subject=pitch_data["subject"],
                     body=pitch_data["body"],
                     source_type="REAL",

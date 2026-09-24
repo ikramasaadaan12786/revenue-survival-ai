@@ -263,7 +263,7 @@ class AutonomousSalesManager:
                     lead_id=l.id,
                     channel=channel,
                     message_type="INITIAL_PITCH",
-                    recipient=l.contact_info or "+971 56 428 8630",
+                    recipient=l.contact_info or "",
                     subject=pitch_data["subject"],
                     body=pitch_data["body"],
                     approval_status="APPROVED",

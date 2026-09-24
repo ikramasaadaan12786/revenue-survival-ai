@@ -9,7 +9,7 @@ on:
       mission_id:
         description: 'Target Mission ID'
         required: false
-        default: '1'
+        default: ''
 
 concurrency:
   group: revenue-fast-cadence
