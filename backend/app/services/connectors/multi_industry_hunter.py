@@ -31,3 +31,4 @@ class MultiIndustryOpportunityHunterService:
         return await self.hunter.execute_live_discovery(session, mission_id)
 
 multi_industry_opportunity_hunter = MultiIndustryOpportunityHunterService()
+multi_industry_hunter = multi_industry_opportunity_hunter

@@ -271,6 +271,41 @@ if os.path.exists(static_dir):
 async def whatsapp_coexistence_page():
     return HTMLResponse(content=WHATSAPP_COEXISTENCE_HTML, status_code=200, media_type="text/html")
 
+@app.get("/api/v1/health")
+@app.get("/health")
+async def health_check():
+    import datetime
+    from sqlalchemy import text
+    from app.core.database import AsyncSessionLocal
+
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    db_status = "disconnected"
+    try:
+        async with AsyncSessionLocal() as session:
+            res = await session.execute(text("SELECT 1"))
+            if res.scalar() == 1:
+                db_status = "connected"
+    except Exception as e:
+        db_status = f"degraded: {str(e)[:100]}"
+
+    components = {
+        "database": db_status,
+        "resend": "configured" if bool(os.getenv("RESEND_API_KEY")) else "pending_key",
+        "linkedin": "configured" if bool(os.getenv("LINKEDIN_CLIENT_ID") or os.getenv("LINKEDIN_ACCESS_TOKEN")) else "pending_auth",
+        "discovery_runner": "ready",
+        "uae_buyer_radar_bridge": "ready",
+        "excel_generation": "ready"
+    }
+
+    return {
+        "status": "ok" if "connected" in db_status else "degraded",
+        "app": "Revenue Survival AI",
+        "database": db_status,
+        "components": components,
+        "deployment": os.getenv("VERCEL_ENV", os.getenv("ENVIRONMENT", "production")),
+        "timestamp": now_iso
+    }
+
 @app.get("/")
 async def root():
     index_file = os.path.join(static_dir, "index.html")

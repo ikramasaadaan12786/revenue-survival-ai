@@ -15,4 +15,5 @@ async def audit_leads():
             for l in leads:
                 print(f"Lead ID: {l.id:<4} | Name: {l.name:<25} | Company: {l.company_name or 'None':<25} | Platform: {l.source_platform:<12} | Stage: {l.pipeline_stage:<14} | SourceURL: {l.source_url} | Contact: {l.contact_info}")
 
-asyncio.run(audit_leads())
+if __name__ == '__main__':
+    asyncio.run(audit_leads())
