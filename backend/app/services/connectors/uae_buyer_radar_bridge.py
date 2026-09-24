@@ -1062,20 +1062,20 @@ class UAEBuyerRadarBridgeService:
                 session.add(lead)
                 created_leads.append(lead)
 
-                # Queue discovery pitch in safety approval queue
+                # Queue professional discovery pitch in safety approval queue
+                from app.services.communication.pitch_generator import pitch_generator
+                pitch_data = pitch_generator.generate_pitch(lead, channel=sig.get("channel", "Email"))
+
                 comm = Communication(
                     mission_id=mission_id,
                     lead=lead,
-                    channel=sig.get("channel", "WhatsApp"),
+                    channel=sig.get("channel", "Email"),
                     message_type="INITIAL_PITCH",
                     sequence_step=1,
-                    subject=f"UAE Buyer Radar Match • Direct Proposal for {sig.get('company', sig['name'])}",
-                    body=(
-                        f"Hello {sig['name']}, our autonomous revenue engine detected your active inquiry for "
-                        f"{assigned_industry}. We have specialized solutions ready for 24-48h deployment. "
-                        f"Can we share a 2-minute video overview?"
-                    ),
-                    provider_name="WHATSAPP_BUSINESS" if sig.get("channel") == "WhatsApp" else "DIRECT_MESSAGING",
+                    subject=pitch_data["subject"],
+                    body=pitch_data["body"],
+                    recipient=lead.contact_info,
+                    provider_name="RESEND" if sig.get("channel") == "Email" else ("WHATSAPP_BUSINESS" if sig.get("channel") == "WhatsApp" else "DIRECT_MESSAGING"),
                     requires_approval=True,
                     approval_status="PENDING",
                     delivery_status="DRAFT"

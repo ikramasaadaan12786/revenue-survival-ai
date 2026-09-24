@@ -138,6 +138,33 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
     return (c.channel || '').toUpperCase() === activeChannelFilter.toUpperCase();
   });
 
+  const handleRegeneratePitch = async (commId: number) => {
+    try {
+      const res = await fetch(getApiUrl(`/api/v1/communications/${commId}/regenerate-pitch`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (res.ok) {
+        setActionNotice(`Message #${commId} regenerated with professional business development template.`);
+        loadData();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const getProposedServicesSummary = (lead: any) => {
+    const combined = `${lead?.interest || ''} ${lead?.notes || ''}`.toLowerCase();
+    if (combined.includes('real estate') || combined.includes('property') || combined.includes('villa') || combined.includes('apartment') || combined.includes('off-plan')) {
+      return 'Property sourcing, off-plan/secondary options, pricing comparisons, investment advisory & off-market opportunities';
+    } else if (combined.includes('software') || combined.includes('crm') || combined.includes('fleet') || combined.includes('app') || combined.includes('dashboard')) {
+      return 'Custom web/mobile apps, AI-powered automation, CRM/workflow systems & API integrations';
+    } else if (combined.includes('ai') || combined.includes('agent') || combined.includes('triage')) {
+      return 'Bilingual conversational AI agents, 24/7 automated customer triage, CRM sync & workflow automation';
+    }
+    return 'Tailored digital solutions, workflow automation & custom infrastructure';
+  };
+
   return (
     <div className="space-y-6 w-full max-w-[1640px] mx-auto">
       {/* Header */}
@@ -202,6 +229,7 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
           filteredList.map((comm) => {
             const isEditing = editingCommId === comm.id;
             const isReplying = selectedCommForReply === comm.id;
+            const lead = leads.find((l) => l.id === comm.lead_id);
 
             return (
               <div
@@ -211,9 +239,11 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs font-bold text-[#D4AF37]">#{comm.id}</span>
-                    <span className="text-xs font-bold text-white">Lead #{comm.lead_id}</span>
+                    <span className="text-xs font-bold text-white">
+                      {lead ? `${lead.name} (${lead.company_name || 'Individual'})` : `Lead #${comm.lead_id}`}
+                    </span>
                     <span className="text-xs font-mono px-2 py-0.5 rounded bg-white/5 text-[#F5D77F] border border-white/10">
-                      {comm.channel || 'WhatsApp'}
+                      {comm.channel || 'Email'}
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       {comm.delivery_status || 'DRAFT'}
@@ -226,12 +256,40 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
                   </div>
                 </div>
 
+                {/* Personalization Summary Card */}
+                {lead && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5 p-3 rounded-xl bg-[#04060A]/80 border border-white/5 text-[11px] font-sans">
+                    <div>
+                      <span className="text-slate-400 font-mono block text-[10px] uppercase tracking-wider">Requirement</span>
+                      <span className="text-white font-medium line-clamp-2">{lead.interest || 'Verified Buyer Need'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-mono block text-[10px] uppercase tracking-wider">Source / Provenance</span>
+                      <span className="text-amber-300 font-mono">{lead.source || 'Public Intent Signal'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-mono block text-[10px] uppercase tracking-wider">Proposed Services</span>
+                      <span className="text-emerald-300 line-clamp-2">{getProposedServicesSummary(lead)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-mono block text-[10px] uppercase tracking-wider">CTA Channel</span>
+                      <span className="text-cyan-300 font-mono">WhatsApp: +971 56 428 8630</span>
+                    </div>
+                  </div>
+                )}
+
+                {comm.subject && (
+                  <div className="text-xs font-mono text-[#D4AF37] px-1">
+                    <strong>Subject:</strong> {comm.subject}
+                  </div>
+                )}
+
                 {isEditing ? (
                   <div className="space-y-3">
                     <textarea
                       value={editedBody}
                       onChange={(e) => setEditedBody(e.target.value)}
-                      rows={4}
+                      rows={6}
                       className="w-full p-3 rounded-xl bg-[#04060A] border border-[#D4AF37]/40 text-xs text-white font-sans focus:outline-none"
                     />
                     <div className="flex gap-2">
@@ -250,7 +308,7 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-200 font-sans leading-relaxed bg-[#04060A]/60 p-3.5 rounded-xl border border-white/5">
+                  <p className="text-xs text-slate-200 font-sans leading-relaxed bg-[#04060A]/60 p-3.5 rounded-xl border border-white/5 whitespace-pre-line">
                     {comm.body}
                   </p>
                 )}
@@ -270,11 +328,24 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
                         Token: <strong className="text-emerald-400">{comm.provider_confirmation}</strong>
                       </span>
                     )}
+                    {comm.provider_message_id && (
+                      <span className="text-[10px] font-mono text-slate-400 bg-white/5 px-2 py-1 rounded">
+                        Resend ID: <strong className="text-emerald-400">{comm.provider_message_id}</strong>
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
                     {activeSubTab === 'approvals' && (
                       <>
+                        <button
+                          onClick={() => handleRegeneratePitch(comm.id)}
+                          title="Regenerate with executive professional BD template"
+                          className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-mono transition-all flex items-center gap-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Regenerate Pitch
+                        </button>
                         <button
                           onClick={() => {
                             setEditingCommId(comm.id);

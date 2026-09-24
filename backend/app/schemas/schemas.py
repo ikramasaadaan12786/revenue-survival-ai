@@ -198,8 +198,12 @@ class CommunicationApprovalUpdate(BaseModel):
 class CommunicationResponse(CommunicationBase):
     id: int
     mission_id: int
+    recipient: Optional[str] = None
+    provider_message_id: Optional[str] = None
+    provider_name: Optional[str] = None
     sent_at: Optional[datetime] = None
     response_received: Optional[str] = None
+    notes: Optional[str] = None
     created_at: datetime
     class Config:
         from_attributes = True

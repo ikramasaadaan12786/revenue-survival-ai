@@ -24,24 +24,20 @@ class OutreachAutomationEngine:
         offer = (await session.execute(offer_stmt)).scalars().first()
         product_name = offer.product_name if offer else "Dubai Distress Deal Intelligence"
 
+        from app.services.communication.pitch_generator import pitch_generator, OFFICIAL_WHATSAPP_NUMBER
+        pitch_data = pitch_generator.generate_pitch(lead, channel=lead.channel)
         now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
         # Step 1: Initial Conversational Pitch
-        s1_body = (
-            f"Hi {lead.name},\n\n"
-            f"I saw your note regarding {lead.interest or 'high-yield Dubai property investments'}. "
-            f"We just compiled a curated dossier of 3 off-market distress allocations in Business Bay & Dubai Marina "
-            f"yielding 8.5%+ net with post-handover payment terms.\n\n"
-            f"Would it be helpful if I shared the 1-page financial breakdown with you here?"
-        )
         comm1 = Communication(
             mission_id=mission_id,
             lead_id=lead.id,
-            channel=lead.channel,
+            channel=lead.channel or "Email",
             message_type="INITIAL_PITCH",
             sequence_step=1,
-            subject=f"Exclusive: 3 Distress Allocations in Business Bay (8.5% Net Yield)",
-            body=s1_body,
+            subject=pitch_data["subject"],
+            body=pitch_data["body"],
+            recipient=lead.contact_info,
             requires_approval=True,
             approval_status="PENDING",
             delivery_status="DRAFT",
@@ -49,21 +45,24 @@ class OutreachAutomationEngine:
         )
         session.add(comm1)
 
-        # Step 2: T+24h Value Drop
+        # Step 2: T+24h Professional Follow-up
         s2_body = (
-            f"Hey {lead.name}, quick follow up on the {lead.country} investor brief. "
-            f"One of the Waterfront 1BR allocations in Business Bay just had an additional 2% developer fee waiver approved. "
-            f"Net rental ROI forecast is 8.8%.\n\n"
-            f"Let me know if you want me to drop the payment schedule over WhatsApp."
+            f"Hi {lead.name},\n\n"
+            f"Following up on our previous note regarding {lead.interest or 'your requirement'}.\n\n"
+            f"If you are still reviewing options, I’d be happy to coordinate a brief conversation or share relevant scope details.\n\n"
+            f"Please feel free to reply with a convenient time to speak, or connect with us on WhatsApp at {OFFICIAL_WHATSAPP_NUMBER}.\n\n"
+            f"Best regards,\n"
+            f"Business Development Team"
         )
         comm2 = Communication(
             mission_id=mission_id,
             lead_id=lead.id,
-            channel=lead.channel,
+            channel=lead.channel or "Email",
             message_type="FOLLOW_UP_1",
             sequence_step=2,
-            subject=f"Update: 8.8% Net Yield + Fee Waiver on Business Bay Unit",
+            subject=f"Following Up on Your Requirement — {lead.company_name or lead.name}",
             body=s2_body,
+            recipient=lead.contact_info,
             requires_approval=True,
             approval_status="PENDING",
             delivery_status="DRAFT",
@@ -71,20 +70,24 @@ class OutreachAutomationEngine:
         )
         session.add(comm2)
 
-        # Step 3: T+48h Scarcity Close
+        # Step 3: T+48h Final Professional Touch
         s3_body = (
-            f"Hi {lead.name}, closing out allocations for this week's distress tranche. "
-            f"We have 1 remaining allocation before units return to standard retail broker pricing. "
-            f"Shall I reserve the 10-minute briefing slot for you today?"
+            f"Hi {lead.name},\n\n"
+            f"Just checking in to ensure you have what you need regarding {lead.interest or 'your requirement'}.\n\n"
+            f"If your timing has shifted, no problem at all. We are available whenever you are ready to explore next steps.\n\n"
+            f"WhatsApp: {OFFICIAL_WHATSAPP_NUMBER}\n\n"
+            f"Best regards,\n"
+            f"Business Development Team"
         )
         comm3 = Communication(
             mission_id=mission_id,
             lead_id=lead.id,
-            channel=lead.channel,
+            channel=lead.channel or "Email",
             message_type="FOLLOW_UP_2",
             sequence_step=3,
-            subject=f"Final Call: 1 Remaining Allocation in Distress Tranche",
+            subject=f"Checking In: {lead.company_name or lead.name}",
             body=s3_body,
+            recipient=lead.contact_info,
             requires_approval=True,
             approval_status="PENDING",
             delivery_status="DRAFT",

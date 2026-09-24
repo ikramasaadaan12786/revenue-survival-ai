@@ -257,18 +257,18 @@ class AutonomousMissionControl:
                 )
                 comm = existing_comm.scalars().first()
                 if not comm:
-                    # Formulate personalized pitch
-                    offer_info = next((o for o in self.SECTOR_OFFERS if o["product_name"] in (l.notes or "")), self.SECTOR_OFFERS[0])
-                    pitch_body = f"Salam {l.name}, noticed {l.company_name or 'your team'} is looking for {l.interest or 'growth automation'}. We deploy a tailored {offer_info['product_name']} with live setup in {offer_info['delivery_hours']}h and full CRM sync. Would you like a 60-second architecture preview?"
+                    # Formulate professional pitch
+                    from app.services.communication.pitch_generator import pitch_generator
+                    pitch_data = pitch_generator.generate_pitch(l, channel=l.channel or "Email")
                     
                     new_comm = Communication(
                         mission_id=mission_id,
                         lead_id=l.id,
-                        channel=l.channel or "WhatsApp",
+                        channel=l.channel or "Email",
                         message_type="INITIAL_PITCH",
                         sequence_step=1,
-                        subject=f"Autonomous AI Solution for {l.company_name or l.name}",
-                        body=pitch_body,
+                        subject=pitch_data["subject"],
+                        body=pitch_data["body"],
                         recipient=l.contact_info,
                         source_type="REAL",
                         verification_status="VERIFIED",

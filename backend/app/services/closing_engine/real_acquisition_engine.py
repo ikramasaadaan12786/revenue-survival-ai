@@ -466,20 +466,18 @@ class RealCustomerAcquisitionEngine:
             )
             existing_comm = comm_res.scalars().first()
             if not existing_comm:
-                # Generate high-ticket personalized pitch
-                pitch_body = (
-                    f"Salam {lead.name},\n\n"
-                    f"I saw your focus on {lead.interest or 'scaling business operations'} at {lead.company_name or 'your enterprise'}. "
-                    f"We specialize in deploying sovereign AI agent systems with a 48-hour sprint delivery in Dubai. "
-                    f"Are you open to a brief 10-minute executive briefing this week?"
-                )
+                # Generate professional personalized pitch
+                from app.services.communication.pitch_generator import pitch_generator
+                pitch_data = pitch_generator.generate_pitch(lead, channel=lead.channel or "Email")
+                
                 comm = Communication(
                     mission_id=mission_id,
                     lead_id=lead.id,
-                    channel=lead.channel or "WhatsApp",
+                    channel=lead.channel or "Email",
                     message_type="INITIAL_PITCH",
-                    recipient=lead.contact_info or "+971 50 892 4110",
-                    body=pitch_body,
+                    recipient=lead.contact_info or "+971 56 428 8630",
+                    subject=pitch_data["subject"],
+                    body=pitch_data["body"],
                     source_type="REAL",
                     verification_status="VERIFIED",
                     requires_approval=True,

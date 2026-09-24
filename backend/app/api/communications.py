@@ -150,3 +150,74 @@ async def simulate_prospect_reply(comm_id: int, payload: SimulateReplyPayload, d
         "reply": payload.message,
         "ai_sales_response": sales_resp if lead else None
     }
+
+@router.post("/{comm_id}/regenerate-pitch")
+async def regenerate_single_pitch(comm_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Regenerates a draft pitch using the professional pitch generator.
+    Guarantees historical SENT/DELIVERED messages are never modified.
+    """
+    from app.services.communication.pitch_generator import pitch_generator
+    comm = await db.get(Communication, comm_id)
+    if not comm:
+        raise HTTPException(status_code=404, detail="Communication not found")
+    
+    if comm.delivery_status in ["SENT", "DELIVERED", "READ", "REPLIED"]:
+        raise HTTPException(status_code=400, detail="Cannot modify already sent or delivered communications.")
+
+    lead = await db.get(Lead, comm.lead_id) if comm.lead_id else None
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead associated with communication not found")
+
+    pitch_data = pitch_generator.generate_pitch(lead, channel=comm.channel)
+    comm.subject = pitch_data["subject"]
+    comm.body = pitch_data["body"]
+    if not comm.recipient and lead.contact_info:
+        comm.recipient = lead.contact_info
+
+    await db.commit()
+    await db.refresh(comm)
+    return {
+        "status": "success",
+        "comm_id": comm.id,
+        "subject": comm.subject,
+        "body": comm.body,
+        "personalization_summary": pitch_data["personalization_summary"]
+    }
+
+@router.post("/mission/{mission_id}/regenerate-drafts")
+async def regenerate_mission_draft_pitches(mission_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Regenerates all un-sent DRAFT/STAGED communications for a mission using the professional pitch generator.
+    Preserves all SENT/DELIVERED communications untouched.
+    """
+    from app.services.communication.pitch_generator import pitch_generator
+    stmt = (
+        select(Communication, Lead)
+        .outerjoin(Lead, Communication.lead_id == Lead.id)
+        .where(
+            Communication.mission_id == mission_id,
+            Communication.delivery_status.in_(["DRAFT", "APPROVAL_REQUIRED", "PENDING"])
+        )
+    )
+    results = (await db.execute(stmt)).all()
+    
+    regenerated_count = 0
+    summaries = []
+    for comm, lead in results:
+        if lead:
+            pitch_data = pitch_generator.generate_pitch(lead, channel=comm.channel)
+            comm.subject = pitch_data["subject"]
+            comm.body = pitch_data["body"]
+            if not comm.recipient and lead.contact_info:
+                comm.recipient = lead.contact_info
+            regenerated_count += 1
+            summaries.append(pitch_data["personalization_summary"])
+
+    await db.commit()
+    return {
+        "status": "success",
+        "mission_id": mission_id,
+        "regenerated_count": regenerated_count,
+        "summaries": summaries
+    }

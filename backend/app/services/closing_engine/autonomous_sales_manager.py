@@ -254,19 +254,18 @@ class AutonomousSalesManager:
             )
             existing_comm = comm_res.scalars().first()
             if not existing_comm:
-                channel = l.channel or "WhatsApp"
-                body = (
-                    f"Hello {l.name}, following up on your requirement for {l.interest or 'AI Enterprise Automation'} at {l.company_name}. "
-                    f"We have architected a turnkey solution delivering measurable ROI in under 48 hours. Let's connect for a brief 10-minute briefing."
-                )
+                channel = l.channel or "Email"
+                from app.services.communication.pitch_generator import pitch_generator
+                pitch_data = pitch_generator.generate_pitch(l, channel=channel)
+                
                 comm = Communication(
                     mission_id=mission_id,
                     lead_id=l.id,
                     channel=channel,
                     message_type="INITIAL_PITCH",
-                    recipient=l.contact_info or "+971508924110",
-                    subject=f"Enterprise Architecture Proposal — {l.company_name}",
-                    body=body,
+                    recipient=l.contact_info or "+971 56 428 8630",
+                    subject=pitch_data["subject"],
+                    body=pitch_data["body"],
                     approval_status="APPROVED",
                     delivery_status="APPROVED",
                     source_type="REAL",
