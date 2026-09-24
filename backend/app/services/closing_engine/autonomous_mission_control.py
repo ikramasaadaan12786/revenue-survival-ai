@@ -127,6 +127,44 @@ class AutonomousMissionControl:
         timestamp_str = lead_data.get("timestamp") or datetime.datetime.utcnow().isoformat()
         evidence_ref = lead_data.get("evidence_reference") or f"EVID-{source_platform[:3].upper()}-{int(datetime.datetime.utcnow().timestamp()) % 100000:05d}"
 
+        # -------------------------------------------------------------
+        # GLOBAL CROSS-MISSION DEDUPLICATION GATE
+        # -------------------------------------------------------------
+        from app.services.connectors.uae_buyer_radar_bridge import (
+            get_global_crm_registry, normalize_email_address, normalize_phone_number,
+            normalize_web_url, normalize_text
+        )
+        crm_registry = await get_global_crm_registry(session)
+
+        n_email = normalize_email_address(lead_data.get("contact_information"))
+        n_phone = normalize_phone_number(lead_data.get("contact_information"))
+        n_url = normalize_web_url(lead_data.get("source_url"))
+        n_purl = normalize_web_url(lead_data.get("profile_url"))
+        n_name = normalize_text(lead_data.get("name"))
+        n_comp = normalize_text(lead_data.get("company"))
+
+        matched_lead_id = None
+        if n_email and n_email in crm_registry["emails"]:
+            matched_lead_id = crm_registry["emails"][n_email]
+        elif n_phone and n_phone in crm_registry["phones"]:
+            matched_lead_id = crm_registry["phones"][n_phone]
+        elif n_url and n_url in crm_registry["urls"]:
+            matched_lead_id = crm_registry["urls"][n_url]
+        elif n_purl and n_purl in crm_registry["urls"]:
+            matched_lead_id = crm_registry["urls"][n_purl]
+        elif (n_name, n_comp) in crm_registry["name_companies"]:
+            matched_lead_id = crm_registry["name_companies"][(n_name, n_comp)]
+        elif n_name in crm_registry["names"]:
+            matched_lead_id = crm_registry["names"][n_name]
+
+        if matched_lead_id:
+            return {
+                "status": "REDISCOVERED_HISTORICAL",
+                "canonical_lead_id": matched_lead_id,
+                "reason": f"Prospect already exists in CRM as canonical Lead #{matched_lead_id}. Global cross-mission deduplication prevented duplicate creation.",
+                "rejected_at": datetime.datetime.utcnow().isoformat()
+            }
+
         # Select matched offer and reason
         matched_offer = self.SECTOR_OFFERS[0]
         req_lower = lead_data["requirement"].lower()
