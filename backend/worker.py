@@ -34,8 +34,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger("RevenueSurvivalCloudWorker")
 
-STATUS_FILE = os.path.join(os.path.dirname(__file__), "worker_status.json")
-ACTIVE_MISSION_ID = int(os.getenv("ACTIVE_MISSION_ID", "1"))
+def _parse_active_mission_id() -> int:
+    val = os.getenv("ACTIVE_MISSION_ID", "")
+    if val and val.strip().isdigit():
+        return int(val.strip())
+    return 1012
+
+ACTIVE_MISSION_ID = _parse_active_mission_id()
 WORKER_INSTANCE_ID = os.getenv("WORKER_INSTANCE_ID", "REVENUE-DAEMON-CLOUD-PROD-01")
 
 # In-memory runtime job state

@@ -45,11 +45,47 @@ logging.basicConfig(
 )
 logger = logging.getLogger("AutonomousCloudRunner")
 
-ACTIVE_MISSION_ID = int(os.getenv("ACTIVE_MISSION_ID", "1"))
+def _get_initial_mission_id() -> int:
+    val = os.getenv("ACTIVE_MISSION_ID", "")
+    if val and val.strip().isdigit():
+        return int(val.strip())
+    return 0
+
+ACTIVE_MISSION_ID = _get_initial_mission_id()
 RUNNER_ID = os.getenv("WORKER_INSTANCE_ID", "GITHUB-ACTIONS-RUNNER-01")
 GITHUB_RUN_ID = os.getenv("GITHUB_RUN_ID", "manual-local")
 GITHUB_WORKFLOW = os.getenv("GITHUB_WORKFLOW", "Direct-Execution")
 DEPLOYMENT_PLATFORM = "GITHUB_ACTIONS" if os.getenv("GITHUB_ACTIONS") else ("VERCEL_CRON" if os.getenv("VERCEL") else "STANDALONE_CLOUD")
+
+
+async def resolve_active_mission_id(session) -> int:
+    """
+    Dynamically resolves current active mission in PostgreSQL.
+    Guarantees user-created sprints receive automated cloud execution.
+    """
+    env_mission = os.getenv("ACTIVE_MISSION_ID")
+    if env_mission and env_mission.strip() not in ["", "0"]:
+        try:
+            m_id = int(env_mission.strip())
+            m = await session.get(Mission, m_id)
+            if m and m.status == "ACTIVE":
+                return m.id
+        except ValueError:
+            pass
+
+    stmt = select(Mission).where(Mission.status == "ACTIVE").order_by(Mission.id.desc()).limit(1)
+    res = await session.execute(stmt)
+    active = res.scalar_one_or_none()
+    if active:
+        return active.id
+    
+    # Fallback to latest mission
+    stmt_latest = select(Mission).order_by(Mission.id.desc()).limit(1)
+    res_latest = await session.execute(stmt_latest)
+    latest = res_latest.scalar_one_or_none()
+    if latest:
+        return latest.id
+    return 1012
 
 
 async def record_cloud_heartbeat(
@@ -117,11 +153,14 @@ async def record_cloud_heartbeat(
 # -----------------------------------------------------------------------------
 # TASK 1: OUTBOUND EMAIL QUEUE DISPATCH
 # -----------------------------------------------------------------------------
-async def run_outbound_queue(session, mission_id: int = ACTIVE_MISSION_ID) -> Dict[str, Any]:
+async def run_outbound_queue(session, mission_id: Optional[int] = None) -> Dict[str, Any]:
     """
     Claims and dispatches approved outreach emails safely and idempotently.
-    Prevents duplicate sends with strict delivery_status locking.
+    Prevents duplicate sends with strict delivery_status locking and Resend ID checks.
     """
+    if not mission_id or mission_id <= 0:
+        mission_id = await resolve_active_mission_id(session)
+
     logger.info(f"Checking Outbound Email Queue for Mission #{mission_id}...")
     now = datetime.datetime.utcnow()
     
@@ -144,56 +183,101 @@ async def run_outbound_queue(session, mission_id: int = ACTIVE_MISSION_ID) -> Di
     
     if not pending:
         logger.info("Outbound queue empty. 0 pending emails.")
-        return {"status": "SUCCESS", "dispatched": 0, "message": "No pending approved emails"}
+        return {"status": "SUCCESS", "dispatched": 0, "duplicates_prevented": 0, "message": "No pending approved emails"}
 
     from app.services.connectors.resend_email_service import resend_email_service
     dispatched_count = 0
     failed_count = 0
+    duplicates_prevented = 0
 
     for comm in pending:
-        # Atomic lock status to avoid double processing
-        comm.delivery_status = "SENDING"
-        await session.commit()
+        # Idempotency Gate 1: Check if already sent or has provider_message_id
+        if comm.provider_message_id and len(comm.provider_message_id.strip()) > 5:
+            logger.info(f"Skipping Comm #{comm.id} - already dispatched with Resend ID: {comm.provider_message_id}")
+            comm.delivery_status = "SENT"
+            await session.commit()
+            duplicates_prevented += 1
+            continue
+
+        # Extract recipient
+        lead = await session.get(Lead, comm.lead_id) if comm.lead_id else None
+        recipient = comm.recipient or (lead.contact_info if lead else None)
         
-        try:
-            # Check lead contact info
-            lead = await session.get(Lead, comm.lead_id) if comm.lead_id else None
-            recipient = comm.recipient or (lead.contact_info if lead else None)
-            
-            if not recipient or "@" not in recipient:
-                comm.delivery_status = "FAILED"
-                comm.notes = f"{comm.notes or ''} | Discarded: Invalid email recipient {recipient}"
-                await session.commit()
-                failed_count += 1
-                continue
-                
-            res = await resend_email_service.send_outbound_email(
-                session=session,
-                to_email=recipient,
-                subject=comm.subject or "Revenue Acceleration Proposal",
-                body_text=comm.body or "Salam, we build automated revenue infrastructure for UAE businesses.",
-                communication_id=comm.id,
-                lead_id=comm.lead_id,
-                mission_id=mission_id
-            )
-            
-            if res.get("status") == "SENT":
-                dispatched_count += 1
-                logger.info(f"Dispatched email #{comm.id} to {recipient}. Resend ID: {res.get('resend_id')}")
-            else:
-                failed_count += 1
-                logger.warning(f"Email #{comm.id} delivery reported non-sent: {res.get('error')}")
-        except Exception as e:
+        # Clean email extraction
+        import re
+        emails_extracted = re.findall(r'[\w\.-]+@[\w\.-]+\.\w+', str(recipient or ''))
+        clean_email = emails_extracted[0].lower() if emails_extracted else None
+
+        if not clean_email:
             comm.delivery_status = "FAILED"
-            comm.notes = f"{comm.notes or ''} | Dispatch error: {str(e)}"
+            comm.notes = f"{comm.notes or ''} | Discarded: Invalid email recipient {recipient}"
             await session.commit()
             failed_count += 1
-            logger.error(f"Failed to dispatch email #{comm.id}: {e}")
+            continue
+
+        # Idempotency Gate 2: Verify no duplicate communication to this recipient was SENT in last 24h
+        dup_check_stmt = select(Communication).where(
+            Communication.mission_id == mission_id,
+            Communication.recipient == clean_email,
+            Communication.delivery_status.in_(["SENT", "DELIVERED", "OPENED", "CLICKED"]),
+            Communication.id != comm.id
+        )
+        prior_sent = (await session.execute(dup_check_stmt)).scalars().first()
+        if prior_sent:
+            logger.info(f"Idempotency Gate: Comm #{comm.id} to {clean_email} skipped - already sent via Comm #{prior_sent.id}")
+            comm.delivery_status = "SKIPPED_DUPLICATE"
+            comm.notes = f"Duplicate prevented: already sent via Comm #{prior_sent.id} (Resend ID: {prior_sent.provider_message_id})"
+            await session.commit()
+            duplicates_prevented += 1
+            continue
+
+        # Atomic lock status to avoid race conditions
+        comm.delivery_status = "SENDING"
+        comm.recipient = clean_email
+        await session.commit()
+        
+        # Safe retry with bounded backoff
+        send_success = False
+        last_error = None
+        for attempt in range(1, 4):
+            try:
+                res = await resend_email_service.send_outbound_email(
+                    session=session,
+                    to_email=clean_email,
+                    subject=comm.subject or "Revenue Acceleration Proposal",
+                    body_text=comm.body or "Salam, we build automated revenue infrastructure for UAE businesses.",
+                    communication_id=comm.id,
+                    lead_id=comm.lead_id,
+                    mission_id=mission_id
+                )
+                
+                if res.get("status") == "SENT":
+                    dispatched_count += 1
+                    send_success = True
+                    logger.info(f"Dispatched email #{comm.id} to {clean_email}. Resend ID: {res.get('resend_id')}")
+                    break
+                else:
+                    last_error = res.get("error")
+                    logger.warning(f"Email #{comm.id} attempt {attempt} failed: {last_error}")
+                    if attempt < 3:
+                        await asyncio.sleep(2 * attempt)
+            except Exception as e:
+                last_error = str(e)
+                logger.error(f"Email #{comm.id} attempt {attempt} exception: {e}")
+                if attempt < 3:
+                    await asyncio.sleep(2 * attempt)
+
+        if not send_success:
+            comm.delivery_status = "FAILED"
+            comm.notes = f"{comm.notes or ''} | Dispatch error: {last_error}"
+            await session.commit()
+            failed_count += 1
 
     return {
         "status": "SUCCESS",
         "dispatched": dispatched_count,
         "failed": failed_count,
+        "duplicates_prevented": duplicates_prevented,
         "processed_total": len(pending)
     }
 
@@ -201,10 +285,13 @@ async def run_outbound_queue(session, mission_id: int = ACTIVE_MISSION_ID) -> Di
 # -----------------------------------------------------------------------------
 # TASK 2: INBOUND REPLY PROCESSING
 # -----------------------------------------------------------------------------
-async def run_reply_processing(session, mission_id: int = ACTIVE_MISSION_ID) -> Dict[str, Any]:
+async def run_reply_processing(session, mission_id: Optional[int] = None) -> Dict[str, Any]:
     """
     Ingests inbound replies, performs sentiment classification, and advances CRM stages.
     """
+    if not mission_id or mission_id <= 0:
+        mission_id = await resolve_active_mission_id(session)
+
     logger.info(f"Running Inbound Reply Processor for Mission #{mission_id}...")
     
     # Check for unclassified inbound communications
@@ -241,11 +328,14 @@ async def run_reply_processing(session, mission_id: int = ACTIVE_MISSION_ID) -> 
 # -----------------------------------------------------------------------------
 # TASK 3: FOLLOW-UPS & CADENCE PROGRESSION
 # -----------------------------------------------------------------------------
-async def run_followups(session, mission_id: int = ACTIVE_MISSION_ID) -> Dict[str, Any]:
+async def run_followups(session, mission_id: Optional[int] = None) -> Dict[str, Any]:
     """
     Identifies leads due for follow-ups (where next_followup_at <= now)
     and drafts contextual multi-channel follow-up touches.
     """
+    if not mission_id or mission_id <= 0:
+        mission_id = await resolve_active_mission_id(session)
+
     logger.info(f"Evaluating due Follow-up cadences for Mission #{mission_id}...")
     now = datetime.datetime.utcnow()
     
@@ -299,29 +389,6 @@ async def run_followups(session, mission_id: int = ACTIVE_MISSION_ID) -> Dict[st
     return {"status": "SUCCESS", "staged_followups": staged_followups}
 
 
-async def resolve_active_mission_id(session) -> int:
-    """
-    Dynamically resolves current active mission in PostgreSQL.
-    Guarantees user-created sprints receive automated cloud execution.
-    """
-    env_mission = os.getenv("ACTIVE_MISSION_ID")
-    if env_mission and env_mission.strip() not in ["", "0", "1"]:
-        try:
-            m_id = int(env_mission.strip())
-            m = await session.get(Mission, m_id)
-            if m and m.status == "ACTIVE":
-                return m.id
-        except ValueError:
-            pass
-
-    stmt = select(Mission).where(Mission.status == "ACTIVE").order_by(Mission.id.desc()).limit(1)
-    res = await session.execute(stmt)
-    active = res.scalar_one_or_none()
-    if active:
-        return active.id
-    return 1006
-
-
 # -----------------------------------------------------------------------------
 # TASK 4: BUYER & OPPORTUNITY DISCOVERY (UAE BUYER RADAR)
 # -----------------------------------------------------------------------------
@@ -331,7 +398,7 @@ async def run_buyer_discovery(session, mission_id: Optional[int] = None) -> Dict
     Reddit, and YouTube. Enforces strict Opportunity Quality Control and deduplication.
     Outputs canonical discovery freshness telemetry.
     """
-    if not mission_id:
+    if not mission_id or mission_id <= 0:
         mission_id = await resolve_active_mission_id(session)
 
     now = datetime.datetime.utcnow()
@@ -409,11 +476,14 @@ async def run_buyer_discovery(session, mission_id: Optional[int] = None) -> Dict
 # -----------------------------------------------------------------------------
 # TASK 5: MISSION CONTROL & CLOSING PIPELINE PROGRESSION
 # -----------------------------------------------------------------------------
-async def run_mission_pipeline(session, mission_id: int = ACTIVE_MISSION_ID) -> Dict[str, Any]:
+async def run_mission_pipeline(session, mission_id: Optional[int] = None) -> Dict[str, Any]:
     """
     Calculates revenue velocity, target conversion math, proposal generation,
     and advances qualified leads along the 9-stage closing pipeline.
     """
+    if not mission_id or mission_id <= 0:
+        mission_id = await resolve_active_mission_id(session)
+
     logger.info(f"Running Mission Pipeline & Closing Engine for Mission #{mission_id}...")
     
     mission = await session.get(Mission, mission_id)
@@ -455,13 +525,16 @@ async def run_mission_pipeline(session, mission_id: int = ACTIVE_MISSION_ID) -> 
 # -----------------------------------------------------------------------------
 # TASK 6: CEO BRAIN & STRATEGIC REVENUE PLANNING
 # -----------------------------------------------------------------------------
-async def run_ceo_brain(session, mission_id: int = ACTIVE_MISSION_ID) -> Dict[str, Any]:
+async def run_ceo_brain(session, mission_id: Optional[int] = None) -> Dict[str, Any]:
     """
     Executes daily CEO strategic revenue operating cycle:
     - Analyzes revenue gap to target (e.g. 50,000 AED)
     - Formulates top 3 revenue priorities
     - Synthesizes morning executive briefing
     """
+    if not mission_id or mission_id <= 0:
+        mission_id = await resolve_active_mission_id(session)
+
     logger.info(f"Executing Daily CEO Revenue Operating Cycle for Mission #{mission_id}...")
     
     mission = await session.get(Mission, mission_id)
@@ -513,10 +586,13 @@ async def run_ceo_brain(session, mission_id: int = ACTIVE_MISSION_ID) -> Dict[st
 # -----------------------------------------------------------------------------
 # TASK 7: MASTER REVENUE CYCLE (ALL AGENTS END-TO-END)
 # -----------------------------------------------------------------------------
-async def run_all_cycle(session, mission_id: int = ACTIVE_MISSION_ID) -> Dict[str, Any]:
+async def run_all_cycle(session, mission_id: Optional[int] = None) -> Dict[str, Any]:
     """
     Runs complete end-to-end revenue operating cycle across all agents.
     """
+    if not mission_id or mission_id <= 0:
+        mission_id = await resolve_active_mission_id(session)
+
     logger.info("==================================================================")
     logger.info(f">>> RUNNING COMPLETE AUTONOMOUS REVENUE CYCLE (MISSION #{mission_id}) <<<")
     logger.info("==================================================================")
