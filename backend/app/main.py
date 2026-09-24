@@ -32,6 +32,7 @@ from app.api import (
     system,
     webhooks,
     oauth_linkedin,
+    daily_intelligence,
 )
 import app.models.entities  # Ensures all models are registered in Base.metadata
 
@@ -158,6 +159,8 @@ app.include_router(webhooks.router)
 app.include_router(webhooks.root_router)
 app.include_router(oauth_linkedin.router, prefix=settings.API_V1_STR)
 app.include_router(oauth_linkedin.router)
+app.include_router(daily_intelligence.router, prefix=settings.API_V1_STR)
+app.include_router(daily_intelligence.router)
 
 import os
 from fastapi.staticfiles import StaticFiles

@@ -35,6 +35,7 @@ import { ProposalDesk } from "@/components/luxury/ProposalDesk";
 import { DealClosingBoard } from "@/components/luxury/DealClosingBoard";
 import { CEOMorningReport } from "@/components/luxury/CEOMorningReport";
 import { AutonomousRevenueMissionEngine } from "@/components/luxury/AutonomousRevenueMissionEngine";
+import { DailyLeadsCenter } from "@/components/luxury/DailyLeadsCenter";
 import NewMissionModal from "@/components/NewMissionModal";
 import { DashboardSummary, DepartmentSummary, EmployeeScorecard } from "@/types";
 import { api } from "@/lib/api";
@@ -476,6 +477,13 @@ export default function Home() {
                     onRefreshSummary={() => fetchSummary(missionId)}
                   />
                 </div>
+              )}
+
+              {/* Daily Leads Outreach & Excel Intelligence Tab */}
+              {(activeTab === "daily_leads" || activeTab === "daily-leads" || activeTab === "excel_leads") && (
+                <DailyLeadsCenter
+                  activeMissionId={missionId}
+                />
               )}
 
               {/* Autonomous Revenue Mission Engine Tab */}

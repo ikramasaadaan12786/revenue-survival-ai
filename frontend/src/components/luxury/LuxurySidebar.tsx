@@ -18,6 +18,7 @@ import {
   Flame,
   MessageSquare,
   FileText,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface LuxurySidebarProps {
@@ -33,6 +34,7 @@ export const LuxurySidebar: React.FC<LuxurySidebarProps> = ({
 }) => {
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'daily_leads', label: 'Daily Leads', icon: FileSpreadsheet, badge: 'EXCEL 7-SHEET' },
     { id: 'mission_engine', label: 'Mission Engine', icon: Target, badge: 'AUTONOMOUS' },
     { id: 'sales_queue', label: 'Real Sales Queue', icon: UserCheck, badge: '8 STAGES' },
     { id: 'ceo_report', label: 'CEO Morning Briefing', icon: FileBarChart2, badge: 'ACTIVE' },

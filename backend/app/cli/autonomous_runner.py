@@ -647,6 +647,38 @@ async def run_all_cycle(session, mission_id: Optional[int] = None) -> Dict[str, 
     return results
 
 
+async def run_daily_excel_intelligence(session, mission_id: int) -> Dict[str, Any]:
+    """
+    Generates the daily 7-sheet Revenue_Leads_YYYY-MM-DD.xlsx workbook
+    and saves to reports/ directory for cloud artifact publishing.
+    """
+    from app.services.intelligence.daily_excel_service import daily_excel_service
+    logger.info(">>> Starting Daily Excel Intelligence Workbook Generation...")
+    
+    target_date = datetime.date.today()
+    buffer, filename, summary = await daily_excel_service.build_daily_workbook(
+        session=session,
+        target_date=target_date,
+        mission_id=mission_id
+    )
+
+    # Save to local reports folder for GitHub Actions artifact upload
+    reports_dir = os.path.abspath("reports")
+    os.makedirs(reports_dir, exist_ok=True)
+    report_path = os.path.join(reports_dir, filename)
+    with open(report_path, "wb") as f:
+        f.write(buffer.getvalue())
+
+    logger.info(f"[+] Daily Excel generated and written to {report_path}")
+    logger.info(f"[+] Summary: {len(summary.get('sheets', []))} sheets, {summary.get('total_leads', 0)} leads indexed")
+    return {
+        "status": "SUCCESS",
+        "report_path": report_path,
+        "filename": filename,
+        "summary": summary
+    }
+
+
 # -----------------------------------------------------------------------------
 # MAIN CLI ENTRYPOINT
 # -----------------------------------------------------------------------------
@@ -657,6 +689,7 @@ TASK_REGISTRY = {
     "buyer_discovery": run_buyer_discovery,
     "mission_pipeline": run_mission_pipeline,
     "ceo_brain": run_ceo_brain,
+    "daily_excel_intelligence": run_daily_excel_intelligence,
     "all_cycle": run_all_cycle
 }
 

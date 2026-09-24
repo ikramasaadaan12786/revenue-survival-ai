@@ -1,0 +1,58 @@
+name: Daily Lead Outreach & Excel Intelligence Generator
+
+on:
+  schedule:
+    # Runs daily at 20:00 UTC (00:00 UAE Midnight)
+    - cron: '0 20 * * *'
+  workflow_dispatch:
+    inputs:
+      mission_id:
+        description: 'Target Mission ID'
+        required: false
+        default: '1012'
+
+concurrency:
+  group: revenue-daily-excel-intelligence
+  cancel-in-progress: false
+
+jobs:
+  generate-daily-excel:
+    name: Generate Production Daily Excel & Intelligence Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Execute Daily Excel Intelligence Task
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
+          ENVIRONMENT: production
+          ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '1012' }}
+          WORKER_INSTANCE_ID: GITHUB-ACTIONS-DAILY-EXCEL-RUNNER
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+        run: |
+          python run_cloud_task.py daily_excel_intelligence
+
+      - name: Upload Daily Excel Report Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: daily-revenue-leads-excel
+          path: reports/
+          retention-days: 30
