@@ -308,17 +308,17 @@ class MissionCreate(MissionBase):
 class MissionResponse(MissionBase):
     id: int
     user_id: Optional[int] = None
-    spent: float
-    revenue_generated: float
-    pipeline_value: float
-    total_commission_potential: float = 0.0
-    status: str
-    current_day: int
-    total_days: int
+    spent: Optional[float] = 0.0
+    revenue_generated: Optional[float] = 0.0
+    pipeline_value: Optional[float] = 0.0
+    total_commission_potential: Optional[float] = 0.0
+    status: Optional[str] = "ACTIVE"
+    current_day: Optional[int] = 1
+    total_days: Optional[int] = 3
     ai_strategy: Optional[str] = None
     next_best_action: Optional[str] = None
-    confidence_score: float
-    created_at: datetime
+    confidence_score: Optional[float] = 85.0
+    created_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
     class Config:
         from_attributes = True
