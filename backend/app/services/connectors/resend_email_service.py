@@ -325,6 +325,51 @@ class ResendEmailService:
                 "response": {"exception": str(exc)}
             }
 
+    async def send_outbound_email(
+        self,
+        session: AsyncSession,
+        to_email: str,
+        subject: str,
+        body_text: str,
+        communication_id: Optional[int] = None,
+        lead_id: Optional[int] = None,
+        mission_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Transmits outbound email via Resend API and records provider metadata in Communication table.
+        """
+        res = await self.send_email(
+            to=to_email,
+            subject=subject,
+            body=body_text,
+            session=session
+        )
+        if res.get("success"):
+            resend_id = res.get("id")
+            now = datetime.datetime.utcnow()
+            if communication_id:
+                comm = await session.get(Communication, communication_id)
+                if comm:
+                    comm.provider_name = "RESEND_EMAIL_API"
+                    comm.provider_message_id = resend_id
+                    comm.delivery_status = "SENT"
+                    comm.sent_at = now
+                    comm.source_type = "REAL"
+                    comm.verification_status = "VERIFIED"
+                    await session.commit()
+            return {
+                "status": "SENT",
+                "resend_id": resend_id,
+                "recipient": to_email,
+                "timestamp": now.strftime("%Y-%m-%d %H:%M:%S UTC")
+            }
+        else:
+            return {
+                "status": "FAILED",
+                "error": res.get("error", "Unknown dispatch failure"),
+                "recipient": to_email
+            }
+
     # -------------------------------------------------------------------------
     # 2. DOMAIN VERIFICATION
     # -------------------------------------------------------------------------
