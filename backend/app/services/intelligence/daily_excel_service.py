@@ -251,17 +251,21 @@ class DailyExcelIntelligenceService:
         all_comms = (await session.execute(comms_stmt)).scalars().all()
         all_signals = (await session.execute(signals_stmt)).scalars().all()
 
-        # Segregate leads
-        real_buyer_leads = [
-            l for l in all_leads 
-            if l.pipeline_stage != "RESEARCH_ONLY_JOB_SIGNAL" 
-            and (l.intent_score in ["Hot", "Qualified"] or l.buying_intent == "HIGH" or l.expected_value is not None)
-        ]
-        
-        research_job_leads = [
-            l for l in all_leads 
-            if l.pipeline_stage == "RESEARCH_ONLY_JOB_SIGNAL"
-        ]
+        from app.services.intelligence.mission_metrics_service import mission_metrics_service
+
+        # Segregate leads using canonical MissionMetricsService
+        real_buyer_leads = []
+        research_job_leads = []
+        rejected_duplicate_leads = []
+
+        for l in all_leads:
+            c_type = mission_metrics_service.classify_lead_record(l)
+            if c_type in ["REAL_BUYER", "NEEDS_REVIEW"]:
+                real_buyer_leads.append(l)
+            elif c_type in ["DUPLICATE", "REJECTED"]:
+                rejected_duplicate_leads.append(l)
+            else:
+                research_job_leads.append(l)
 
         procurement_leads = [
             l for l in real_buyer_leads 
@@ -270,12 +274,12 @@ class DailyExcelIntelligenceService:
 
         contact_ready_leads = [
             l for l in real_buyer_leads 
-            if self.determine_contactability(l)[0] == "VERIFIED_CONTACTABLE"
+            if mission_metrics_service.determine_contactability(l) == "DIRECT_CONTACT_READY"
         ]
 
         manual_research_leads = [
             l for l in real_buyer_leads 
-            if self.determine_contactability(l)[0] != "VERIFIED_CONTACTABLE"
+            if mission_metrics_service.determine_contactability(l) in ["PLATFORM_ACTION_REQUIRED", "MANUAL_RESEARCH_REQUIRED"]
         ]
 
         wb = openpyxl.Workbook()

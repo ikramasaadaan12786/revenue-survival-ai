@@ -739,7 +739,7 @@ class RealProviderDispatchService:
             else:
                 sector = "Enterprise Business Solutions"
 
-            estimated_value = float(lead.expected_value or lead.estimated_budget or 3500.0)
+            estimated_value = float(lead.expected_value or lead.estimated_budget or 0.0)
             source_platform = lead.source_platform or lead.source or "Public Intent Radar"
 
             if emails_found:
@@ -747,12 +747,13 @@ class RealProviderDispatchService:
 
                 # Personalized email copy
                 subject = f"Regarding your {source_platform} inquiry on {sector} — Tailored Proposal for {lead.company_name or lead.name}"
+                value_line = f"• Projected Value: AED {estimated_value:,.0f}\n" if estimated_value > 0 else ""
                 body = (
                     f"Dear {lead.name},\n\n"
                     f"I noticed your verified inquiry on {source_platform} regarding {lead.interest}.\n\n"
                     f"We have prepared a dedicated {sector} deployment engineered for {lead.company_name or 'your organization'}:\n"
                     f"• Scope: Turnkey delivery tailored to {lead.interest}\n"
-                    f"• Projected Value: AED {estimated_value:,.0f}\n"
+                    f"{value_line}"
                     f"• Turnaround Time: 24–48 Hours with guaranteed SLA and verification\n\n"
                     f"If you would like to review the architecture roadmap or schedule a brief technical overview, "
                     f"feel free to reply directly to this email or access our verified executive portal at enterprise.dubai-revenue.ae.\n\n"

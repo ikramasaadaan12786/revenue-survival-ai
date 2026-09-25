@@ -477,39 +477,35 @@ async def run_mission_pipeline(session, mission_id: Optional[int] = None) -> Dic
 
     logger.info(f"Running Mission Pipeline & Closing Engine for Mission #{mission_id}...")
     
-    mission = await session.get(Mission, mission_id)
-    if not mission:
-        return {"status": "ERROR", "message": f"Mission {mission_id} not found"}
-        
-    # Query verified leads
+    from app.services.intelligence.mission_metrics_service import mission_metrics_service
+    metrics = await mission_metrics_service.calculate_mission_metrics(session, mission_id)
+    
+    total_pipeline = metrics.get("evidence_backed_pipeline", 0.0)
+    mission.pipeline_value = total_pipeline
+    mission.total_commission_potential = metrics.get("commission_earned", 0.0)
+    
+    # Check proposal requirements for qualified high-intent leads
     stmt = (
         select(Lead)
         .where(
             Lead.mission_id == mission_id,
             Lead.source_type == "REAL",
-            Lead.verification_status == "VERIFIED"
+            Lead.status.in_(["NEW", "AI_VERIFIED", "CONTACT_READY"])
         )
     )
     verified_leads = (await session.execute(stmt)).scalars().all()
     
-    # Calculate pipeline metrics
-    total_pipeline = sum(float(l.estimated_budget or 3500.0) for l in verified_leads)
-    mission.pipeline_value = total_pipeline
-    
-    # Check proposal requirements for qualified high-intent leads
-    proposals_created = 0
     for lead in verified_leads:
-        if lead.pipeline_stage == "VERIFIED" and (lead.qualification_score or 0) >= 85.0:
-            # Advance to CONTACT_READY
+        if (lead.qualification_score or 0) >= 85.0 and lead.contact_info:
             lead.pipeline_stage = "CONTACT_READY"
             
     await session.commit()
     return {
         "status": "SUCCESS",
         "mission_id": mission_id,
-        "active_leads": len(verified_leads),
+        "active_sales_leads": metrics.get("real_sales_leads_count", 0),
         "pipeline_value_aed": total_pipeline,
-        "revenue_generated_aed": mission.revenue_generated or 0.0
+        "collected_revenue_aed": metrics.get("collected_revenue", 0.0)
     }
 
 
@@ -685,6 +681,54 @@ TASK_REGISTRY = {
 }
 
 
+async def run_cloud_preflight(session) -> Dict[str, Any]:
+    """
+    Validates Python environment, dependencies, database ping, commit SHA, and active mission.
+    """
+    logger.info("[PRE-FLIGHT] Executing Cloud Runner Pre-flight Verification...")
+    
+    # 1. Verify Core Imports
+    required_modules = ["sqlalchemy", "greenlet", "asyncpg", "openpyxl", "httpx", "fastapi"]
+    missing = []
+    for mod in required_modules:
+        try:
+            __import__(mod)
+        except ImportError:
+            missing.append(mod)
+            
+    if missing:
+        raise RuntimeError(f"Pre-flight failed: Missing required runtime modules: {missing}")
+
+    # 2. Database Ping (SELECT 1)
+    try:
+        res = await session.execute(text("SELECT 1;"))
+        if res.scalar() != 1:
+            raise RuntimeError("Database SELECT 1 check did not return 1.")
+    except Exception as db_err:
+        raise RuntimeError(f"Pre-flight failed: Database connectivity error: {db_err}")
+
+    # 3. Writable reports directory
+    reports_dir = os.path.abspath("reports")
+    os.makedirs(reports_dir, exist_ok=True)
+    test_file = os.path.join(reports_dir, ".preflight_write_test")
+    try:
+        with open(test_file, "w") as f:
+            f.write("OK")
+        if os.path.exists(test_file):
+            os.remove(test_file)
+    except Exception as io_err:
+        logger.warning(f"Pre-flight warning: Could not write to reports directory: {io_err}")
+
+    commit_sha = os.getenv("GITHUB_SHA", "local_development")
+    logger.info(f"[PRE-FLIGHT] All checks passed. Commit: {commit_sha[:8]} | DB: Connected")
+    return {
+        "status": "PASSED",
+        "commit_sha": commit_sha,
+        "python_version": sys.version,
+        "platform": DEPLOYMENT_PLATFORM
+    }
+
+
 async def main():
     task_name = sys.argv[1].lower() if len(sys.argv) > 1 else "all_cycle"
     
@@ -701,6 +745,21 @@ async def main():
         await conn.run_sync(Base.metadata.create_all)
 
     async with AsyncSessionLocal() as session:
+        # 1. Execute Pre-flight check
+        try:
+            preflight = await run_cloud_preflight(session)
+        except Exception as pf_err:
+            logger.error(f"[PRE-FLIGHT ERROR]: {pf_err}")
+            await record_cloud_heartbeat(
+                session=session,
+                task_name=task_name,
+                status="FAILED",
+                details={"error": str(pf_err)},
+                error_msg=str(pf_err)
+            )
+            print(f"\n[!] Cloud Pre-flight check failed: {pf_err}")
+            sys.exit(1)
+
         target_mission_id = await resolve_active_mission_id(session)
         if not target_mission_id:
             print("[*] No ACTIVE mission found in production database.")
@@ -708,26 +767,36 @@ async def main():
             await record_cloud_heartbeat(
                 session=session,
                 task_name=task_name,
-                status="NO_ACTIVE_MISSION",
+                status="IDLE",
                 details={"message": "No active mission in database. Workflow completed safely."}
             )
             sys.exit(0)
 
         print(f"[*] Target Active Mission Resolved: #{target_mission_id}\n")
 
+        # Record STARTING heartbeat
+        await record_cloud_heartbeat(
+            session=session,
+            task_name=task_name,
+            status="RUNNING",
+            details={"preflight": preflight, "mission_id": target_mission_id}
+        )
+
         try:
             task_func = TASK_REGISTRY[task_name]
             result = await task_func(session, mission_id=target_mission_id)
             
-            # Record persistent heartbeat
+            final_status = "PARTIAL_SUCCESS" if result.get("source_failures", 0) > 0 or result.get("failed", 0) > 0 else "SUCCESS"
+
+            # Record final persistent heartbeat
             await record_cloud_heartbeat(
                 session=session,
                 task_name=task_name,
-                status="SUCCESS",
+                status=final_status,
                 details=result
             )
             
-            print(f"\n[+] Task '{task_name}' completed successfully.")
+            print(f"\n[+] Task '{task_name}' completed with status {final_status}.")
             print(f"[+] Output: {json.dumps(result, indent=2, default=str)}\n")
             sys.exit(0)
         except Exception as e:
@@ -739,7 +808,7 @@ async def main():
                 await record_cloud_heartbeat(
                     session=session,
                     task_name=task_name,
-                    status="ERROR",
+                    status="FAILED",
                     details={"error": err_msg},
                     error_msg=err_msg
                 )

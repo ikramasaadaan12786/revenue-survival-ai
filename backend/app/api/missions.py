@@ -223,85 +223,41 @@ async def get_mission_dashboard(mission_id: int, db: AsyncSession = Depends(get_
     if not mission:
         raise HTTPException(status_code=404, detail="Mission not found")
 
-    now = datetime.utcnow()
-    hours_remaining = 0.0
-    if mission.expires_at:
-        diff = (mission.expires_at - now).total_seconds() / 3600.0
-        hours_remaining = max(0.0, round(diff, 1))
-    else:
-        hours_remaining = float(mission.deadline_hours)
+    from app.services.intelligence.mission_metrics_service import mission_metrics_service
+    metrics = await mission_metrics_service.calculate_mission_metrics(db, mission_id)
 
-    opp_count = (await db.execute(select(Opportunity).where(Opportunity.mission_id == mission_id))).scalars().all()
-    rev_opps = (await db.execute(select(RevenueOpportunity).where(RevenueOpportunity.mission_id == mission_id))).scalars().all()
-    leads = (await db.execute(select(Lead).where(Lead.mission_id == mission_id))).scalars().all()
-    comms = (await db.execute(select(Communication).where(Communication.mission_id == mission_id))).scalars().all()
     tasks = (await db.execute(select(Task).where(Task.mission_id == mission_id).order_by(Task.id.desc()).limit(10))).scalars().all()
-    revs = (await db.execute(select(RevenueTracking).where(RevenueTracking.mission_id == mission_id))).scalars().all()
-    deals = (await db.execute(select(RealEstateDeal).where(RealEstateDeal.mission_id == mission_id))).scalars().all()
 
-    sent_count = sum(1 for c in comms if c.delivery_status in ["SENT", "DELIVERED", "READ", "REPLIED"])
-    replies_count = sum(1 for c in comms if c.delivery_status == "REPLIED" or c.response_received)
-    meetings_count = sum(1 for l in leads if l.status == "MEETING")
-    deals_count = sum(1 for l in leads if l.status in ["DEAL", "COMMISSION"])
-    commission_earned = sum(r.commission_collected for r in revs if r.deal_status == "CONFIRMED")
-    pending_approvals = sum(1 for c in comms if c.approval_status == "PENDING" and c.requires_approval)
-
-    # 8-Stage CRM Funnel Counts
-    crm_funnel_counts = {
-        "NEW": 0,
-        "AI_VERIFIED": 0,
-        "CONTACT_READY": 0,
-        "CONTACTED": 0,
-        "REPLIED": 0,
-        "MEETING": 0,
-        "DEAL": 0,
-        "COMMISSION": 0
-    }
-    for l in leads:
-        st = l.status.upper()
-        if st in crm_funnel_counts:
-            crm_funnel_counts[st] += 1
-        else:
-            crm_funnel_counts["NEW"] += 1
-
-    total_opps = max(len(opp_count), len(rev_opps), len(opp_count) + len(rev_opps) if not opp_count else len(opp_count))
-    lead_pipeline_val = sum(l.expected_value for l in leads)
-    if lead_pipeline_val > 0:
-        pipeline_val = lead_pipeline_val
-    elif rev_opps:
-        pipeline_val = sum(ro.estimated_value for ro in rev_opps)
-    else:
-        pipeline_val = mission.pipeline_value or 0.0
-
+    pipeline_val = metrics.get("evidence_backed_pipeline", 0.0)
     mission.pipeline_value = pipeline_val
-
-    total_comm_potential = sum(l.commission_potential for l in leads) + sum(d.commission_amount for d in deals)
-    if total_comm_potential == 0 and pipeline_val > 0:
-        total_comm_potential = round(pipeline_val * 0.15, 2)
-    mission.total_commission_potential = total_comm_potential
+    commission_val = metrics.get("commission_earned", 0.0)
+    mission.total_commission_potential = commission_val
 
     return DashboardSummary(
         mission=mission,
-        hours_remaining=hours_remaining,
+        hours_remaining=metrics.get("hours_remaining", float(mission.deadline_hours or 12.0)),
         target_amount=mission.goal_amount,
-        revenue_achieved=mission.revenue_generated,
+        revenue_achieved=metrics.get("collected_revenue", 0.0),
         pipeline_expected=pipeline_val,
-        total_commission_potential=total_comm_potential,
+        total_commission_potential=commission_val,
         budget_spent=mission.spent,
         survival_status=mission.status,
         confidence_score=mission.confidence_score,
-        opportunities_count=total_opps,
-        leads_count=len(leads),
-        messages_sent=sent_count,
-        replies_count=replies_count,
-        meetings_count=meetings_count,
-        deals_count=deals_count,
-        commission_earned=commission_earned,
+        opportunities_count=metrics.get("buyer_signals_count", 0),
+        leads_count=metrics.get("real_sales_leads_count", 0),
+        messages_sent=metrics.get("provider_submitted_outreach", 0),
+        replies_count=metrics.get("replies_received", 0),
+        meetings_count=metrics.get("crm_funnel_counts", {}).get("MEETING", 0),
+        deals_count=metrics.get("crm_funnel_counts", {}).get("DEAL", 0),
+        commission_earned=metrics.get("commission_earned", 0.0),
         next_best_action=mission.next_best_action or "Execute autonomous tasks.",
-        active_agent="Survival Manager Agent",
+        active_agent="Autonomous Mission Control",
         recent_tasks=tasks,
-        pending_approvals=pending_approvals,
-        crm_funnel_counts=crm_funnel_counts
+        pending_approvals=metrics.get("waiting_approval", 0),
+        crm_funnel_counts=metrics.get("crm_funnel_counts", {
+            "NEW": 0, "AI_VERIFIED": 0, "CONTACT_READY": 0, "CONTACTED": 0,
+            "REPLIED": 0, "MEETING": 0, "DEAL": 0, "COMMISSION": 0
+        })
     )
 
 @router.post("/{mission_id}/run-next-step")

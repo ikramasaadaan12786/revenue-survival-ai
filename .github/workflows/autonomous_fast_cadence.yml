@@ -2,7 +2,7 @@ name: 24/7 Fast Outbound & Reply Dispatcher
 
 on:
   schedule:
-    # Runs every 5 minutes with deliberate offset
+    # Runs every 5 minutes
     - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
@@ -34,16 +34,16 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt
+          pip install -r requirements.txt
 
       - name: Process Outbound Email Queue
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
-          EMAIL_SENDING_DOMAIN: ${{ secrets.EMAIL_SENDING_DOMAIN || 'altsofts.in' }}
-          EMAIL_FROM: ${{ secrets.EMAIL_FROM || 'sales@altsofts.in' }}
-          EMAIL_REPLY_TO: ${{ secrets.EMAIL_REPLY_TO || 'sales@altsofts.in' }}
+          EMAIL_SENDING_DOMAIN: ${{ secrets.EMAIL_SENDING_DOMAIN }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_REPLY_TO: ${{ secrets.EMAIL_REPLY_TO }}
           ENVIRONMENT: production
           ACTIVE_MISSION_ID: ${{ github.event.inputs.mission_id || '' }}
           WORKER_INSTANCE_ID: GITHUB-ACTIONS-FAST-DISPATCHER
