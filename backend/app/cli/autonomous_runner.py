@@ -480,9 +480,11 @@ async def run_mission_pipeline(session, mission_id: Optional[int] = None) -> Dic
     from app.services.intelligence.mission_metrics_service import mission_metrics_service
     metrics = await mission_metrics_service.calculate_mission_metrics(session, mission_id)
     
+    mission = await session.get(Mission, mission_id)
     total_pipeline = metrics.get("evidence_backed_pipeline", 0.0)
-    mission.pipeline_value = total_pipeline
-    mission.total_commission_potential = metrics.get("commission_earned", 0.0)
+    if mission:
+        mission.pipeline_value = total_pipeline
+        mission.total_commission_potential = metrics.get("commission_earned", 0.0)
     
     # Check proposal requirements for qualified high-intent leads
     stmt = (
