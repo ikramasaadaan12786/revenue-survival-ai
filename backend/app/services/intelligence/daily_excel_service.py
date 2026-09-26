@@ -337,7 +337,8 @@ class DailyExcelIntelligenceService:
                 lead.country or "United Arab Emirates",
                 "Dubai / UAE",
                 lead.interest or "",
-                f"AED {lead.budget:,.2f}" if (lead.budget and lead.budget > 0) else "TBD",
+                f"AED {(lead.estimated_budget or lead.expected_value):,.2f}" if (getattr(lead, 'estimated_budget', None) or getattr(lead, 'expected_value', None)) else "TBD",
+
                 lead.source_platform or lead.source or "Direct Discovery",
                 lead.source_url or "",
                 linkedin_url or lead.profile_url or "",

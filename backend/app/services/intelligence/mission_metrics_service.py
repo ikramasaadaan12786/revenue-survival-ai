@@ -80,8 +80,9 @@ class MissionMetricsService:
             return "NEEDS_REVIEW"
 
         # 8. Verified real buyers
-        if lead.is_verified and lead.contact_info and ("@" in contact or "+" in contact):
+        if (lead.verification_status == "VERIFIED" or st in ["AI_VERIFIED", "VERIFIED"]) and lead.contact_info and ("@" in contact or "+" in contact):
             return "REAL_BUYER"
+
 
         if st in ["NEW", "AI_VERIFIED", "CONTACT_READY", "CONTACTED", "REPLIED", "MEETING", "DEAL", "COMMISSION"]:
             # Check if there is explicit buyer intent
