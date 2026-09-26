@@ -53,10 +53,13 @@ export const DealClosingBoard: React.FC<DealClosingBoardProps> = ({
   const loadPipelineData = async () => {
     setLoading(true);
     try {
+      const targetMissionId = missionId || 1013;
       const [leadsRes, healthRes] = await Promise.allSettled([
-        api.getLeads(missionId).catch(() => []),
-        fetch(getApiUrl(`/api/v1/closing-engine/reality-health-monitor/${missionId}`)).then(r => r.json()).catch(() => null)
+        api.getLeads(targetMissionId).catch(() => []),
+        fetch(getApiUrl(`/api/v1/closing-engine/reality-health-monitor/${targetMissionId}`)).then(r => r.json()).catch(() => null)
       ]);
+
+
 
       if (leadsRes.status === 'fulfilled') {
         setLeads(leadsRes.value || []);

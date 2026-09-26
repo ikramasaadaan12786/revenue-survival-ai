@@ -11,7 +11,6 @@ import {
   ExternalLink,
   Mail,
   MessageSquare,
-  Linkedin,
   ShieldCheck,
   TrendingUp,
   Sparkles,
@@ -22,7 +21,9 @@ import {
   Building,
   Target
 } from 'lucide-react';
+import { Linkedin } from '@/components/luxury/LinkedInIcon';
 import { getApiUrl } from '@/lib/api';
+
 
 interface DailyLeadsCenterProps {
   activeMissionId?: number;

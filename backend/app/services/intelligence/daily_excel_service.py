@@ -286,17 +286,15 @@ class DailyExcelIntelligenceService:
         wb.remove(wb.active)  # remove default sheet
 
         # ---------------------------------------------------------------------
-        # SHEET 1: REAL BUYER LEADS
+        # SHEET 1: TODAY'S REAL LEADS (Primary Sheet — Opened First)
         # ---------------------------------------------------------------------
-        ws_buyers = wb.create_sheet(title="REAL BUYER LEADS")
+        ws_buyers = wb.create_sheet(title="TODAY'S REAL LEADS")
         headers_buyers = [
-            "Lead ID", "Mission ID", "Discovery Time", "Name", "Company", "Role", 
-            "Domain / Industry", "Country", "City / Emirate", "Email", "Phone", 
-            "WhatsApp", "LinkedIn Profile", "Company Website", "Source Platform", 
-            "Source URL", "Requirement (Raw)", "Commercial Requirement Summary", 
-            "Intent Tier", "Qualification", "Confidence Score", "Verification Status", 
-            "Contactability", "Email Status", "Email Sent At", "Delivered?", 
-            "Reply Received?", "LinkedIn Outreach Status", "Next Best Action", "Notes"
+            "Lead ID", "Date", "Time", "Name", "Company", "Country", "City", 
+            "Requirement", "Budget", "Source", "Source URL", "Profile URL", 
+            "Email", "Phone", "LinkedIn", "Other Contact Route", "Verification", 
+            "Outreach Channel", "Outreach Status", "Sent At", "Delivery Status", 
+            "Reply", "Next Action", "Notes"
         ]
         ws_buyers.append(headers_buyers)
         for col_idx in range(1, len(headers_buyers) + 1):
@@ -315,41 +313,45 @@ class DailyExcelIntelligenceService:
             website_url = self.extract_website_url(lead)
 
             latest_comm = sorted(lead.communications, key=lambda c: c.id or 0, reverse=True)[0] if lead.communications else None
-            email_status = latest_comm.delivery_status if latest_comm else "UNSENT"
-            email_sent_at = latest_comm.sent_at.strftime("%Y-%m-%d %H:%M:%S") if (latest_comm and latest_comm.sent_at) else ""
-            email_delivered = "YES" if (latest_comm and latest_comm.delivery_status in ["DELIVERED", "READ", "REPLIED"]) else "NO"
-            email_reply = latest_comm.reply_status if latest_comm else "NONE"
+            outreach_channel = latest_comm.channel if latest_comm else ("Email" if email else ("WhatsApp" if phone else ("LinkedIn" if linkedin_url else "Manual")))
+            outreach_status = latest_comm.delivery_status if latest_comm else "UNSENT"
+            sent_at_str = latest_comm.sent_at.strftime("%Y-%m-%d %H:%M:%S") if (latest_comm and latest_comm.sent_at) else ""
+            delivery_status_str = latest_comm.delivery_status if latest_comm else "PENDING"
+            reply_str = latest_comm.reply_status if latest_comm else "NONE"
+
+            disc_date = lead.discovery_timestamp.strftime("%Y-%m-%d") if lead.discovery_timestamp else target_date.strftime("%Y-%m-%d")
+            disc_time = lead.discovery_timestamp.strftime("%H:%M:%S") if lead.discovery_timestamp else "00:00:00"
+
+            next_action = "Approve & Send Email" if (email and outreach_status == "UNSENT") else (
+                "Send 1-on-1 LinkedIn Note" if linkedin_url else (
+                    "WhatsApp Outreach" if phone else "Review & Enrich Contact Details"
+                )
+            )
 
             row_data = [
                 lead.id,
-                lead.mission_id,
-                lead.discovery_timestamp.strftime("%Y-%m-%d %H:%M:%S") if lead.discovery_timestamp else "",
-                lead.name or "Commercial Lead",
+                disc_date,
+                disc_time,
+                lead.name or "Prospect",
                 lead.company_name or "Direct Enterprise",
-                "Decision Maker",
-                pitch_generator.classify_domain(lead),
                 lead.country or "United Arab Emirates",
                 "Dubai / UAE",
-                email,
-                phone,
-                phone if phone else "",
-                linkedin_url,
-                website_url,
+                lead.interest or "",
+                f"AED {lead.budget:,.2f}" if (lead.budget and lead.budget > 0) else "TBD",
                 lead.source_platform or lead.source or "Direct Discovery",
                 lead.source_url or "",
-                lead.interest or "",
-                pitch_generator.get_requirement_summary(lead, pitch_generator.classify_domain(lead)),
-                lead.intent_score or "Warm",
-                lead.classification or "QUALIFIED",
-                f"{int(lead.qualification_score or 85)}%",
+                linkedin_url or lead.profile_url or "",
+                email,
+                phone,
+                linkedin_url,
+                website_url or ("Platform Profile" if lead.profile_url else ""),
                 lead.verification_status or "VERIFIED",
-                contactability,
-                email_status,
-                email_sent_at,
-                email_delivered,
-                email_reply,
-                "HUMAN_ACTION_REQUIRED" if linkedin_url else "NOT_AVAILABLE",
-                "Personal Outreach / Review" if contactability == "VERIFIED_CONTACTABLE" else "Enrichment / Research",
+                outreach_channel,
+                outreach_status,
+                sent_at_str,
+                delivery_status_str,
+                reply_str,
+                next_action,
                 lead.notes or reason
             ]
             ws_buyers.append(row_data)
@@ -363,14 +365,14 @@ class DailyExcelIntelligenceService:
                 cell.border = THIN_BORDER
                 cell.alignment = Alignment(vertical="center")
 
-                if col_idx == 10 and email:
+                if col_idx == 11 and lead.source_url:
+                    _set_cell_link(cell, lead.source_url, "Open Source")
+                elif col_idx == 12 and (linkedin_url or lead.profile_url):
+                    _set_cell_link(cell, linkedin_url or lead.profile_url, "Open Profile")
+                elif col_idx == 13 and email:
                     _set_cell_link(cell, f"mailto:{email}", email)
-                elif col_idx == 13 and linkedin_url:
-                    _set_cell_link(cell, linkedin_url, "Open LinkedIn Profile")
-                elif col_idx == 14 and website_url:
-                    _set_cell_link(cell, website_url, "Open Website")
-                elif col_idx == 16 and lead.source_url:
-                    _set_cell_link(cell, lead.source_url, "View Provenance Signal")
+                elif col_idx == 15 and linkedin_url:
+                    _set_cell_link(cell, linkedin_url, "Open LinkedIn")
                 else:
                     cell.font = DATA_FONT
             row_num += 1
@@ -378,100 +380,36 @@ class DailyExcelIntelligenceService:
         _apply_sheet_formatting(ws_buyers, header_row=1)
 
         # ---------------------------------------------------------------------
-        # SHEET 2: CONTACT READY
+        # SHEET 2: NEEDS REVIEW
         # ---------------------------------------------------------------------
-        ws_ready = wb.create_sheet(title="CONTACT READY")
-        headers_ready = [
-            "Name", "Company", "Requirement", "Email", "Phone", "WhatsApp", 
-            "LinkedIn URL", "Country", "Source URL", "Recommended Contact Channel", 
-            "Recommended First Message", "Priority", "Reason for Priority"
+        ws_review = wb.create_sheet(title="NEEDS REVIEW")
+        headers_review = [
+            "Lead ID", "Name", "Company", "Requirement", "Source", "Source URL", 
+            "Missing / Unverified Element", "Recommended Verification Action"
         ]
-        ws_ready.append(headers_ready)
-        for col_idx in range(1, len(headers_ready) + 1):
-            cell = ws_ready.cell(row=1, column=col_idx)
+        ws_review.append(headers_review)
+        for col_idx in range(1, len(headers_review) + 1):
+            cell = ws_review.cell(row=1, column=col_idx)
             cell.font = HEADER_FONT
             cell.fill = HEADER_FILL
             cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             cell.border = THIN_BORDER
 
         row_num = 2
-        for lead in contact_ready_leads:
-            email = self.extract_email(lead)
-            phone = self.extract_phone(lead)
-            linkedin_url = self.extract_linkedin_url(lead)
-            
-            rec_channel = "Email" if email else ("WhatsApp" if phone else "LinkedIn")
-            pitch_data = pitch_generator.generate_pitch(lead, channel=rec_channel)
-
-            row_data = [
-                lead.name or "Prospect",
-                lead.company_name or "Direct Client",
-                lead.interest or "",
-                email,
-                phone,
-                phone,
-                linkedin_url,
-                lead.country or "United Arab Emirates",
-                lead.source_url or "",
-                rec_channel,
-                pitch_data["body"],
-                "P1 — HIGH INTENT" if lead.intent_score in ["Hot", "Qualified"] else "P2 — ACTIVE REQUIREMENT",
-                f"Verified commercial requirement for {pitch_data['domain']}"
-            ]
-            ws_ready.append(row_data)
-
-            bg_color = ZEBRA_BG if row_num % 2 == 0 else "FFFFFF"
-            row_fill = PatternFill(start_color=bg_color, end_color=bg_color, fill_type="solid")
-
-            for col_idx in range(1, len(row_data) + 1):
-                cell = ws_ready.cell(row=row_num, column=col_idx)
-                cell.fill = row_fill
-                cell.border = THIN_BORDER
-                cell.alignment = Alignment(vertical="center")
-
-                if col_idx == 4 and email:
-                    _set_cell_link(cell, f"mailto:{email}", email)
-                elif col_idx == 7 and linkedin_url:
-                    _set_cell_link(cell, linkedin_url, "Open Profile")
-                elif col_idx == 9 and lead.source_url:
-                    _set_cell_link(cell, lead.source_url, "View Source")
-                else:
-                    cell.font = DATA_FONT
-            row_num += 1
-
-        _apply_sheet_formatting(ws_ready, header_row=1)
-
-        # ---------------------------------------------------------------------
-        # SHEET 3: MANUAL RESEARCH REQUIRED
-        # ---------------------------------------------------------------------
-        ws_manual = wb.create_sheet(title="MANUAL RESEARCH REQUIRED")
-        headers_manual = [
-            "Lead ID", "Source Platform", "Name", "Company", "Requirement", 
-            "Source URL", "Missing Coordinates", "Suggested Action", "Discovered At"
-        ]
-        ws_manual.append(headers_manual)
-        for col_idx in range(1, len(headers_manual) + 1):
-            cell = ws_manual.cell(row=1, column=col_idx)
-            cell.font = HEADER_FONT
-            cell.fill = HEADER_FILL
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-            cell.border = THIN_BORDER
-
-        row_num = 2
-        for lead in manual_research_leads:
-            ws_manual.append([
+        needs_review_leads = [l for l in real_buyer_leads if l.verification_status == "NEEDS_REVIEW" or not (self.extract_email(l) or self.extract_phone(l))]
+        for lead in needs_review_leads:
+            ws_review.append([
                 lead.id,
-                lead.source_platform or lead.source,
-                lead.name,
-                lead.company_name,
-                lead.interest,
-                lead.source_url,
-                "Direct Corporate Email / Phone",
-                "Lookup Company Website or LinkedIn Directory",
-                lead.discovery_timestamp.strftime("%Y-%m-%d %H:%M:%S") if lead.discovery_timestamp else ""
+                lead.name or "Prospect",
+                lead.company_name or "Unspecified",
+                lead.interest or "",
+                lead.source_platform or lead.source or "Market Signal",
+                lead.source_url or "",
+                "Missing Direct Business Email / Phone",
+                "Review provenance and enrich via official corporate website / LinkedIn"
             ])
-            for col_idx in range(1, len(headers_manual) + 1):
-                c = ws_manual.cell(row=row_num, column=col_idx)
+            for col_idx in range(1, len(headers_review) + 1):
+                c = ws_review.cell(row=row_num, column=col_idx)
                 c.border = THIN_BORDER
                 c.font = DATA_FONT
                 c.alignment = Alignment(vertical="center")
@@ -479,99 +417,59 @@ class DailyExcelIntelligenceService:
                     _set_cell_link(c, lead.source_url, "Open Source")
             row_num += 1
 
-        _apply_sheet_formatting(ws_manual, header_row=1)
+        _apply_sheet_formatting(ws_review, header_row=1)
 
         # ---------------------------------------------------------------------
-        # SHEET 4: PROCUREMENT / RFP
+        # SHEET 3: PLATFORM ACTIONS
         # ---------------------------------------------------------------------
-        ws_proc = wb.create_sheet(title="PROCUREMENT RFP")
-        headers_proc = [
-            "ID", "Portal / Source", "Organization", "RFP / Tender Title", 
-            "Requirement Detail", "Source URL", "Deadline / Status", "Discovered At"
+        ws_platform = wb.create_sheet(title="PLATFORM ACTIONS")
+        headers_plat = [
+            "Lead ID", "Platform", "Name", "Profile / Post URL", "Requirement", 
+            "Recommended Owner Action", "Suggested Message / Response"
         ]
-        ws_proc.append(headers_proc)
-        for col_idx in range(1, len(headers_proc) + 1):
-            cell = ws_proc.cell(row=1, column=col_idx)
+        ws_platform.append(headers_plat)
+        for col_idx in range(1, len(headers_plat) + 1):
+            cell = ws_platform.cell(row=1, column=col_idx)
             cell.font = HEADER_FONT
             cell.fill = HEADER_FILL
             cell.alignment = Alignment(horizontal="center", vertical="center")
             cell.border = THIN_BORDER
 
-        row_num = 2
-        for lead in procurement_leads:
-            ws_proc.append([
-                lead.id,
-                lead.source_platform or lead.source,
-                lead.company_name,
-                lead.name,
-                lead.interest,
-                lead.source_url,
-                "Open for Submission",
-                lead.discovery_timestamp.strftime("%Y-%m-%d %H:%M:%S") if lead.discovery_timestamp else ""
-            ])
-            for col_idx in range(1, len(headers_proc) + 1):
-                c = ws_proc.cell(row=row_num, column=col_idx)
-                c.border = THIN_BORDER
-                c.font = DATA_FONT
-                c.alignment = Alignment(vertical="center")
-                if col_idx == 6 and lead.source_url:
-                    _set_cell_link(c, lead.source_url, "View Tender")
-            row_num += 1
-
-        _apply_sheet_formatting(ws_proc, header_row=1)
-
-        # ---------------------------------------------------------------------
-        # SHEET 5: LINKEDIN ACTIONS
-        # ---------------------------------------------------------------------
-        ws_linkedin = wb.create_sheet(title="LINKEDIN ACTIONS")
-        headers_linkedin = [
-            "Name", "Company", "LinkedIn URL", "Requirement", "Recommended 1-on-1 Message", 
-            "Human Action Required", "Status"
-        ]
-        ws_linkedin.append(headers_linkedin)
-        for col_idx in range(1, len(headers_linkedin) + 1):
-            cell = ws_linkedin.cell(row=1, column=col_idx)
-            cell.font = HEADER_FONT
-            cell.fill = HEADER_FILL
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-            cell.border = THIN_BORDER
-
-        linkedin_leads = [
+        platform_action_leads = [
             l for l in real_buyer_leads 
-            if self.extract_linkedin_url(l) or "linkedin" in (l.source or "").lower()
+            if any(k in (l.source_platform or l.source or "").lower() for k in ["reddit", "telegram", "linkedin"]) or not self.extract_email(l)
         ]
-
         row_num = 2
-        for lead in linkedin_leads:
-            linkedin_url = self.extract_linkedin_url(lead)
-            msg = self.generate_recommended_linkedin_note(lead)
-            ws_linkedin.append([
-                lead.name,
-                lead.company_name,
-                linkedin_url,
-                lead.interest,
-                msg,
-                "Send Connection Request with Customized Note",
-                "ACTION_REQUIRED"
+        for lead in platform_action_leads:
+            plat = lead.source_platform or lead.source or "Social Platform"
+            pitch = pitch_generator.generate_pitch(lead, channel="Manual")
+            ws_platform.append([
+                lead.id,
+                plat,
+                lead.name or "Platform Member",
+                lead.profile_url or lead.source_url or "",
+                lead.interest or "",
+                f"Manual 1-on-1 contact on {plat}",
+                pitch.get("body", "")
             ])
-            for col_idx in range(1, len(headers_linkedin) + 1):
-                c = ws_linkedin.cell(row=row_num, column=col_idx)
+            for col_idx in range(1, len(headers_plat) + 1):
+                c = ws_platform.cell(row=row_num, column=col_idx)
                 c.border = THIN_BORDER
                 c.font = DATA_FONT
                 c.alignment = Alignment(vertical="center")
-                if col_idx == 3 and linkedin_url:
-                    _set_cell_link(c, linkedin_url, "Open LinkedIn")
+                if col_idx == 4 and (lead.profile_url or lead.source_url):
+                    _set_cell_link(c, lead.profile_url or lead.source_url, "Open URL")
             row_num += 1
 
-        _apply_sheet_formatting(ws_linkedin, header_row=1)
+        _apply_sheet_formatting(ws_platform, header_row=1)
 
         # ---------------------------------------------------------------------
-        # SHEET 6: RESEARCH SIGNALS & JOB VACANCIES (SEGREGATED)
+        # SHEET 4: RESEARCH ARCHIVE (Segregated Job Vacancies & Market Signals)
         # ---------------------------------------------------------------------
-        ws_research = wb.create_sheet(title="RESEARCH SIGNALS")
+        ws_research = wb.create_sheet(title="RESEARCH ARCHIVE")
         headers_res = [
-            "ID", "Source Platform", "Company", "Requirement / Job Title", "Contact Info", 
-            "Classification", "Source URL", "Discovered At", "Notes"
+            "Record ID", "Source Platform", "Company / Poster", "Title / Content Snippet", 
+            "Classification", "Source URL", "Logged Timestamp", "Notes"
         ]
         ws_research.append(headers_res)
         for col_idx in range(1, len(headers_res) + 1):
@@ -586,20 +484,19 @@ class DailyExcelIntelligenceService:
             ws_research.append([
                 lead.id,
                 lead.source_platform or lead.source,
-                lead.company_name,
+                lead.company_name or "Enterprise",
                 lead.interest[:120] if lead.interest else "",
-                lead.contact_info,
-                "JOB_VACANCY (Research Only)",
+                "JOB_VACANCY / RESEARCH_SIGNAL",
                 lead.source_url,
                 lead.discovery_timestamp.strftime("%Y-%m-%d %H:%M:%S") if lead.discovery_timestamp else "",
-                lead.notes or ""
+                lead.notes or "Segregated from active sales funnel"
             ])
             for col_idx in range(1, len(headers_res) + 1):
                 c = ws_research.cell(row=row_num, column=col_idx)
                 c.border = THIN_BORDER
                 c.font = DATA_FONT
                 c.alignment = Alignment(vertical="center")
-                if col_idx == 7 and lead.source_url:
+                if col_idx == 6 and lead.source_url:
                     _set_cell_link(c, lead.source_url, "Open URL")
             row_num += 1
 
@@ -607,13 +504,12 @@ class DailyExcelIntelligenceService:
             ws_research.append([
                 f"SIG-{sig.id}",
                 sig.source,
-                sig.lead_name or "Market Inquirer",
+                sig.lead_name or "Market Signal",
                 sig.signal_text[:120],
-                sig.channel,
                 "MARKET_SIGNAL",
                 sig.raw_metadata.get("source_url", "") if isinstance(sig.raw_metadata, dict) else "",
                 sig.created_at.strftime("%Y-%m-%d %H:%M:%S") if sig.created_at else "",
-                "Segregated market research signal"
+                "Segregated research signal"
             ])
             for col_idx in range(1, len(headers_res) + 1):
                 c = ws_research.cell(row=row_num, column=col_idx)
@@ -625,9 +521,35 @@ class DailyExcelIntelligenceService:
         _apply_sheet_formatting(ws_research, header_row=1)
 
         # ---------------------------------------------------------------------
-        # SHEET 7: REJECTED RECORDS
+        # SHEET 5: DUPLICATES & REJECTED
         # ---------------------------------------------------------------------
-        ws_rej = wb.create_sheet(title="REJECTED")
+        ws_rej = wb.create_sheet(title="DUPLICATES")
+        headers_rej = ["Record ID", "Source", "Identifier / Snippet", "Resolution / Canonical Match", "Logged At"]
+        ws_rej.append(headers_rej)
+        for col_idx in range(1, len(headers_rej) + 1):
+            cell = ws_rej.cell(row=1, column=col_idx)
+            cell.font = HEADER_FONT
+            cell.fill = HEADER_FILL
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.border = THIN_BORDER
+
+        row_num = 2
+        for lead in rejected_duplicate_leads:
+            ws_rej.append([
+                lead.id,
+                lead.source_platform or lead.source,
+                lead.name or lead.interest[:60],
+                lead.notes or "Duplicate entity matched against canonical record",
+                lead.discovery_timestamp.strftime("%Y-%m-%d %H:%M:%S") if lead.discovery_timestamp else ""
+            ])
+            for col_idx in range(1, len(headers_rej) + 1):
+                c = ws_rej.cell(row=row_num, column=col_idx)
+                c.border = THIN_BORDER
+                c.font = DATA_FONT
+                c.alignment = Alignment(vertical="center")
+            row_num += 1
+
+        _apply_sheet_formatting(ws_rej, header_row=1)
         headers_rej = ["Record Identifier", "Source", "Context / Raw Snippet", "Rejection Reason", "Logged At"]
         ws_rej.append(headers_rej)
         for col_idx in range(1, len(headers_rej) + 1):

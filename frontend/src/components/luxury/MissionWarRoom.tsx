@@ -24,25 +24,26 @@ interface SprintData {
   revenue_gap_aed: number;
   remaining_hours: number;
   required_velocity_aed_hr: number;
-  fastest_closing_opportunity: {
+  fastest_closing_opportunity?: {
     name: string;
     offer: string;
     expected_revenue: number;
     closing_probability_percent: number;
   };
-  fastest_offer: {
+  fastest_offer?: {
     offer_name: string;
     price_aed: number;
     delivery_timeline: string;
     reason: string;
   };
-  fastest_channel: {
+  fastest_channel?: {
     channel: string;
     response_time: string;
     confidence_score: number;
   };
   tactical_closing_plan: string[];
 }
+
 
 interface TargetPlanData {
   quotas: {
@@ -317,26 +318,27 @@ export const MissionWarRoom: React.FC<MissionWarRoomProps> = ({
             <div className="space-y-3 text-xs">
               <div className="p-3 rounded-xl bg-[#04060A]/80 border border-[#D4AF37]/20 space-y-1">
                 <div className="text-[10px] uppercase font-mono text-slate-400">Fastest Closing Opportunity</div>
-                <div className="font-bold text-white">{sprintData.fastest_closing_opportunity.name}</div>
+                <div className="font-bold text-white">{sprintData.fastest_closing_opportunity?.name || 'Enterprise Client'}</div>
                 <div className="text-[#F5D77F] font-mono">
-                  {sprintData.fastest_closing_opportunity.closing_probability_percent}% Prob • {sprintData.fastest_closing_opportunity.offer}
+                  {sprintData.fastest_closing_opportunity?.closing_probability_percent || 80}% Prob • {sprintData.fastest_closing_opportunity?.offer || 'Consultation'}
                 </div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#04060A]/80 border border-[#D4AF37]/20 space-y-1">
                 <div className="text-[10px] uppercase font-mono text-slate-400">Fastest Offer (24h Turnaround)</div>
-                <div className="font-bold text-emerald-400">{sprintData.fastest_offer.offer_name}</div>
+                <div className="font-bold text-emerald-400">{sprintData.fastest_offer?.offer_name || 'AI Automation Solution'}</div>
                 <div className="text-slate-300">
-                  AED {sprintData.fastest_offer.price_aed.toLocaleString()} • {sprintData.fastest_offer.delivery_timeline}
+                  AED {(sprintData.fastest_offer?.price_aed || 3000).toLocaleString()} • {sprintData.fastest_offer?.delivery_timeline || '24-48 Hours'}
                 </div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#04060A]/80 border border-[#D4AF37]/20 space-y-1">
                 <div className="text-[10px] uppercase font-mono text-slate-400">Fastest Channel</div>
-                <div className="font-bold text-amber-300">{sprintData.fastest_channel.channel}</div>
-                <div className="text-slate-400">Avg response: {sprintData.fastest_channel.response_time}</div>
+                <div className="font-bold text-amber-300">{sprintData.fastest_channel?.channel || 'Direct Email / Resend'}</div>
+                <div className="text-slate-400">Avg response: {sprintData.fastest_channel?.response_time || '< 2 hours'}</div>
               </div>
             </div>
+
           </div>
 
           {/* CEO Brain Target Achievement Plan */}

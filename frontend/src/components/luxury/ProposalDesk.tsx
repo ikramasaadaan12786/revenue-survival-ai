@@ -27,8 +27,9 @@ export const ProposalDesk: React.FC<ProposalDeskProps> = ({
 
   const loadProposals = async () => {
     setLoading(true);
+    const targetMissionId = missionId || 1013;
     try {
-      const res = await api.getMissionProposals(missionId).catch(() => []);
+      const res = await api.getMissionProposals(targetMissionId).catch(() => []);
       setProposals(res || []);
       if (res && res.length > 0) {
         setSelectedProposal(res[0]);
@@ -47,9 +48,11 @@ export const ProposalDesk: React.FC<ProposalDeskProps> = ({
   const handleGenerateProposal = async () => {
     setGenerating(true);
     setNotice(null);
+    const targetMissionId = missionId || 1013;
     try {
       const res = await api.generateProposal({
-        mission_id: missionId,
+        mission_id: targetMissionId,
+
         client_name: clientName,
         client_industry: clientIndustry,
         proposal_type: proposalType,

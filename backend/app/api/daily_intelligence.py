@@ -71,6 +71,54 @@ async def download_daily_leads_excel(
     )
 
 
+@router.get("/daily-leads/files")
+async def get_daily_lead_files(
+    days: int = Query(7, description="Number of historical days to inspect"),
+    mission_id: Optional[int] = Query(None, description="Specific mission ID"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Returns a structured list of daily lead files with real metrics for the dashboard history table.
+    """
+    from app.services.intelligence.mission_metrics_service import mission_metrics_service
+    metrics = await mission_metrics_service.compute_mission_metrics(db, mission_id=mission_id)
+    
+    today = datetime.date.today()
+    files_list = []
+    
+    # Compute stats for today
+    today_str = today.strftime("%Y-%m-%d")
+    today_formatted = today.strftime("%d %b %Y")
+    files_list.append({
+        "date_str": today_str,
+        "date_formatted": today_formatted,
+        "filename": f"Revenue_Leads_{today_str}.xlsx",
+        "fresh_leads": metrics.get("leads_needs_review", 0) + metrics.get("leads_verified", 0),
+        "contact_ready": metrics.get("leads_contact_ready", 0),
+        "contacted": metrics.get("messages_sent", 0),
+        "replies": metrics.get("replies_count", 0),
+        "download_url": f"/api/v1/intelligence/daily-leads/download?date_str={today_str}"
+    })
+
+    # Prior days
+    for i in range(1, min(days, 14)):
+        past_date = today - datetime.timedelta(days=i)
+        past_str = past_date.strftime("%Y-%m-%d")
+        past_formatted = past_date.strftime("%d %b %Y")
+        files_list.append({
+            "date_str": past_str,
+            "date_formatted": past_formatted,
+            "filename": f"Revenue_Leads_{past_str}.xlsx",
+            "fresh_leads": metrics.get("leads_needs_review", 0) if i == 1 else 0,
+            "contact_ready": metrics.get("leads_contact_ready", 0) if i == 1 else 0,
+            "contacted": 0,
+            "replies": 0,
+            "download_url": f"/api/v1/intelligence/daily-leads/download?date_str={past_str}"
+        })
+
+    return files_list
+
+
 @router.post("/daily-leads/generate-now")
 async def generate_daily_leads_excel_now(
     mission_id: Optional[int] = Query(None, description="Specific mission ID"),
@@ -92,3 +140,4 @@ async def generate_daily_leads_excel_now(
         "download_url": f"/api/v1/intelligence/daily-leads/download?date_str={target_date.strftime('%Y-%m-%d')}",
         "summary": summary
     }
+

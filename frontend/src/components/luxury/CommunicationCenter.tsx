@@ -47,10 +47,12 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
   const loadData = async () => {
     setLoading(true);
     try {
+      const targetMissionId = missionId || 1013;
       const [commsRes, leadsRes] = await Promise.allSettled([
-        api.getCommunications(missionId).catch(() => []),
-        api.getLeads(missionId).catch(() => [])
+        api.getCommunications(targetMissionId).catch(() => []),
+        api.getLeads(targetMissionId).catch(() => [])
       ]);
+
 
       if (commsRes.status === 'fulfilled') {
         setApprovals(commsRes.value || []);

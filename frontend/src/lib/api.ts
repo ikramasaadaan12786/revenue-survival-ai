@@ -497,7 +497,24 @@ export const api = {
     fetcher<any>(`/enterprise-network/companies/${companyId}/upgrade-plan`, { method: "POST", body: JSON.stringify({ new_plan_name: newPlanName }) }),
   getSystemHealth: () =>
     fetcher<any>("/system/health"),
+
+  // Business-Usability & Daily Action Centers
+  getDailyLeadsSummary: (dateStr?: string, missionId?: number) =>
+    fetcher<any>(`/intelligence/daily-leads/summary?${dateStr ? `date_str=${dateStr}&` : ""}${missionId ? `mission_id=${missionId}` : ""}`),
+  getDailyLeadFiles: (days: number = 7, missionId?: number) =>
+    fetcher<any[]>(`/intelligence/daily-leads/files?days=${days}${missionId ? `&mission_id=${missionId}` : ""}`),
+  getEmailActionCenter: (missionId?: number) =>
+    fetcher<any>(`/communications/email-action-center${missionId ? `?mission_id=${missionId}` : ""}`),
+  getLinkedInActionCenter: (missionId?: number) =>
+    fetcher<any>(`/communications/linkedin-action-center${missionId ? `?mission_id=${missionId}` : ""}`),
+  getActionRequired: (missionId?: number) =>
+    fetcher<any>(`/communications/action-required${missionId ? `?mission_id=${missionId}` : ""}`),
+  markLeadContacted: (data: { lead_id: number; channel?: string; notes?: string }) =>
+    fetcher<any>("/communications/mark-contacted", { method: "POST", body: JSON.stringify(data) }),
+  sendTestEmail: (data: { recipient_email: string; subject?: string; body?: string }) =>
+    fetcher<any>("/communications/send-test-email", { method: "POST", body: JSON.stringify(data) }),
 };
+
 
 
 

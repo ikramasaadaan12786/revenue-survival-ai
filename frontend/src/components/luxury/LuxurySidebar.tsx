@@ -33,31 +33,21 @@ export const LuxurySidebar: React.FC<LuxurySidebarProps> = ({
   pendingApprovalsCount = 0,
 }) => {
   const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'daily_leads', label: 'Daily Leads', icon: FileSpreadsheet, badge: 'EXCEL 7-SHEET' },
-    { id: 'mission_engine', label: 'Mission Engine', icon: Target, badge: 'AUTONOMOUS' },
-    { id: 'sales_queue', label: 'Real Sales Queue', icon: UserCheck, badge: '8 STAGES' },
-    { id: 'ceo_report', label: 'CEO Morning Briefing', icon: FileBarChart2, badge: 'ACTIVE' },
-    { id: 'reality_audit', label: 'Reality Audit', icon: ShieldCheck, badge: 'P18' },
-    { id: 'providers', label: 'Provider Activation', icon: ShieldCheck, badge: 'P20' },
-    { id: 'war_room', label: 'War Room', icon: Flame, badge: 'v15' },
-    { id: 'revenue_proof', label: 'Revenue Proof', icon: ShieldCheck, badge: 'P16' },
-    { id: 'hot_buyers', label: 'Hot Buyers', icon: UserCheck },
-    { id: 'comms_center', label: 'Comms Center', icon: MessageSquare, alertCount: pendingApprovalsCount },
-    { id: 'proposal_desk', label: 'Proposal Desk', icon: FileText },
-    { id: 'deal_room', label: 'Deal Room CRM', icon: TrendingUp },
-    { id: 'ceo_brain', label: 'CEO Brain', icon: BrainCircuit, badge: 'v4' },
-    { id: 'revenue_empire', label: 'Revenue Empire', icon: Building2, badge: 'v7' },
-    { id: 'scaling_engine', label: 'Scaling Engine', icon: Rocket, badge: 'v8' },
-    { id: 'enterprise_network', label: 'AI Employees', icon: Users2, badge: 'v9' },
-    { id: 'missions', label: 'Missions', icon: Target },
-    { id: 'crm', label: 'Clients', icon: UserCheck },
-    { id: 'growth_loop', label: 'Investor Hub', icon: TrendingUp },
-    { id: 'market_radar', label: 'Market Intelligence', icon: Radar },
-    { id: 'analytics', label: 'Reports', icon: FileBarChart2 },
-    { id: 'approvals', label: 'Approvals', icon: ShieldCheck, alertCount: pendingApprovalsCount },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 'TODAY' },
+    { id: 'leads', label: "Today's Leads", icon: UserCheck, badge: 'REAL BUYERS' },
+    { 
+      id: 'actions', 
+      label: 'Action Required', 
+      icon: ShieldCheck, 
+      alertCount: pendingApprovalsCount,
+      badge: pendingApprovalsCount > 0 ? 'PENDING' : undefined 
+    },
+    { id: 'outreach_email', label: 'Email Outreach', icon: MessageSquare, badge: 'RESEND' },
+    { id: 'outreach_linkedin', label: 'LinkedIn Actions', icon: Target, badge: '1-ON-1' },
+    { id: 'missions', label: 'Revenue Missions', icon: Rocket },
+    { id: 'system_health', label: 'System Health', icon: Settings, badge: 'ADMIN' },
   ];
+
 
 
   return (

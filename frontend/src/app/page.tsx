@@ -35,11 +35,18 @@ import { ProposalDesk } from "@/components/luxury/ProposalDesk";
 import { DealClosingBoard } from "@/components/luxury/DealClosingBoard";
 import { CEOMorningReport } from "@/components/luxury/CEOMorningReport";
 import { AutonomousRevenueMissionEngine } from "@/components/luxury/AutonomousRevenueMissionEngine";
-import { DailyLeadsCenter } from "@/components/luxury/DailyLeadsCenter";
 import NewMissionModal from "@/components/NewMissionModal";
+import { OwnerDashboard } from "@/components/luxury/OwnerDashboard";
+import { TodaysLeadsView } from "@/components/luxury/TodaysLeadsView";
+import { ActionRequiredView } from "@/components/luxury/ActionRequiredView";
+import { EmailActionCenterView } from "@/components/luxury/EmailActionCenterView";
+import { LinkedInActionCenterView } from "@/components/luxury/LinkedInActionCenterView";
+import { SimpleMissionView } from "@/components/luxury/SimpleMissionView";
+import { SystemHealthView } from "@/components/luxury/SystemHealthView";
 import { DashboardSummary, DepartmentSummary, EmployeeScorecard } from "@/types";
 import { api } from "@/lib/api";
 import { Loader2, Settings, ShieldCheck, Sparkles, Sliders, CheckCircle } from "lucide-react";
+
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -143,6 +150,8 @@ export default function Home() {
         setMissionId(undefined);
       }
 
+      const validMissionId = currentId || 1013;
+
       // 2. Parallel fetch of all real backend modules
       const [
         dashRes,
@@ -156,17 +165,18 @@ export default function Home() {
         prioritiesRes,
         revsRes,
       ] = await Promise.allSettled([
-        api.getMissionDashboard(currentId),
+        api.getMissionDashboard(validMissionId),
         api.getGlobalOverview(),
         api.getEnterpriseNetworkOverview(),
-        api.getCompanyCommandCenter(currentId),
-        api.getEmployeeScorecards(currentId),
-        api.getRevenueOpportunities(currentId),
-        api.getGrowthCommandCenterStats(currentId),
-        api.listClientAccounts(currentId),
-        api.getTopPriorities(currentId),
-        api.getRevenues(currentId),
+        api.getCompanyCommandCenter(validMissionId),
+        api.getEmployeeScorecards(validMissionId),
+        api.getRevenueOpportunities(validMissionId),
+        api.getGrowthCommandCenterStats(validMissionId),
+        api.listClientAccounts(validMissionId),
+        api.getTopPriorities(validMissionId),
+        api.getRevenues(validMissionId),
       ]);
+
 
       let anySuccess = false;
 
@@ -259,7 +269,7 @@ export default function Home() {
   const handleRunNextStep = async () => {
     try {
       setIsRunningStep(true);
-      await api.runNextStep(missionId);
+      await api.runNextStep(missionId || 1013);
       await fetchSummary(missionId);
     } catch (err) {
       console.error("Failed running next step", err);
@@ -271,7 +281,7 @@ export default function Home() {
   const handleEvaluatePivot = async () => {
     try {
       setIsRunningStep(true);
-      await api.evaluatePivot(missionId);
+      await api.evaluatePivot(missionId || 1013);
       await fetchSummary(missionId);
     } catch (err) {
       console.error("Failed evaluating pivot", err);
@@ -279,6 +289,7 @@ export default function Home() {
       setIsRunningStep(false);
     }
   };
+
 
   const handleMissionCreated = (newId: number) => {
     setMissionId(newId);
@@ -391,254 +402,69 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {/* 1. Dubai Luxury Sovereign Dashboard (Default) */}
-              {(activeTab === "dashboard" || activeTab === "command") && (
-                <MainLuxuryDashboard
-                  onNavigateTab={handleNavigateTab}
-                  onRunOperatingCycle={handleRunNextStep}
-                  activeMissionId={missionId}
-                  metrics={dashboardMetrics}
-                  missions={enrichedMissions}
-                  departments={departmentsData}
-                  scorecards={scorecardsData}
-                  opportunities={opportunitiesData}
-                  priorities={prioritiesData}
-                  historicalRevenues={historicalRevenues}
-                />
-              )}
-
-              {/* 2. Autonomous CEO Brain v4 */}
-              {(activeTab === "ceo_brain" || activeTab === "ceo-brain") && (
-                <AICEOCommandCenter
-                  missionId={missionId}
+              {/* 1. Owner Dashboard — Today's Results, Funnel, Daily Excel Card, Fleet Status */}
+              {(activeTab === "dashboard" || activeTab === "command" || activeTab === "today" || !activeTab) && (
+                <OwnerDashboard
                   summary={summary}
-                  onRefresh={() => fetchSummary(missionId)}
-                />
-              )}
-
-              {/* 3. Autonomous Revenue Empire v7 */}
-              {(activeTab === "revenue_empire" || activeTab === "revenue-empire") && (
-                <AICompanyCommandCenter activeMissionId={missionId} />
-              )}
-
-              {/* 4. Autonomous Scaling Engine v8 */}
-              {(activeTab === "scaling_engine" || activeTab === "scaling-engine") && (
-                <AIScalingCommandCenter activeMissionId={missionId} />
-              )}
-
-              {/* 5. Autonomous AI Enterprise Network v9 */}
-              {(activeTab === "enterprise_network" || activeTab === "enterprise-network") && (
-                <AIEnterpriseNetworkCenter />
-              )}
-
-              {/* 6. Growth Command Center / Investor Hub */}
-              {(activeTab === "growth_loop" || activeTab === "growth-loop") && (
-                <GrowthCommandCenter
-                  missionId={missionId}
-                  onRefreshAll={() => fetchSummary(missionId)}
-                />
-              )}
-
-              {/* 7. Revenue Control Room v5 */}
-              {activeTab === "control-room" && (
-                <RevenueControlRoom
-                  activeMissionId={missionId}
-                  onRefreshAll={() => fetchSummary(missionId)}
-                />
-              )}
-
-              {/* 8. Missions & Multi-Mission Planning */}
-              {activeTab === "missions" && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="font-serif text-2xl font-bold text-[#F9F6EE]">
-                        Active Missions Operation
-                      </h2>
-                      <p className="text-xs text-[#8C9BAE] mt-1">
-                        Manage strategic campaigns, resource allocations, and real-time execution.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setIsNewMissionOpen(true)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-[#06080F] bg-gradient-to-r from-[#F3E5AB] via-[#D4AF37] to-[#AA771C] hover:opacity-90 transition-opacity shadow-[0_2px_15px_rgba(212,175,55,0.3)]"
-                    >
-                      + Create New Mission
-                    </button>
-                  </div>
-                  <SurvivalHUD
-                    summary={summary}
-                    onRunNextStep={handleRunNextStep}
-                    onEvaluatePivot={handleEvaluatePivot}
-                    isRunningStep={isRunningStep}
-                    onRefreshSummary={() => fetchSummary(missionId)}
-                    onSwitchMission={handleSwitchMission}
-                    allMissions={missionsList}
-                  />
-                  <MissionPlannerView
-                    missionId={missionId}
-                    onRefreshSummary={() => fetchSummary(missionId)}
-                  />
-                </div>
-              )}
-
-              {/* Daily Leads Outreach & Excel Intelligence Tab */}
-              {(activeTab === "daily_leads" || activeTab === "daily-leads" || activeTab === "excel_leads") && (
-                <DailyLeadsCenter
-                  activeMissionId={missionId}
-                />
-              )}
-
-              {/* Autonomous Revenue Mission Engine Tab */}
-              {(activeTab === "mission_engine" || activeTab === "revenue_engine") && (
-                <AutonomousRevenueMissionEngine
                   missionId={missionId}
                   onNavigateTab={handleNavigateTab}
                 />
               )}
 
-              {/* Phase 14-20 Execution & Reality Engine Tabs */}
-              {activeTab === "ceo_report" && (
-                <CEOMorningReport
+              {/* 2. Today's Leads — Central Sales CRM (Strictly Genuine Buyers) */}
+              {(activeTab === "leads" || activeTab === "crm" || activeTab === "sales_queue" || activeTab === "daily_leads" || activeTab === "hot_buyers" || activeTab === "queue") && (
+                <TodaysLeadsView
                   missionId={missionId}
                   onNavigateTab={handleNavigateTab}
                 />
               )}
 
-              {(activeTab === "sales_queue" || activeTab === "queue") && (
-                <RealSalesQueue
+              {/* 3. Action Required — Owner To-Do Center */}
+              {(activeTab === "actions" || activeTab === "approvals" || activeTab === "safety_approvals") && (
+                <ActionRequiredView
                   missionId={missionId}
                   onNavigateTab={handleNavigateTab}
                 />
               )}
 
-              {activeTab === "reality_audit" && (
-                <RealityAuditDashboard
+              {/* 4. Email Outreach — Resend Action Center */}
+              {(activeTab === "outreach_email" || activeTab === "comms_center" || activeTab === "communication_center") && (
+                <EmailActionCenterView
                   missionId={missionId}
                   onNavigateTab={handleNavigateTab}
                 />
               )}
 
-              {(activeTab === "providers" || activeTab === "wizard" || activeTab === "provider_activation") && (
-                <ProviderActivationWizard
-                  onNavigateTab={handleNavigateTab}
-                />
-              )}
-
-              {activeTab === "war_room" && (
-                <RevenueWarRoom
-                  missionId={missionId}
-                  missionTitle={summary?.mission?.title || "Dubai AI Revenue Sprint — 18 Hour Challenge"}
-                  targetRevenue={summary?.target_amount || 2500}
-                  currentRevenue={summary?.revenue_achieved || 0}
-                  onNavigateTab={handleNavigateTab}
-                />
-              )}
-
-              {(activeTab === "revenue_proof" || activeTab === "proof_dashboard") && (
-                <RevenueProofDashboard
-                  missionId={missionId}
-                  missionTitle={summary?.mission?.title || "Dubai AI Revenue Sprint — 18 Hour Challenge"}
-                  onNavigateTab={handleNavigateTab}
-                />
-              )}
-
-              {activeTab === "hot_buyers" && (
-                <HotBuyerTerminal
+              {/* 5. LinkedIn Actions — 1-on-1 Personalized Launchpad */}
+              {(activeTab === "outreach_linkedin" || activeTab === "linkedin") && (
+                <LinkedInActionCenterView
                   missionId={missionId}
                   onNavigateTab={handleNavigateTab}
                 />
               )}
 
-              {(activeTab === "comms_center" || activeTab === "communication_center") && (
-                <CommunicationCenter
-                  missionId={missionId}
+              {/* 6. Revenue Missions — Goal, Sub-Tabs (Results, Leads, Outreach, Replies, Revenue) */}
+              {(activeTab === "missions" || activeTab === "mission_engine" || activeTab === "revenue_engine") && (
+                <SimpleMissionView
+                  summary={summary}
                   onNavigateTab={handleNavigateTab}
                 />
               )}
 
-              {activeTab === "proposal_desk" && (
-                <ProposalDesk
-                  missionId={missionId}
-                  onNavigateTab={handleNavigateTab}
-                />
+              {/* 7. Admin & System Health — Cloud Infrastructure & Diagnostics */}
+              {(activeTab === "system_health" || activeTab === "admin" || activeTab === "settings" || activeTab === "reality_audit" || activeTab === "providers" || activeTab === "analytics") && (
+                <SystemHealthView />
               )}
 
-              {(activeTab === "deal_room" || activeTab === "deal_closing_board") && (
-                <DealClosingBoard
-                  missionId={missionId}
-                  onNavigateTab={handleNavigateTab}
-                />
-              )}
-
-              {/* 9. CRM & Lead Kanban */}
-              {(activeTab === "crm" || activeTab === "leads") && (
-                <LeadKanbanView
-                  missionId={missionId}
-                  onRefreshSummary={() => fetchSummary(missionId)}
-                />
-              )}
-
-              {/* 10. Market Radar & Intelligence */}
-              {(activeTab === "market_radar" || activeTab === "opportunities") && (
-                <OpportunityRadarView
-                  missionId={missionId}
-                  onRefreshSummary={() => fetchSummary(missionId)}
-                />
-              )}
-
-              {/* 11. Autonomous Closing Engine */}
-              {activeTab === "closing_engine" && (
-                <AutonomousClosingCenter
-                  missionId={missionId}
-                  onRefresh={() => fetchSummary(missionId)}
-                />
-              )}
-
-              {/* 12. Safety Approvals */}
-              {activeTab === "approvals" && (
-                <SafetyApprovalQueueView
-                  missionId={missionId}
-                  onRefreshSummary={() => fetchSummary(missionId)}
-                />
-              )}
-
-              {/* 13. Dubai Real Estate Mode */}
-              {activeTab === "real-estate" && (
-                <DubaiRealEstateView
-                  missionId={missionId}
-                  onRefreshSummary={() => fetchSummary(missionId)}
-                />
-              )}
-
-              {/* 14. Revenue Intelligence */}
-              {activeTab === "intelligence" && (
-                <RevenueIntelligenceCenter missionId={missionId} />
-              )}
-
-              {/* 15. Offer Studio */}
-              {activeTab === "offers" && (
-                <OfferStudioView
-                  missionId={missionId}
-                  onRefreshSummary={() => fetchSummary(missionId)}
-                />
-              )}
-
-              {/* 16. Reports & Memory Analytics */}
-              {activeTab === "analytics" && (
-                <AnalyticsMemoryView
-                  missionId={missionId}
-                  onRefreshSummary={() => fetchSummary(missionId)}
-                />
-              )}
 
               {/* 17. Multi-Industry Strategy Brain */}
               {activeTab === "strategy-brain" && (
                 <MultiIndustryStrategyBrainView
-                  missionId={missionId}
+                  missionId={missionId || 1013}
                   onRefreshSummary={() => fetchSummary(missionId)}
                 />
               )}
+
 
               {/* 18. Executive Settings & Security Panel */}
               {activeTab === "settings" && (
