@@ -534,26 +534,43 @@ async def run_ceo_brain(session, mission_id: Optional[int] = None) -> Dict[str, 
     achieved = float(mission.revenue_generated or 0.0)
     gap = max(0.0, target - achieved)
     
-    # Create / Update DailyCycleLog
-    cycle_log = DailyCycleLog(
-        mission_id=mission_id,
-        cycle_date=datetime.date.today().isoformat(),
-        phase="MORNING",
-        summary=f"CEO Operating Briefing: Pursuing {target:,.0f} AED revenue target. Current pipeline value: AED {float(mission.pipeline_value or 0):,.0f}.",
-        metrics_snapshot={
-            "target_amount": target,
-            "revenue_achieved": achieved,
-            "revenue_gap": gap,
-            "pipeline_value": float(mission.pipeline_value or 0.0)
-        },
-        actions_taken=[
-            "Hourly Buyer Discovery sweep across 6 public intent connectors",
-            "Outbound proposal queue processing via Resend verified domain",
-            "Inbound reply classification and sentiment tracking",
-            "15-minute lead pipeline progression check"
-        ]
+    # UPSERT DailyCycleLog (one per mission + cycle_date + phase)
+    today_str = datetime.date.today().isoformat()
+    stmt_log = select(DailyCycleLog).where(
+        DailyCycleLog.mission_id == mission_id,
+        DailyCycleLog.cycle_date == today_str,
+        DailyCycleLog.phase == "MORNING"
     )
-    session.add(cycle_log)
+    cycle_log = (await session.execute(stmt_log)).scalars().first()
+    summary_text = f"CEO Operating Briefing: Pursuing {target:,.0f} AED revenue target. Current pipeline value: AED {float(mission.pipeline_value or 0):,.0f}."
+    snap = {
+        "target_amount": target,
+        "revenue_achieved": achieved,
+        "revenue_gap": gap,
+        "pipeline_value": float(mission.pipeline_value or 0.0)
+    }
+    actions = [
+        "Hourly Buyer Discovery sweep across 6 public intent connectors",
+        "Outbound proposal queue processing via Resend verified domain",
+        "Inbound reply classification and sentiment tracking",
+        "15-minute lead pipeline progression check"
+    ]
+
+    if not cycle_log:
+        cycle_log = DailyCycleLog(
+            mission_id=mission_id,
+            cycle_date=today_str,
+            phase="MORNING",
+            summary=summary_text,
+            metrics_snapshot=snap,
+            actions_taken=actions
+        )
+        session.add(cycle_log)
+    else:
+        cycle_log.summary = summary_text
+        cycle_log.metrics_snapshot = snap
+        cycle_log.actions_taken = actions
+
     await session.commit()
 
     
@@ -683,11 +700,16 @@ TASK_REGISTRY = {
 }
 
 
-async def run_cloud_preflight(session) -> Dict[str, Any]:
+async def run_cloud_preflight() -> Dict[str, Any]:
     """
-    Validates Python environment, dependencies, database ping, commit SHA, and active mission.
+    Validates Python environment, dependencies, Neon connection, quota health, and reports directory.
+    Strict Order:
+    1. NEON CONNECTION & QUOTA HEALTH
+    2. STORAGE HEALTH (pg_database_size)
+    3. REQUIRED ENVIRONMENT & MODULES
+    4. ACTIVE MISSION
     """
-    logger.info("[PRE-FLIGHT] Executing Cloud Runner Pre-flight Verification...")
+    logger.info("[PRE-FLIGHT] Step 1: Checking Runtime Modules...")
     
     # 1. Verify Core Imports
     required_modules = ["sqlalchemy", "greenlet", "asyncpg", "openpyxl", "httpx", "fastapi"]
@@ -701,13 +723,51 @@ async def run_cloud_preflight(session) -> Dict[str, Any]:
     if missing:
         raise RuntimeError(f"Pre-flight failed: Missing required runtime modules: {missing}")
 
-    # 2. Database Ping (SELECT 1)
-    try:
-        res = await session.execute(text("SELECT 1;"))
-        if res.scalar() != 1:
-            raise RuntimeError("Database SELECT 1 check did not return 1.")
-    except Exception as db_err:
-        raise RuntimeError(f"Pre-flight failed: Database connectivity error: {db_err}")
+    # 2. Direct Connection & Quota Probe
+    db_url = settings.DATABASE_URL
+    is_postgres = "postgres" in db_url.lower()
+    
+    logger.info("[PRE-FLIGHT] Step 2: Testing Database Connectivity & Quota Status...")
+    if is_postgres:
+        import asyncpg
+        raw_pg_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+        try:
+            conn = await asyncpg.connect(raw_pg_url, timeout=10)
+            db_size_bytes = await conn.fetchval("SELECT pg_database_size(current_database());")
+            await conn.close()
+            db_size_mb = db_size_bytes / (1024 * 1024) if db_size_bytes else 0.0
+            logger.info(f"[PRE-FLIGHT] Database Connected. Size: {db_size_mb:.2f} MB")
+            
+            # Storage threshold guardrail (500MB free / 5GB total)
+            storage_warning = db_size_mb >= 450.0  # Warning if approaching limits
+        except asyncpg.exceptions.InsufficientResourcesError as q_err:
+            logger.error(f"[PRE-FLIGHT CRITICAL]: Neon PostgreSQL Quota Exceeded: {q_err}")
+            return {
+                "status": "DATABASE_QUOTA_LOCKED",
+                "error_type": "InsufficientResourcesError",
+                "error_message": str(q_err),
+                "is_locked": True
+            }
+        except Exception as conn_err:
+            err_str = str(conn_err)
+            if "quota" in err_str.lower() or "limit" in err_str.lower():
+                logger.error(f"[PRE-FLIGHT CRITICAL]: Database Quota Locked: {err_str}")
+                return {
+                    "status": "DATABASE_QUOTA_LOCKED",
+                    "error_type": type(conn_err).__name__,
+                    "error_message": err_str,
+                    "is_locked": True
+                }
+            logger.error(f"[PRE-FLIGHT ERROR]: Database Connection Failed: {err_str}")
+            return {
+                "status": "DATABASE_UNAVAILABLE",
+                "error_type": type(conn_err).__name__,
+                "error_message": err_str,
+                "is_locked": False
+            }
+    else:
+        db_size_mb = 0.0
+        storage_warning = False
 
     # 3. Writable reports directory
     reports_dir = os.path.abspath("reports")
@@ -727,7 +787,10 @@ async def run_cloud_preflight(session) -> Dict[str, Any]:
         "status": "PASSED",
         "commit_sha": commit_sha,
         "python_version": sys.version,
-        "platform": DEPLOYMENT_PLATFORM
+        "platform": DEPLOYMENT_PLATFORM,
+        "db_size_mb": db_size_mb,
+        "storage_warning": storage_warning,
+        "is_locked": False
     }
 
 
@@ -742,26 +805,33 @@ async def main():
     print(f"[*] Environment: {settings.ENVIRONMENT} | Platform: {DEPLOYMENT_PLATFORM}")
     print(f"[*] GitHub Run ID: {GITHUB_RUN_ID} | Mission: #{ACTIVE_MISSION_ID}\n")
 
-    # Initialize schema tables if not exist
+    # 1. Execute Production Pre-flight Check (Connection -> Quota -> Environment)
+    preflight = await run_cloud_preflight()
+    
+    if preflight.get("status") == "DATABASE_QUOTA_LOCKED":
+        incident_report = {
+            "incident": "DATABASE_QUOTA_LOCKED",
+            "message": "Production Neon PostgreSQL rejected connection because account/project quota is exceeded.",
+            "error_detail": preflight.get("error_message"),
+            "action": "Execution halted safely before discovery or outreach. Zero repeated writes or retries.",
+            "resolution": "Upgrade Neon plan or adjust quota in Neon console to resume live agent operations."
+        }
+        print("\n" + "="*80)
+        print("[!] PRODUCTION INCIDENT: DATABASE_QUOTA_LOCKED")
+        print("="*80)
+        print(json.dumps(incident_report, indent=2))
+        print("="*80 + "\n")
+        sys.exit(0)
+
+    elif preflight.get("status") != "PASSED":
+        print(f"\n[!] Cloud Pre-flight check failed: {preflight.get('error_message')}")
+        sys.exit(1)
+
+    # Initialize schema tables if not exist (only if DB is available and healthy)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     async with AsyncSessionLocal() as session:
-        # 1. Execute Pre-flight check
-        try:
-            preflight = await run_cloud_preflight(session)
-        except Exception as pf_err:
-            logger.error(f"[PRE-FLIGHT ERROR]: {pf_err}")
-            await record_cloud_heartbeat(
-                session=session,
-                task_name=task_name,
-                status="FAILED",
-                details={"error": str(pf_err)},
-                error_msg=str(pf_err)
-            )
-            print(f"\n[!] Cloud Pre-flight check failed: {pf_err}")
-            sys.exit(1)
-
         target_mission_id = await resolve_active_mission_id(session)
         if not target_mission_id:
             print("[*] No ACTIVE mission found in production database.")

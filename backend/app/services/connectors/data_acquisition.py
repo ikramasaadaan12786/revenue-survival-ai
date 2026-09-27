@@ -163,21 +163,34 @@ class DataAcquisitionEngine:
     async def _persist_signals(self, session: AsyncSession, mission_id: int, signals: List[Dict[str, Any]]) -> List[MarketSignal]:
         created = []
         for s in signals:
-            sig = MarketSignal(
-                mission_id=mission_id,
-                source=s["source"],
-                signal_text=s["signal_text"],
-                lead_name=s["lead_name"],
-                country=s["country"],
-                intent_score=s["intent_score"],
-                channel=s["channel"],
-                raw_metadata=s.get("raw_metadata", {})
+            # Dedup check: do not insert duplicate signal text for same mission
+            sig_stmt = select(MarketSignal).where(
+                MarketSignal.mission_id == mission_id,
+                MarketSignal.source == s["source"],
+                MarketSignal.signal_text == s["signal_text"]
             )
-            session.add(sig)
-            created.append(sig)
+            existing_sig = (await session.execute(sig_stmt)).scalars().first()
+            if existing_sig:
+                created.append(existing_sig)
+                continue
 
-            # Check if lead exists in CRM; if not, ingest into 8-stage CRM
-            if s.get("lead_name"):
+            # Only persist high-intent signals to avoid database storage bloat
+            if s.get("intent_score") in ["Hot", "Qualified"]:
+                sig = MarketSignal(
+                    mission_id=mission_id,
+                    source=s["source"],
+                    signal_text=s["signal_text"],
+                    lead_name=s["lead_name"],
+                    country=s["country"],
+                    intent_score=s["intent_score"],
+                    channel=s["channel"],
+                    raw_metadata=s.get("raw_metadata", {})
+                )
+                session.add(sig)
+                created.append(sig)
+
+            # Check if lead exists in CRM; if not and intent is valid, ingest
+            if s.get("lead_name") and s.get("intent_score") in ["Hot", "Qualified"]:
                 lead_stmt = select(Lead).where(Lead.mission_id == mission_id, Lead.name == s["lead_name"])
                 existing_lead = (await session.execute(lead_stmt)).scalars().first()
                 if not existing_lead:
@@ -189,7 +202,7 @@ class DataAcquisitionEngine:
                         interest=s["signal_text"],
                         intent_score=s["intent_score"],
                         channel=s.get("channel", "WhatsApp"),
-                        status="AI_VERIFIED" if s["intent_score"] in ["Hot", "Qualified"] else "NEW",
+                        status="AI_VERIFIED",
                         expected_value=299.0,
                         commission_potential=40000.0,
                         notes=f"Auto-ingested from {s['source']} connector"

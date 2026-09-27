@@ -1097,26 +1097,9 @@ class RealExternalOpportunityHunterService:
                 counts["outbound_drafts_staged"] += 1
 
             else:
-                # JOB_VACANCY, SELLER_AD, and POTENTIAL_RESEARCH_SIGNAL are stored as market research signals
-                signal = MarketSignal(
-                    mission_id=mission.id,
-                    source=source,
-                    signal_text=f"[{intent_class}] [{fresh_bucket}] {name} ({comp}): {req[:300]}",
-                    lead_name=name,
-                    country="United Arab Emirates" if "dubai" in req.lower() or "uae" in req.lower() else "Global",
-                    intent_score="Research" if intent_class == "POTENTIAL_RESEARCH_SIGNAL" else ("Job Vacancy" if intent_class == "JOB_VACANCY" else "Seller Ad"),
-                    channel="Research",
-                    raw_metadata={
-                        "source_url": url,
-                        "profile_url": profile_url,
-                        "intent_class": intent_class,
-                        "freshness_bucket": fresh_bucket,
-                        "contactability": contact_status,
-                        "external_published_at": pub_date_str
-                    }
-                )
-                session.add(signal)
-                created_signals.append(signal)
+                # Emergency Write Brake: Non-buyer signals (job vacancies, seller ads, research candidates)
+                # are tracked in memory/stream only and NOT persisted to PostgreSQL to protect storage quota.
+                counts["research_signals_filtered"] = counts.get("research_signals_filtered", 0) + 1
 
         await session.commit()
 

@@ -62,8 +62,12 @@ async def get_system_health(db: AsyncSession = Depends(get_db)) -> Dict[str, Any
             "providers": p_count
         }
     except Exception as e:
-        db_status = "DEGRADED"
-        db_error = str(e)
+        err_str = str(e)
+        if "quota" in err_str.lower() or "limit" in err_str.lower() or "insufficientresourceserror" in err_str.lower():
+            db_status = "DATABASE_QUOTA_LOCKED"
+        else:
+            db_status = "DEGRADED"
+        db_error = err_str
 
     # 2. Worker Daemon Status Check (Database Heartbeat as Primary Truth)
     worker_status = "OFFLINE"

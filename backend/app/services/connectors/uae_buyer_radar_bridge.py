@@ -1123,17 +1123,24 @@ class UAEBuyerRadarBridgeService:
             if sig.get("raw_metadata"):
                 meta.update(sig["raw_metadata"])
 
-            market_sig = MarketSignal(
-                mission_id=mission_id,
-                source=sig["source"],
-                signal_text=sig["requirement"],
-                lead_name=sig["name"],
-                country=sig.get("country", "United Arab Emirates"),
-                intent_score="Hot" if sig.get("intent_score", 90) >= 90 else "Qualified",
-                channel=sig.get("channel", "WhatsApp"),
-                raw_metadata=meta
+            # Deduplicate before persisting MarketSignal
+            exist_sig_stmt = select(MarketSignal).where(
+                MarketSignal.mission_id == mission_id,
+                MarketSignal.signal_text == sig["requirement"]
             )
-            session.add(market_sig)
+            exist_sig = (await session.execute(exist_sig_stmt)).scalars().first()
+            if not exist_sig:
+                market_sig = MarketSignal(
+                    mission_id=mission_id,
+                    source=sig["source"],
+                    signal_text=sig["requirement"],
+                    lead_name=sig["name"],
+                    country=sig.get("country", "United Arab Emirates"),
+                    intent_score="Hot" if sig.get("intent_score", 90) >= 90 else "Qualified",
+                    channel=sig.get("channel", "WhatsApp"),
+                    raw_metadata=meta
+                )
+                session.add(market_sig)
             imported_signals.append(sig)
 
             # Determine platform display name
