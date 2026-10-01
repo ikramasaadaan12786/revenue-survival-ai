@@ -94,7 +94,7 @@ export default function RevenueCopilotModal({ isOpen, onClose, opportunity, onOf
         title: analysis.recommended_service?.service_name || `${opportunity.company} Custom Growth Offer`,
         service_type: analysis.recommended_service?.service_name || "Revenue Automation",
         tier: "CUSTOM",
-        price: analysis.pricing?.recommended_price || opportunity.estimated_value || 3500,
+        price: analysis.pricing?.recommended_price || opportunity.estimated_value || 0,
         timeline_days: analysis.recommended_service?.delivery_timeline_days || 2,
         deliverables: analysis.recommended_service?.deliverables || ["Custom Automation Pipeline"],
         pitch_template: analysis.pitch?.full_pitch || "",
@@ -212,10 +212,10 @@ export default function RevenueCopilotModal({ isOpen, onClose, opportunity, onOf
                   </span>
                 </div>
                 <div className="text-2xl font-black font-mono text-emerald-400">
-                  {Number(analysis.suggested_pricing_aed || analysis.pricing?.recommended_price || 3500).toLocaleString()} AED
+                  {Number(analysis.suggested_pricing_aed || analysis.pricing?.recommended_price || opportunity.estimated_value || 0).toLocaleString()} AED
                 </div>
                 <div className="text-xs text-slate-300 space-y-1 font-mono">
-                  <div>Upfront Deposit: <strong className="text-white">{Number(analysis.upfront_deposit_aed || 1750).toLocaleString()} AED</strong></div>
+                  <div>Upfront Deposit: <strong className="text-white">{Number(analysis.upfront_deposit_aed || 0).toLocaleString()} AED</strong></div>
                   <div>ROI Model: <strong className="text-emerald-300">{analysis.roi_multiplier || "4.2x ROI"}</strong></div>
                   <div>Confidence: <strong className="text-cyan-300">{analysis.conversion_confidence || 92.5}%</strong></div>
                 </div>

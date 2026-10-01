@@ -527,7 +527,7 @@ export default function OpportunityRadarView({ missionId, onRefreshSummary }: Pr
                         company: opp.target_customer,
                         industry: opp.market,
                         requirement: opp.problem,
-                        estimated_value: opp.price_estimate || 3500
+                        estimated_value: opp.price_estimate || 0
                       });
                       setShowCopilotModal(true);
                     }}

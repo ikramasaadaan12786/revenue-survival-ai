@@ -266,7 +266,7 @@ export default function LeadKanbanView({ missionId, onRefreshSummary }: Props) {
                   <div className="flex justify-between">
                     <span className="text-[#8C9BAE]">Deal Target:</span>
                     <strong className="text-emerald-400 font-serif">
-                      {Number(lead.estimated_budget || lead.expected_value || 3500).toLocaleString()} AED
+                      {Number(lead.estimated_budget || lead.expected_value || 0).toLocaleString()} AED
                     </strong>
                   </div>
                   <div className="flex justify-between text-[11px]">
